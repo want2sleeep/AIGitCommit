@@ -39,23 +39,29 @@
 
 #### 1. 配置 API
 
-首次使用时，插件会自动引导您完成配置：
+使用专用配置面板快速设置：
 
-1. 触发生成提交信息命令
-2. 按照提示输入 API 端点、API 密钥和模型名称
-3. 配置将自动保存
+1. 按 `Ctrl+Shift+P`（Mac: `Cmd+Shift+P`）打开命令面板
+2. 输入 "配置 AI Git Commit" 或 "Configure AI Git Commit"
+3. 在配置面板中：
+   - **选择 API 提供商**: 从下拉列表选择（OpenAI、Azure OpenAI、Ollama 或其他）
+   - **输入 API 密钥**: 您的 API 密钥（安全存储）
+   - **Base URL**: 自动填充默认值，可根据需要修改
+   - **模型名称**: 自动填充推荐模型，可自定义
+4. 点击"保存"完成配置
 
-或者手动配置：
+💡 **提示**: 选择不同的 API 提供商时，Base URL 和模型名称会自动填充推荐值！
+
+或者通过设置手动配置：
 
 1. 按 `Ctrl+,`（Mac: `Cmd+,`）打开设置
 2. 搜索 "AI Git Commit"
 3. 配置以下选项：
+   - **Provider**: API 提供商（openai/azure-openai/ollama/custom）
    - **API Endpoint**: API 端点 URL
    - **Model Name**: 模型名称
    - **Language**: 提交信息语言（中文/英文）
    - **Commit Format**: 提交格式（conventional/simple）
-
-4. 运行命令 "配置 AI Git Commit Generator" 来设置 API 密钥（安全存储）
 
 #### 2. 生成提交信息
 
@@ -72,9 +78,10 @@
 - Windows/Linux: `Ctrl+Shift+G C`
 - Mac: `Cmd+Shift+G C`
 
-**方式 3: 源代码管理视图**
+**方式 3: 源代码管理视图**（推荐）
 1. 打开源代码管理视图（`Ctrl+Shift+G`）
 2. 点击标题栏的 ✨ 图标
+3. 💡 **提示**: 将鼠标悬停在 ✨ 图标上可查看当前配置信息
 
 ### ⚙️ 配置指南
 
@@ -203,9 +210,13 @@ refactor(user): 使用箭头函数和模板字符串重构 getUserName
 
 ### ❓ 常见问题
 
-#### Q: 如何更改 API 密钥？
+#### Q: 如何更改 API 密钥或配置？
 
-A: 运行命令 "配置 AI Git Commit Generator"，按照提示重新输入新的 API 密钥。密钥将安全存储在 VSCode SecretStorage 中。
+A: 有两种方式：
+1. **配置面板**（推荐）: 运行命令 "配置 AI Git Commit" 打开配置面板，修改任何配置项后点击保存
+2. **快速入口**: 在源代码管理视图中，将鼠标悬停在 ✨ 图标上，点击悬停提示中的"编辑配置"链接
+
+所有配置将安全存储，API 密钥使用 VSCode SecretStorage 加密保存。
 
 #### Q: 生成的提交信息不满意怎么办？
 
@@ -266,6 +277,12 @@ A: 插件会将您暂存的代码变更（diff）发送到您配置的 API 端�
 1. 使用本地模型（如 Ollama）
 2. 使用私有部署的 LLM 服务
 3. 使用 Azure OpenAI 等企业级服务
+
+#### Q: 如何查看当前配置？
+
+A: 有两种方式：
+1. **悬停查看**: 在源代码管理视图中，将鼠标悬停在 ✨ 图标上，即可看到当前使用的 API 提供商、Base URL、模型等信息
+2. **配置面板**: 运行命令 "配置 AI Git Commit" 打开配置面板查看完整配置
 
 #### Q: 如何查看详细的错误日志？
 
@@ -352,23 +369,29 @@ MIT
 
 #### 1. Configure API
 
-On first use, the extension will guide you through configuration:
+Use the dedicated configuration panel for quick setup:
 
-1. Trigger the generate commit message command
-2. Follow prompts to enter API endpoint, API key, and model name
-3. Configuration will be saved automatically
+1. Press `Ctrl+Shift+P` (Mac: `Cmd+Shift+P`) to open Command Palette
+2. Type "Configure AI Git Commit"
+3. In the configuration panel:
+   - **Select API Provider**: Choose from dropdown (OpenAI, Azure OpenAI, Ollama, or Custom)
+   - **Enter API Key**: Your API key (securely stored)
+   - **Base URL**: Auto-filled with default value, modify if needed
+   - **Model Name**: Auto-filled with recommended model, customize as needed
+4. Click "Save" to complete configuration
 
-Or configure manually:
+💡 **Tip**: When you select different API providers, Base URL and Model Name are automatically filled with recommended values!
+
+Or configure manually through settings:
 
 1. Press `Ctrl+,` (Mac: `Cmd+,`) to open Settings
 2. Search for "AI Git Commit"
 3. Configure the following options:
+   - **Provider**: API provider (openai/azure-openai/ollama/custom)
    - **API Endpoint**: API endpoint URL
    - **Model Name**: Model name
    - **Language**: Commit message language (Chinese/English)
    - **Commit Format**: Commit format (conventional/simple)
-
-4. Run command "Configure AI Git Commit Generator" to set API key (secure storage)
 
 #### 2. Generate Commit Message
 
@@ -385,9 +408,10 @@ Three ways to trigger generation:
 - Windows/Linux: `Ctrl+Shift+G C`
 - Mac: `Cmd+Shift+G C`
 
-**Method 3: Source Control View**
+**Method 3: Source Control View** (Recommended)
 1. Open Source Control view (`Ctrl+Shift+G`)
 2. Click the ✨ icon in the title bar
+3. 💡 **Tip**: Hover over the ✨ icon to view current configuration details
 
 ### ⚙️ Configuration Guide
 
@@ -516,9 +540,13 @@ Improve code readability and add type annotations
 
 ### ❓ FAQ
 
-#### Q: How to change API key?
+#### Q: How to change API key or configuration?
 
-A: Run command "Configure AI Git Commit Generator" and follow prompts to enter new API key. The key will be securely stored in VSCode SecretStorage.
+A: Two ways:
+1. **Configuration Panel** (Recommended): Run command "Configure AI Git Commit" to open the configuration panel, modify any settings and click Save
+2. **Quick Access**: In Source Control view, hover over the ✨ icon and click "Edit Configuration" link in the tooltip
+
+All configurations are securely stored, with API keys encrypted using VSCode SecretStorage.
 
 #### Q: What if I'm not satisfied with the generated commit message?
 
@@ -579,6 +607,12 @@ A: The extension sends your staged code changes (diff) to the API endpoint you c
 1. Use local models (like Ollama)
 2. Use privately deployed LLM services
 3. Use enterprise services like Azure OpenAI
+
+#### Q: How to view current configuration?
+
+A: Two ways:
+1. **Hover to View**: In Source Control view, hover over the ✨ icon to see current API provider, Base URL, model, and other information
+2. **Configuration Panel**: Run command "Configure AI Git Commit" to open the configuration panel and view complete settings
 
 #### Q: How to view detailed error logs?
 

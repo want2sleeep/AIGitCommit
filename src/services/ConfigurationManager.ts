@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ExtensionConfig, ValidationResult } from '../types';
+import { ExtensionConfig, ValidationResult, FullConfig, ConfigSummary } from '../types';
 
 /**
  * 配置管理器
@@ -8,6 +8,10 @@ import { ExtensionConfig, ValidationResult } from '../types';
 export class ConfigurationManager {
     private static readonly CONFIG_SECTION = 'aiGitCommit';
     private static readonly SECRET_KEY_API_KEY = 'aiGitCommit.apiKey';
+    private static readonly CACHE_TTL = 5000; // 5秒缓存TTL
+    
+    private configSummaryCache: ConfigSummary | undefined;
+    private cacheTimestamp: number = 0;
     
     constructor(
         private readonly context: vscode.ExtensionContext
@@ -114,11 +118,13 @@ export class ConfigurationManager {
         // API密钥特殊处理，存储到 SecretStorage
         if (key === 'apiKey') {
             await this.storeApiKey(String(value));
+            this.invalidateCache();
             return;
         }
 
         const config = vscode.workspace.getConfiguration(ConfigurationManager.CONFIG_SECTION);
         await config.update(key, value, target);
+        this.invalidateCache();
     }
 
     /**
@@ -131,6 +137,7 @@ export class ConfigurationManager {
         } else {
             await this.context.secrets.store(ConfigurationManager.SECRET_KEY_API_KEY, apiKey);
         }
+        this.invalidateCache();
     }
 
     /**
@@ -146,6 +153,7 @@ export class ConfigurationManager {
      */
     async deleteApiKey(): Promise<void> {
         await this.context.secrets.delete(ConfigurationManager.SECRET_KEY_API_KEY);
+        this.invalidateCache();
     }
 
     /**
@@ -355,5 +363,214 @@ export class ConfigurationManager {
                 callback(config);
             }
         });
+    }
+
+    /**
+     * 获取API提供商
+     * @returns 提供商ID
+     */
+    getProvider(): string {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.CONFIG_SECTION);
+        return config.get<string>('provider', 'openai');
+    }
+
+    /**
+     * 设置API提供商
+     * @param provider 提供商ID
+     * @param target 配置目标（全局或工作区）
+     */
+    async setProvider(
+        provider: string,
+        target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Global
+    ): Promise<void> {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.CONFIG_SECTION);
+        await config.update('provider', provider, target);
+        this.invalidateCache();
+    }
+
+    /**
+     * 获取完整配置（包括提供商）
+     * @returns 完整的配置对象
+     */
+    async getFullConfig(): Promise<FullConfig> {
+        const baseConfig = await this.getConfig();
+        const provider = this.getProvider();
+
+        return {
+            ...baseConfig,
+            provider
+        };
+    }
+
+    /**
+     * 保存完整配置
+     * @param config 完整配置对象
+     * @param target 配置目标（全局或工作区）
+     */
+    async saveFullConfig(
+        config: FullConfig,
+        target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Global
+    ): Promise<void> {
+        // 保存提供商
+        await this.setProvider(config.provider, target);
+
+        // 保存API密钥到SecretStorage
+        await this.storeApiKey(config.apiKey);
+
+        // 保存其他配置项
+        const vsConfig = vscode.workspace.getConfiguration(ConfigurationManager.CONFIG_SECTION);
+        await vsConfig.update('apiEndpoint', config.apiEndpoint, target);
+        await vsConfig.update('modelName', config.modelName, target);
+        await vsConfig.update('language', config.language, target);
+        await vsConfig.update('commitFormat', config.commitFormat, target);
+        await vsConfig.update('maxTokens', config.maxTokens, target);
+        await vsConfig.update('temperature', config.temperature, target);
+        
+        // 清除缓存
+        this.invalidateCache();
+    }
+
+    /**
+     * 获取配置摘要（用于显示）
+     * 使用5秒TTL缓存机制提高性能
+     * @returns 配置摘要对象
+     */
+    async getConfigSummary(): Promise<ConfigSummary> {
+        // 检查缓存是否有效
+        const now = Date.now();
+        if (this.configSummaryCache && (now - this.cacheTimestamp) < ConfigurationManager.CACHE_TTL) {
+            return this.configSummaryCache;
+        }
+        
+        // 生成新的配置摘要
+        const summary = await this.generateConfigSummary();
+        
+        // 更新缓存
+        this.configSummaryCache = summary;
+        this.cacheTimestamp = now;
+        
+        return summary;
+    }
+
+    /**
+     * 生成配置摘要
+     * @returns 配置摘要对象
+     */
+    private async generateConfigSummary(): Promise<ConfigSummary> {
+        try {
+            const config = await this.getFullConfig();
+            const isConfigured = await this.isConfigured();
+
+            return {
+                provider: config.provider || 'openai',
+                apiKeyMasked: this.maskApiKey(config.apiKey),
+                baseUrl: config.apiEndpoint || '',
+                modelName: config.modelName || '',
+                isConfigured
+            };
+        } catch (error) {
+            console.error('Error getting config summary:', error);
+            console.error('Error details:', error instanceof Error ? error.message : String(error));
+            
+            // 返回默认值而不是抛出异常
+            return {
+                provider: 'openai',
+                apiKeyMasked: '未设置',
+                baseUrl: '',
+                modelName: '',
+                isConfigured: false
+            };
+        }
+    }
+
+    /**
+     * 清除配置摘要缓存
+     * 在配置变更时调用
+     */
+    private invalidateCache(): void {
+        this.configSummaryCache = undefined;
+        this.cacheTimestamp = 0;
+    }
+
+    /**
+     * 遮蔽API密钥显示
+     * @param apiKey API密钥
+     * @returns 遮蔽后的API密钥
+     */
+    private maskApiKey(apiKey: string): string {
+        if (!apiKey || apiKey.trim() === '') {
+            return '未设置';
+        }
+        if (apiKey.length < 8) {
+            return '****';
+        }
+        return apiKey.substring(0, 4) + '****' + apiKey.substring(apiKey.length - 4);
+    }
+
+    /**
+     * 配置迁移
+     * 检测旧版本配置并迁移到新格式
+     */
+    async migrateConfiguration(): Promise<void> {
+        const config = vscode.workspace.getConfiguration(ConfigurationManager.CONFIG_SECTION);
+        let migrationPerformed = false;
+
+        // 1. 迁移API密钥从settings.json到SecretStorage（已在getConfig中处理，这里确认）
+        const settingsApiKey = config.get<string>('apiKey', '');
+        if (settingsApiKey) {
+            await this.storeApiKey(settingsApiKey);
+            await config.update('apiKey', undefined, vscode.ConfigurationTarget.Global);
+            migrationPerformed = true;
+        }
+
+        // 2. 如果没有provider配置，根据apiEndpoint推断提供商
+        const currentProvider = config.get<string>('provider');
+        if (!currentProvider) {
+            const apiEndpoint = config.get<string>('apiEndpoint', '');
+            const inferredProvider = this.inferProviderFromEndpoint(apiEndpoint);
+            
+            if (inferredProvider) {
+                await this.setProvider(inferredProvider);
+                migrationPerformed = true;
+            }
+        }
+
+        // 3. 显示迁移完成通知
+        if (migrationPerformed) {
+            vscode.window.showInformationMessage(
+                '✅ AI Git Commit 配置已成功迁移到新版本格式'
+            );
+        }
+    }
+
+    /**
+     * 根据API端点推断提供商
+     * @param endpoint API端点URL
+     * @returns 推断的提供商ID
+     */
+    private inferProviderFromEndpoint(endpoint: string): string {
+        if (!endpoint) {
+            return 'openai'; // 默认为OpenAI
+        }
+
+        const lowerEndpoint = endpoint.toLowerCase();
+
+        // 检测Azure OpenAI
+        if (lowerEndpoint.includes('azure') || lowerEndpoint.includes('.openai.azure.com')) {
+            return 'azure-openai';
+        }
+
+        // 检测Ollama
+        if (lowerEndpoint.includes('localhost:11434') || lowerEndpoint.includes('127.0.0.1:11434')) {
+            return 'ollama';
+        }
+
+        // 检测OpenAI官方
+        if (lowerEndpoint.includes('api.openai.com')) {
+            return 'openai';
+        }
+
+        // 其他情况视为自定义
+        return 'custom';
     }
 }

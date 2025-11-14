@@ -14,6 +14,24 @@ export interface ExtensionConfig {
 }
 
 /**
+ * 完整配置接口（包含提供商）
+ */
+export interface FullConfig extends ExtensionConfig {
+    provider: string;
+}
+
+/**
+ * 配置摘要接口（用于显示）
+ */
+export interface ConfigSummary {
+    provider: string;
+    apiKeyMasked: string;
+    baseUrl: string;
+    modelName: string;
+    isConfigured: boolean;
+}
+
+/**
  * Git变更状态
  */
 export enum ChangeStatus {

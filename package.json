@@ -2,7 +2,7 @@
   "name": "ai-git-commit",
   "displayName": "AI Git Commit",
   "description": "使用AI自动生成高质量的Git提交信息",
-  "version": "0.0.1",
+  "version": "0.1.4",
   "publisher": "SleepSheep",
   "author": {
     "name": "SleepSheep"
@@ -36,7 +36,7 @@
     "code-quality"
   ],
   "activationEvents": [
-    "workspaceContains:.git"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -44,19 +44,36 @@
       {
         "command": "aiGitCommit.generateMessage",
         "title": "生成AI提交信息",
-        "category": "Git",
+        "category": "AI Git Commit",
         "icon": "$(sparkle)"
       },
       {
         "command": "aiGitCommit.configureSettings",
-        "title": "配置AI Git Commit Generator",
-        "category": "Git",
+        "title": "配置AI Git Commit",
+        "category": "AI Git Commit",
         "icon": "$(gear)"
       }
     ],
     "configuration": {
-      "title": "AI Git Commit Generator",
+      "title": "AI Git Commit",
       "properties": {
+        "aiGitCommit.provider": {
+          "type": "string",
+          "default": "openai",
+          "enum": [
+            "openai",
+            "azure-openai",
+            "ollama",
+            "custom"
+          ],
+          "enumDescriptions": [
+            "OpenAI官方API服务",
+            "Microsoft Azure OpenAI服务",
+            "本地Ollama服务",
+            "自定义OpenAI兼容服务"
+          ],
+          "description": "API提供商"
+        },
         "aiGitCommit.apiEndpoint": {
           "type": "string",
           "default": "https://api.openai.com/v1",
@@ -109,7 +126,7 @@
       "scm/title": [
         {
           "command": "aiGitCommit.generateMessage",
-          "group": "navigation",
+          "group": "navigation@1",
           "when": "scmProvider == git"
         }
       ]
