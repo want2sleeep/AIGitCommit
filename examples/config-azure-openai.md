@@ -44,7 +44,7 @@ https://my-openai-resource.openai.azure.com/openai/deployments/gpt-35-turbo
 
 ### API 密钥
 - 使用 Azure Portal 中的 Key 1 或 Key 2
-- 通过命令 `Git: 配置AI Git Commit Generator` 安全存储
+- 通过命令 `Git: 配置AI Git Commit` 安全存储
 - 或在首次使用时通过配置向导输入
 
 ### 模型名称
@@ -65,12 +65,12 @@ gpt-4
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://my-openai-resource.openai.azure.com/openai/deployments/gpt-35-turbo",
-  "aiGitCommit.modelName": "gpt-35-turbo",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "https://my-openai-resource.openai.azure.com/openai/deployments/gpt-35-turbo",
+  "aigitcommit.modelName": "gpt-35-turbo",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -78,12 +78,12 @@ gpt-4
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://my-openai-resource.openai.azure.com/openai/deployments/gpt-4",
-  "aiGitCommit.modelName": "gpt-4",
-  "aiGitCommit.language": "en-US",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 800,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "https://my-openai-resource.openai.azure.com/openai/deployments/gpt-4",
+  "aigitcommit.modelName": "gpt-4",
+  "aigitcommit.language": "en-US",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 800,
+  "aigitcommit.temperature": 0.7
 }
 ```
 

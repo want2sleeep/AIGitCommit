@@ -85,7 +85,7 @@ describe('ConfigurationManager', () => {
 
             await configManager.getConfig();
 
-            expect(mockSecrets.store).toHaveBeenCalledWith('aiGitCommit.apiKey', 'old-api-key');
+            expect(mockSecrets.store).toHaveBeenCalledWith('aigitcommit.apiKey', 'old-api-key');
             expect(mockConfig.update).toHaveBeenCalledWith('apiKey', '', vscode.ConfigurationTarget.Global);
         });
 
@@ -259,7 +259,7 @@ describe('ConfigurationManager', () => {
         it('should store API key in secrets', async () => {
             await configManager.updateConfig('apiKey', 'new-api-key');
 
-            expect(mockSecrets.store).toHaveBeenCalledWith('aiGitCommit.apiKey', 'new-api-key');
+            expect(mockSecrets.store).toHaveBeenCalledWith('aigitcommit.apiKey', 'new-api-key');
             expect(mockConfig.update).not.toHaveBeenCalled();
         });
 
@@ -274,19 +274,19 @@ describe('ConfigurationManager', () => {
         it('should store API key in secrets', async () => {
             await configManager.storeApiKey('test-key');
 
-            expect(mockSecrets.store).toHaveBeenCalledWith('aiGitCommit.apiKey', 'test-key');
+            expect(mockSecrets.store).toHaveBeenCalledWith('aigitcommit.apiKey', 'test-key');
         });
 
         it('should delete API key when empty string provided', async () => {
             await configManager.storeApiKey('');
 
-            expect(mockSecrets.delete).toHaveBeenCalledWith('aiGitCommit.apiKey');
+            expect(mockSecrets.delete).toHaveBeenCalledWith('aigitcommit.apiKey');
         });
 
         it('should delete API key when whitespace string provided', async () => {
             await configManager.storeApiKey('   ');
 
-            expect(mockSecrets.delete).toHaveBeenCalledWith('aiGitCommit.apiKey');
+            expect(mockSecrets.delete).toHaveBeenCalledWith('aigitcommit.apiKey');
         });
     });
 
@@ -297,7 +297,7 @@ describe('ConfigurationManager', () => {
             const key = await configManager.getApiKey();
 
             expect(key).toBe('stored-key');
-            expect(mockSecrets.get).toHaveBeenCalledWith('aiGitCommit.apiKey');
+            expect(mockSecrets.get).toHaveBeenCalledWith('aigitcommit.apiKey');
         });
 
         it('should return undefined when no key stored', async () => {
@@ -313,7 +313,7 @@ describe('ConfigurationManager', () => {
         it('should delete API key from secrets', async () => {
             await configManager.deleteApiKey();
 
-            expect(mockSecrets.delete).toHaveBeenCalledWith('aiGitCommit.apiKey');
+            expect(mockSecrets.delete).toHaveBeenCalledWith('aigitcommit.apiKey');
         });
     });
 
@@ -415,7 +415,7 @@ describe('ConfigurationManager', () => {
             await configManager.saveFullConfig(fullConfig);
 
             expect(mockConfig.update).toHaveBeenCalledWith('provider', 'ollama', vscode.ConfigurationTarget.Global);
-            expect(mockSecrets.store).toHaveBeenCalledWith('aiGitCommit.apiKey', 'new-api-key');
+            expect(mockSecrets.store).toHaveBeenCalledWith('aigitcommit.apiKey', 'new-api-key');
             expect(mockConfig.update).toHaveBeenCalledWith('apiEndpoint', 'http://localhost:11434/v1', vscode.ConfigurationTarget.Global);
             expect(mockConfig.update).toHaveBeenCalledWith('modelName', 'llama2', vscode.ConfigurationTarget.Global);
             expect(mockConfig.update).toHaveBeenCalledWith('language', 'en-US', vscode.ConfigurationTarget.Global);
@@ -489,7 +489,7 @@ describe('ConfigurationManager', () => {
 
             await configManager.migrateConfiguration();
 
-            expect(mockSecrets.store).toHaveBeenCalledWith('aiGitCommit.apiKey', 'old-settings-key');
+            expect(mockSecrets.store).toHaveBeenCalledWith('aigitcommit.apiKey', 'old-settings-key');
             expect(mockConfig.update).toHaveBeenCalledWith('apiKey', undefined, vscode.ConfigurationTarget.Global);
         });
 

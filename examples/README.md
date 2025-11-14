@@ -1,6 +1,6 @@
-# AI Git Commit Generator - 配置示例和模板
+# AI Git Commit - 配置示例和模板
 
-本目录包含了 AI Git Commit Generator 插件的配置示例、提示词模板和参考文档。
+本目录包含了 AI Git Commit 插件的配置示例、提示词模板和参考文档。
 
 ## 📁 文件说明
 
@@ -56,7 +56,7 @@
 1. 打开 VSCode 设置（`Ctrl+,` 或 `Cmd+,`）
 2. 搜索 "AI Git Commit"
 3. 根据选择的服务配置相应参数
-4. 使用命令 `Git: 配置AI Git Commit Generator` 安全存储 API 密钥
+4. 使用命令 `Git: 配置AI Git Commit` 安全存储 API 密钥
 
 ### 3. 开始使用
 
@@ -72,7 +72,7 @@
 
 所有配置参数的详细说明：
 
-#### aiGitCommit.apiEndpoint
+#### aigitcommit.apiEndpoint
 - **类型**：字符串
 - **默认值**：`https://api.openai.com/v1`
 - **说明**：OpenAI 兼容 API 的端点 URL
@@ -81,7 +81,7 @@
   - Azure: `https://your-resource.openai.azure.com/openai/deployments/your-deployment`
   - Ollama: `http://localhost:11434/v1`
 
-#### aiGitCommit.modelName
+#### aigitcommit.modelName
 - **类型**：字符串
 - **默认值**：`gpt-3.5-turbo`
 - **说明**：使用的模型名称
@@ -90,19 +90,19 @@
   - Azure: 您的部署名称
   - Ollama: `codellama`, `mistral`, `qwen`
 
-#### aiGitCommit.language
+#### aigitcommit.language
 - **类型**：字符串
 - **默认值**：`zh-CN`
 - **选项**：`zh-CN`（中文）、`en-US`（英文）
 - **说明**：生成的提交信息使用的语言
 
-#### aiGitCommit.commitFormat
+#### aigitcommit.commitFormat
 - **类型**：字符串
 - **默认值**：`conventional`
 - **选项**：`conventional`（约定式提交）、`simple`（简单格式）
 - **说明**：提交信息的格式风格
 
-#### aiGitCommit.maxTokens
+#### aigitcommit.maxTokens
 - **类型**：数字
 - **默认值**：`500`
 - **说明**：生成提交信息的最大 token 数
@@ -111,7 +111,7 @@
   - 标准提交：400-600
   - 详细提交：600-1000
 
-#### aiGitCommit.temperature
+#### aigitcommit.temperature
 - **类型**：数字
 - **默认值**：`0.7`
 - **范围**：0-2
@@ -168,10 +168,10 @@
 **配置**：
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://api.openai.com/v1",
-  "aiGitCommit.modelName": "gpt-4-turbo-preview",
-  "aiGitCommit.language": "en-US",
-  "aiGitCommit.commitFormat": "conventional"
+  "aigitcommit.apiEndpoint": "https://api.openai.com/v1",
+  "aigitcommit.modelName": "gpt-4-turbo-preview",
+  "aigitcommit.language": "en-US",
+  "aigitcommit.commitFormat": "conventional"
 }
 ```
 

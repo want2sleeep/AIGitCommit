@@ -1,4 +1,4 @@
-# AI Git Commit Generator - 市场描述
+# AI Git Commit - 市场描述
 
 ## 简短描述（用于市场标题下方）
 
@@ -10,7 +10,7 @@
 
 ### 🤖 让 AI 帮你写出专业的 Git 提交信息
 
-厌倦了写提交信息？让 AI 来帮你！AI Git Commit Generator 是一个智能的 VSCode 插件，它能够：
+厌倦了写提交信息？让 AI 来帮你！AI Git Commit 是一个智能的 VSCode 插件，它能够：
 
 - ✨ **自动分析**你的代码变更
 - 📝 **生成专业**的约定式提交信息
@@ -88,16 +88,16 @@ fix(auth): 修正年龄验证的边界条件
 #### OpenAI
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://api.openai.com/v1",
-  "aiGitCommit.modelName": "gpt-3.5-turbo"
+  "aigitcommit.apiEndpoint": "https://api.openai.com/v1",
+  "aigitcommit.modelName": "gpt-3.5-turbo"
 }
 ```
 
 #### 本地模型（Ollama）
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:11434/v1",
-  "aiGitCommit.modelName": "llama2"
+  "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
+  "aigitcommit.modelName": "llama2"
 }
 ```
 

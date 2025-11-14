@@ -98,7 +98,7 @@ describe('ConfigurationPanelManager', () => {
             panelManager.showPanel();
 
             expect(vscode.window.createWebviewPanel).toHaveBeenCalledWith(
-                'aiGitCommitConfig',
+                'aigitcommitConfig',
                 'AI Git Commit 配置',
                 vscode.ViewColumn.One,
                 {

@@ -2,7 +2,7 @@
   "name": "ai-git-commit",
   "displayName": "AI Git Commit",
   "description": "使用AI自动生成高质量的Git提交信息",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "SleepSheep",
   "author": {
     "name": "SleepSheep"
@@ -42,13 +42,13 @@
   "contributes": {
     "commands": [
       {
-        "command": "aiGitCommit.generateMessage",
+        "command": "aigitcommit.generateMessage",
         "title": "生成AI提交信息",
         "category": "AI Git Commit",
         "icon": "$(sparkle)"
       },
       {
-        "command": "aiGitCommit.configureSettings",
+        "command": "aigitcommit.configureSettings",
         "title": "配置AI Git Commit",
         "category": "AI Git Commit",
         "icon": "$(gear)"
@@ -57,7 +57,7 @@
     "configuration": {
       "title": "AI Git Commit",
       "properties": {
-        "aiGitCommit.provider": {
+        "aigitcommit.provider": {
           "type": "string",
           "default": "openai",
           "enum": [
@@ -74,23 +74,23 @@
           ],
           "description": "API提供商"
         },
-        "aiGitCommit.apiEndpoint": {
+        "aigitcommit.apiEndpoint": {
           "type": "string",
           "default": "https://api.openai.com/v1",
           "description": "OpenAI兼容API的端点URL"
         },
-        "aiGitCommit.apiKey": {
+        "aigitcommit.apiKey": {
           "type": "string",
           "default": "",
           "description": "API密钥（已弃用：密钥将自动迁移到安全存储，请使用配置向导设置）",
           "deprecationMessage": "请使用配置向导设置API密钥，密钥将安全存储在VSCode SecretStorage中"
         },
-        "aiGitCommit.modelName": {
+        "aigitcommit.modelName": {
           "type": "string",
           "default": "gpt-3.5-turbo",
           "description": "使用的模型名称"
         },
-        "aiGitCommit.language": {
+        "aigitcommit.language": {
           "type": "string",
           "default": "zh-CN",
           "enum": [
@@ -99,7 +99,7 @@
           ],
           "description": "提交信息的语言"
         },
-        "aiGitCommit.commitFormat": {
+        "aigitcommit.commitFormat": {
           "type": "string",
           "default": "conventional",
           "enum": [
@@ -108,12 +108,12 @@
           ],
           "description": "提交信息格式"
         },
-        "aiGitCommit.maxTokens": {
+        "aigitcommit.maxTokens": {
           "type": "number",
           "default": 500,
           "description": "最大token数"
         },
-        "aiGitCommit.temperature": {
+        "aigitcommit.temperature": {
           "type": "number",
           "default": 0.7,
           "minimum": 0,
@@ -125,7 +125,7 @@
     "menus": {
       "scm/title": [
         {
-          "command": "aiGitCommit.generateMessage",
+          "command": "aigitcommit.generateMessage",
           "group": "navigation@1",
           "when": "scmProvider == git"
         }
@@ -133,7 +133,7 @@
     },
     "keybindings": [
       {
-        "command": "aiGitCommit.generateMessage",
+        "command": "aigitcommit.generateMessage",
         "key": "ctrl+shift+g c",
         "mac": "cmd+shift+g c",
         "when": "scmProvider == git"

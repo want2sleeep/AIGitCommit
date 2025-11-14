@@ -156,8 +156,8 @@ out/**/__mocks__/**
 
 #### ✅ 命令注册
 
-- [x] `aiGitCommit.generateMessage` - 生成提交信息
-- [x] `aiGitCommit.configureSettings` - 配置设置
+- [x] `aigitcommit.generateMessage` - 生成提交信息
+- [x] `aigitcommit.configureSettings` - 配置设置
 
 #### ✅ 配置项
 
@@ -300,7 +300,7 @@ out/**/__mocks__/**
    - 确认版本为 0.0.1
 
 3. **测试配置**
-   - 运行 "配置 AI Git Commit Generator"
+   - 运行 "配置 AI Git Commit"
    - 输入测试 API 信息
    - 验证配置保存
 

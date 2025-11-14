@@ -12,12 +12,12 @@ describe('Constants: Command Identifiers', () => {
         });
 
         it('should have correct command identifier values', () => {
-            expect(COMMANDS.GENERATE_MESSAGE).toBe('aiGitCommit.generateMessage');
-            expect(COMMANDS.CONFIGURE_SETTINGS).toBe('aiGitCommit.configureSettings');
+            expect(COMMANDS.GENERATE_MESSAGE).toBe('aigitcommit.generateMessage');
+            expect(COMMANDS.CONFIGURE_SETTINGS).toBe('aigitcommit.configureSettings');
         });
 
         it('should have command identifiers with correct format (extensionId.commandName)', () => {
-            const commandPattern = /^aiGitCommit\.[a-zA-Z]+$/;
+            const commandPattern = /^aigitcommit\.[a-zA-Z]+$/;
             
             Object.values(COMMANDS).forEach(commandId => {
                 expect(commandId).toMatch(commandPattern);
@@ -49,8 +49,8 @@ describe('Constants: Command Identifiers', () => {
             const validCommand1: CommandId = COMMANDS.GENERATE_MESSAGE;
             const validCommand2: CommandId = COMMANDS.CONFIGURE_SETTINGS;
             
-            expect(validCommand1).toBe('aiGitCommit.generateMessage');
-            expect(validCommand2).toBe('aiGitCommit.configureSettings');
+            expect(validCommand1).toBe('aigitcommit.generateMessage');
+            expect(validCommand2).toBe('aigitcommit.configureSettings');
         });
 
         it('should match the values in COMMANDS object', () => {
@@ -66,16 +66,16 @@ describe('Constants: Command Identifiers', () => {
 
     describe('Command identifier naming conventions', () => {
         it('should use camelCase for command names', () => {
-            const camelCasePattern = /^aiGitCommit\.[a-z][a-zA-Z]*$/;
+            const camelCasePattern = /^aigitcommit\.[a-z][a-zA-Z]*$/;
             
             Object.values(COMMANDS).forEach(commandId => {
                 expect(commandId).toMatch(camelCasePattern);
             });
         });
 
-        it('should start with extension prefix "aiGitCommit."', () => {
+        it('should start with extension prefix "aigitcommit."', () => {
             Object.values(COMMANDS).forEach(commandId => {
-                expect(commandId).toMatch(/^aiGitCommit\./);
+                expect(commandId).toMatch(/^aigitcommit\./);
             });
         });
 
@@ -107,8 +107,8 @@ describe('Constants: Command Identifiers', () => {
         it('should match command identifiers expected in package.json', () => {
             // These are the commands that should be registered in package.json
             const expectedCommands = [
-                'aiGitCommit.generateMessage',
-                'aiGitCommit.configureSettings'
+                'aigitcommit.generateMessage',
+                'aigitcommit.configureSettings'
             ];
             
             const actualCommands = Object.values(COMMANDS);

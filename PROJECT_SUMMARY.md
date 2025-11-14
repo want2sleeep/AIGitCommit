@@ -1,7 +1,7 @@
-# AI Git Commit Generator - 项目完成总结
+# AI Git Commit - 项目完成总结
 
-**项目名称**: AI Git Commit Generator  
-**版本**: 0.0.1  
+**项目名称**: AI Git Commit
+**版本**: 0.0.1
 **完成日期**: 2024-11-14  
 **状态**: ✅ 所有任务已完成
 
@@ -9,7 +9,7 @@
 
 ## 🎉 项目概览
 
-AI Git Commit Generator 是一个智能的 VSCode 插件，使用 AI 自动分析代码变更并生成高质量的 Git 提交信息。支持所有 OpenAI 兼容的 LLM 服务。
+AI Git Commit 是一个智能的 VSCode 插件，使用 AI 自动分析代码变更并生成高质量的 Git 提交信息。支持所有 OpenAI 兼容的 LLM 服务。
 
 ---
 
@@ -301,7 +301,7 @@ AI Git Commit Generator 是一个智能的 VSCode 插件，使用 AI 自动分�
 
 1. **命令面板**
    - "生成AI提交信息"
-   - "配置AI Git Commit Generator"
+   - "配置AI Git Commit"
 
 2. **源代码管理视图**
    - 标题栏 ✨ 按钮
@@ -493,7 +493,7 @@ AI Git Commit Generator 是一个智能的 VSCode 插件，使用 AI 自动分�
 
 ## 📝 总结
 
-AI Git Commit Generator v0.0.1 是一个功能完整、质量优秀、文档详尽的 VSCode 插件。
+AI Git Commit v0.0.1 是一个功能完整、质量优秀、文档详尽的 VSCode 插件。
 
 **项目状态**: ✅ 完成  
 **发布状态**: ✅ 准备就绪  

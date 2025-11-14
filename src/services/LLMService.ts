@@ -62,6 +62,8 @@ ${formatInstructions}
 - 标题和详细描述之间用一个空行分隔
 - 使用${language}
 - 直接返回提交信息，不需要额外解释、引号包裹或markdown格式
+- 不要使用<think>标签或展示思考过程
+- 不要包含任何XML标签或特殊标记
 - 关注代码的实际功能变化，而不是文件名或路径`;
         } else {
             return `You are a professional Git commit message generator.
@@ -76,6 +78,8 @@ ${formatInstructions}
 - Separate title and detailed description with a blank line
 - Use ${language}
 - Return the commit message directly without additional explanations, quote wrapping, or markdown formatting
+- Do not use <think> tags or show thinking process
+- Do not include any XML tags or special markers
 - Focus on actual functional changes in the code, not file names or paths`;
         }
     }
@@ -391,14 +395,55 @@ ${diff}
     }
 
     /**
+     * 移除think标签及其内容
+     * @param text 原始文本
+     * @returns 移除think标签后的文本
+     */
+    private removeThinkTags(text: string): string {
+        // 快速检测：如果不包含think标签，直接返回
+        if (!text.includes('<think>') && !text.includes('<THINK>')) {
+            return text;
+        }
+        
+        // 使用正则表达式移除所有<think>...</think>块（支持多行和不区分大小写）
+        let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '');
+        
+        // 移除可能残留的单独think标签
+        cleaned = cleaned.replace(/<\/?think>/gi, '');
+        
+        // 清理移除后产生的多余空白行（连续的空行合并为一个）
+        cleaned = cleaned.replace(/\n\s*\n\s*\n/g, '\n\n');
+        
+        // 去除首尾空白
+        return cleaned.trim();
+    }
+
+    /**
      * 解析提交信息
      * 清理和验证生成的提交信息
      * @param message 原始提交信息
      * @returns 清理后的提交信息
      */
     private parseCommitMessage(message: string): string {
+        // 1. 首先移除think标签
+        const originalMessage = message;
+        let cleaned = this.removeThinkTags(message);
+        
+        // 2. 记录日志（如果检测到think标签）
+        if (cleaned !== originalMessage) {
+            console.warn('[LLMService] 检测到并移除了think标签');
+            console.debug('[LLMService] 原始响应:', originalMessage);
+            console.debug('[LLMService] 处理后:', cleaned);
+        }
+        
+        // 3. 验证内容不为空（在移除think标签后）
+        if (!cleaned || cleaned.trim().length === 0) {
+            throw new Error('移除think标签后提交信息为空，请重新生成');
+        }
+        
+        // 4. 继续现有的清理逻辑
         // 移除可能的引号包裹
-        let cleaned = message.trim();
+        cleaned = cleaned.trim();
         if ((cleaned.startsWith('"') && cleaned.endsWith('"')) ||
             (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
             cleaned = cleaned.slice(1, -1).trim();
@@ -407,12 +452,12 @@ ${diff}
         // 移除markdown代码块标记
         cleaned = cleaned.replace(/^```[\w]*\n?/gm, '').replace(/\n?```$/gm, '');
 
-        // 确保提交信息不为空
+        // 再次验证（在所有清理后）
         if (!cleaned) {
             throw new Error('生成的提交信息为空');
         }
 
-        // 验证和优化提交信息
+        // 5. 验证和优化提交信息
         cleaned = this.validateAndOptimizeCommitMessage(cleaned);
 
         return cleaned;

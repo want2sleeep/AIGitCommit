@@ -11,14 +11,14 @@ describe('Extension: Command Registration Logic', () => {
     describe('Command Identifiers', () => {
         it('should have valid command identifiers from constants', () => {
             // Verify command identifiers are properly defined
-            expect(COMMANDS.GENERATE_MESSAGE).toBe('aiGitCommit.generateMessage');
-            expect(COMMANDS.CONFIGURE_SETTINGS).toBe('aiGitCommit.configureSettings');
+            expect(COMMANDS.GENERATE_MESSAGE).toBe('aigitcommit.generateMessage');
+            expect(COMMANDS.CONFIGURE_SETTINGS).toBe('aigitcommit.configureSettings');
         });
 
         it('should use consistent command naming convention', () => {
             // All commands should start with extension prefix
             Object.values(COMMANDS).forEach(commandId => {
-                expect(commandId).toMatch(/^aiGitCommit\./);
+                expect(commandId).toMatch(/^aigitcommit\./);
             });
         });
 
@@ -42,8 +42,8 @@ describe('Extension: Command Registration Logic', () => {
         it('should have commands that match package.json definitions', () => {
             // These commands should be defined in package.json
             const expectedCommands = [
-                'aiGitCommit.generateMessage',
-                'aiGitCommit.configureSettings'
+                'aigitcommit.generateMessage',
+                'aigitcommit.configureSettings'
             ];
             
             const actualCommands = Object.values(COMMANDS);

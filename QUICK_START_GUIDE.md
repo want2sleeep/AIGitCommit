@@ -32,7 +32,7 @@
 #### 方法 1: 使用配置向导（推荐）
 
 1. 按 `Ctrl+Shift+P` 打开命令面板
-2. 输入 "配置 AI Git Commit Generator"
+2. 输入 "配置 AI Git Commit"
 3. 按照提示输入：
    - **API 端点**: 例如 `https://api.openai.com/v1`
    - **API 密钥**: 你的 OpenAI API 密钥
@@ -43,9 +43,9 @@
 1. 按 `Ctrl+,` 打开设置
 2. 搜索 "AI Git Commit"
 3. 配置以下选项：
-   - `aiGitCommit.apiEndpoint`: API 端点
-   - `aiGitCommit.modelName`: 模型名称
-4. 运行 "配置 AI Git Commit Generator" 命令设置 API 密钥
+   - `aigitcommit.apiEndpoint`: API 端点
+   - `aigitcommit.modelName`: 模型名称
+4. 运行 "配置 AI Git Commit" 命令设置 API 密钥
 
 #### 测试配置示例
 

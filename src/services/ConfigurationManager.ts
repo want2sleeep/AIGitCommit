@@ -6,8 +6,8 @@ import { ExtensionConfig, ValidationResult, FullConfig, ConfigSummary } from '..
  * 负责读取、验证和管理插件配置
  */
 export class ConfigurationManager {
-    private static readonly CONFIG_SECTION = 'aiGitCommit';
-    private static readonly SECRET_KEY_API_KEY = 'aiGitCommit.apiKey';
+    private static readonly CONFIG_SECTION = 'aigitcommit';
+    private static readonly SECRET_KEY_API_KEY = 'aigitcommit.apiKey';
     private static readonly CACHE_TTL = 5000; // 5秒缓存TTL
     
     private configSummaryCache: ConfigSummary | undefined;
@@ -174,7 +174,7 @@ export class ConfigurationManager {
 
         // 欢迎信息
         const proceed = await vscode.window.showInformationMessage(
-            '欢迎使用AI Git Commit Generator！让我们开始配置。',
+            '欢迎使用AI Git Commit！让我们开始配置。',
             '开始配置',
             '取消'
         );
@@ -253,7 +253,7 @@ export class ConfigurationManager {
             if (testConnection === '测试连接') {
                 await this.testAPIConnection();
             } else {
-                vscode.window.showInformationMessage('配置完成！您可以开始使用AI Git Commit Generator了。');
+                vscode.window.showInformationMessage('配置完成！您可以开始使用AI Git Commit了。');
             }
 
             return true;

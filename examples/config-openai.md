@@ -17,7 +17,7 @@ https://api.openai.com/v1
 
 ### API 密钥
 - 访问 [OpenAI API Keys](https://platform.openai.com/api-keys) 获取您的 API 密钥
-- 使用命令 `Git: 配置AI Git Commit Generator` 安全存储密钥
+- 使用命令 `Git: 配置AI Git Commit` 安全存储密钥
 - 或在首次使用时通过配置向导输入
 
 ### 模型名称
@@ -57,12 +57,12 @@ gpt-3.5-turbo-16k
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://api.openai.com/v1",
-  "aiGitCommit.modelName": "gpt-3.5-turbo",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "https://api.openai.com/v1",
+  "aigitcommit.modelName": "gpt-3.5-turbo",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 

@@ -175,7 +175,7 @@ index 1234567..abcdefg 100644
 
             // Verify configuration was loaded
             expect(mockSecrets).toHaveProperty('get');
-            expect((mockSecrets as { get: jest.Mock }).get).toHaveBeenCalledWith('aiGitCommit.apiKey');
+            expect((mockSecrets as { get: jest.Mock }).get).toHaveBeenCalledWith('aigitcommit.apiKey');
 
             // Verify Git extension was accessed
             expect(vscode.extensions.getExtension).toHaveBeenCalledWith('vscode.git');

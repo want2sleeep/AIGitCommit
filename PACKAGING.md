@@ -78,7 +78,7 @@ code --install-extension ai-git-commit-0.0.1.vsix
    - 确认插件已安装
 
 2. **测试配置**
-   - 运行命令 "配置 AI Git Commit Generator"
+   - 运行命令 "配置 AI Git Commit"
    - 输入测试 API 信息
    - 验证配置保存成功
 

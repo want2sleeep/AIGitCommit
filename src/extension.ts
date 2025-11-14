@@ -245,7 +245,7 @@ function registerCommands(
  * 插件激活时调用
  */
 export async function activate(context: vscode.ExtensionContext) {
-    console.log('AI Git Commit Generator is now active');
+    console.log('AI Git Commit is now active');
     
     try {
         // 初始化错误处理器（最先初始化，用于后续日志记录）
@@ -360,7 +360,7 @@ export async function activate(context: vscode.ExtensionContext) {
  * 插件停用时调用
  */
 export function deactivate() {
-    console.log('AI Git Commit Generator is now deactivated');
+    console.log('AI Git Commit is now deactivated');
     
     if (errorHandler) {
         errorHandler.logInfo('插件停用', 'Extension');

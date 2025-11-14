@@ -85,8 +85,8 @@ ai-git-commit-0.0.1.vsix (61.77 KB)
 - ✅ UIManager - UI 管理
 
 #### 命令注册
-- ✅ `aiGitCommit.generateMessage` - 生成提交信息
-- ✅ `aiGitCommit.configureSettings` - 配置设置
+- ✅ `aigitcommit.generateMessage` - 生成提交信息
+- ✅ `aigitcommit.configureSettings` - 配置设置
 
 #### UI 集成
 - ✅ 命令面板集成

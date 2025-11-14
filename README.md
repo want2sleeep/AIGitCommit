@@ -1,4 +1,4 @@
-# AI Git Commit Generator
+# AI Git Commit
 
 一个智能的 VSCode 插件，使用 AI 自动分析代码变更并生成高质量的 Git 提交信息。支持所有 OpenAI 兼容的 LLM 服务。
 
@@ -24,7 +24,7 @@
 
 1. 打开 VSCode
 2. 按 `Ctrl+Shift+X`（)ac: `Cmd+Shift+X`）打开扩展面板
-3. 搜索 "AI Git Commit Generator"
+3. 搜索 "AI Git Commit"
 4. 点击"安装"
 
 #### 从 VSIX 文件安装
@@ -91,12 +91,12 @@
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://api.openai.com/v1",
-  "aiGitCommit.modelName": "gpt-3.5-turbo"
+  "aigitcommit.apiEndpoint": "https://api.openai.com/v1",
+  "aigitcommit.modelName": "gpt-3.5-turbo"
 }
 ```
 
-然后运行 "配置 AI Git Commit Generator" 命令设置您的 OpenAI API 密钥。
+然后运行 "配置 AI Git Commit" 命令设置您的 OpenAI API 密钥。
 
 📖 [查看完整 OpenAI 配置指南](./examples/config-openai.md)
 
@@ -104,8 +104,8 @@
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://your-resource.openai.azure.com/openai/deployments/your-deployment",
-  "aiGitCommit.modelName": "gpt-35-turbo"
+  "aigitcommit.apiEndpoint": "https://your-resource.openai.azure.com/openai/deployments/your-deployment",
+  "aigitcommit.modelName": "gpt-35-turbo"
 }
 ```
 
@@ -117,8 +117,8 @@ API 密钥通过配置向导设置。
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:11434/v1",
-  "aiGitCommit.modelName": "llama2"
+  "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
+  "aigitcommit.modelName": "llama2"
 }
 ```
 
@@ -231,7 +231,7 @@ A: 插件支持两种格式：
 - **Conventional Commits**（推荐）: `type(scope): subject`
 - **Simple**: 简单的描述性提交信息
 
-可以在设置中的 `aiGitCommit.commitFormat` 配置。
+可以在设置中的 `aigitcommit.commitFormat` 配置。
 
 #### Q: 为什么提示"无暂存变更"？
 
@@ -254,22 +254,22 @@ A: 推荐使用 Ollama：
 3. 配置插件:
    ```json
    {
-     "aiGitCommit.apiEndpoint": "http://localhost:11434/v1",
-     "aiGitCommit.modelName": "llama2"
+     "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
+     "aigitcommit.modelName": "llama2"
    }
    ```
 
 #### Q: 生成的提交信息语言不对？
 
-A: 在设置中修改 `aiGitCommit.language`:
+A: 在设置中修改 `aigitcommit.language`:
 - `zh-CN`: 中文
 - `en-US`: 英文
 
 #### Q: 如何自定义提交信息的详细程度？
 
 A: 可以调整以下参数：
-- `aiGitCommit.maxTokens`: 控制生成长度（默认 500）
-- `aiGitCommit.temperature`: 控制创造性（0-2，默认 0.7）
+- `aigitcommit.maxTokens`: 控制生成长度（默认 500）
+- `aigitcommit.temperature`: 控制创造性（0-2，默认 0.7）
 
 #### Q: 插件会发送我的代码到哪里？
 
@@ -298,16 +298,16 @@ A:
 ```json
 {
   // API 配置
-  "aiGitCommit.apiEndpoint": "https://api.openai.com/v1",
-  "aiGitCommit.modelName": "gpt-3.5-turbo",
-  
+  "aigitcommit.apiEndpoint": "https://api.openai.com/v1",
+  "aigitcommit.modelName": "gpt-3.5-turbo",
+
   // 提交信息配置
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+
   // LLM 参数
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -317,10 +317,10 @@ A:
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://your-company-llm.com/v1",
-  "aiGitCommit.modelName": "company-model",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional"
+  "aigitcommit.apiEndpoint": "https://your-company-llm.com/v1",
+  "aigitcommit.modelName": "company-model",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional"
 }
 ```
 
@@ -354,7 +354,7 @@ MIT
 
 1. Open VSCode
 2. Press `Ctrl+Shift+X` (Mac: `Cmd+Shift+X`) to open Extensions panel
-3. Search for "AI Git Commit Generator"
+3. Search for "AI Git Commit"
 4. Click "Install"
 
 #### From VSIX File
@@ -421,12 +421,12 @@ Three ways to trigger generation:
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://api.openai.com/v1",
-  "aiGitCommit.modelName": "gpt-3.5-turbo"
+  "aigitcommit.apiEndpoint": "https://api.openai.com/v1",
+  "aigitcommit.modelName": "gpt-3.5-turbo"
 }
 ```
 
-Then run "Configure AI Git Commit Generator" command to set your OpenAI API key.
+Then run "Configure AI Git Commit" command to set your OpenAI API key.
 
 📖 [View complete OpenAI configuration guide](./examples/config-openai.md)
 
@@ -434,8 +434,8 @@ Then run "Configure AI Git Commit Generator" command to set your OpenAI API key.
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://your-resource.openai.azure.com/openai/deployments/your-deployment",
-  "aiGitCommit.modelName": "gpt-35-turbo"
+  "aigitcommit.apiEndpoint": "https://your-resource.openai.azure.com/openai/deployments/your-deployment",
+  "aigitcommit.modelName": "gpt-35-turbo"
 }
 ```
 
@@ -447,8 +447,8 @@ API key is set through the configuration wizard.
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:11434/v1",
-  "aiGitCommit.modelName": "llama2"
+  "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
+  "aigitcommit.modelName": "llama2"
 }
 ```
 
@@ -561,7 +561,7 @@ A: The extension supports two formats:
 - **Conventional Commits** (recommended): `type(scope): subject`
 - **Simple**: Simple descriptive commit messages
 
-Configure via `aiGitCommit.commitFormat` in settings.
+Configure via `aigitcommit.commitFormat` in settings.
 
 #### Q: Why does it say "No staged changes"?
 
@@ -584,22 +584,22 @@ A: Ollama is recommended:
 3. Configure extension:
    ```json
    {
-     "aiGitCommit.apiEndpoint": "http://localhost:11434/v1",
-     "aiGitCommit.modelName": "llama2"
+     "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
+     "aigitcommit.modelName": "llama2"
    }
    ```
 
 #### Q: Generated commit message is in wrong language?
 
-A: Modify `aiGitCommit.language` in settings:
+A: Modify `aigitcommit.language` in settings:
 - `zh-CN`: Chinese
 - `en-US`: English
 
 #### Q: How to customize commit message verbosity?
 
 A: Adjust the following parameters:
-- `aiGitCommit.maxTokens`: Control generation length (default 500)
-- `aiGitCommit.temperature`: Control creativity (0-2, default 0.7)
+- `aigitcommit.maxTokens`: Control generation length (default 500)
+- `aigitcommit.temperature`: Control creativity (0-2, default 0.7)
 
 #### Q: Where does the extension send my code?
 
@@ -628,16 +628,16 @@ A:
 ```json
 {
   // API Configuration
-  "aiGitCommit.apiEndpoint": "https://api.openai.com/v1",
-  "aiGitCommit.modelName": "gpt-3.5-turbo",
-  
+  "aigitcommit.apiEndpoint": "https://api.openai.com/v1",
+  "aigitcommit.modelName": "gpt-3.5-turbo",
+
   // Commit Message Configuration
-  "aiGitCommit.language": "en-US",
-  "aiGitCommit.commitFormat": "conventional",
-  
+  "aigitcommit.language": "en-US",
+  "aigitcommit.commitFormat": "conventional",
+
   // LLM Parameters
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -647,10 +647,10 @@ Create `.vscode/settings.json` in project root:
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://your-company-llm.com/v1",
-  "aiGitCommit.modelName": "company-model",
-  "aiGitCommit.language": "en-US",
-  "aiGitCommit.commitFormat": "conventional"
+  "aigitcommit.apiEndpoint": "https://your-company-llm.com/v1",
+  "aigitcommit.modelName": "company-model",
+  "aigitcommit.language": "en-US",
+  "aigitcommit.commitFormat": "conventional"
 }
 ```
 

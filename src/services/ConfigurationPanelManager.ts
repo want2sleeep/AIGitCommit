@@ -72,7 +72,7 @@ export class ConfigurationPanelManager {
 
         // 创建新的Webview面板
         this.panel = vscode.window.createWebviewPanel(
-            'aiGitCommitConfig',
+            'aigitcommitConfig',
             'AI Git Commit 配置',
             vscode.ViewColumn.One,
             {

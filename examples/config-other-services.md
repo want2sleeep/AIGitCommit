@@ -23,12 +23,12 @@ docker run -p 8080:8080 --name local-ai -ti localai/localai:latest
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:8080/v1",
-  "aiGitCommit.modelName": "gpt-3.5-turbo",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "http://localhost:8080/v1",
+  "aigitcommit.modelName": "gpt-3.5-turbo",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -53,12 +53,12 @@ LM Studio 是一个桌面应用，可以在本地运行各种开源模型。
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:1234/v1",
-  "aiGitCommit.modelName": "local-model",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "http://localhost:1234/v1",
+  "aigitcommit.modelName": "local-model",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -85,12 +85,12 @@ python server.py --api
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:5000/v1",
-  "aiGitCommit.modelName": "your-model-name",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "http://localhost:5000/v1",
+  "aigitcommit.modelName": "your-model-name",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -112,12 +112,12 @@ python -m vllm.entrypoints.openai.api_server \
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:8000/v1",
-  "aiGitCommit.modelName": "meta-llama/Llama-2-7b-chat-hf",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "http://localhost:8000/v1",
+  "aigitcommit.modelName": "meta-llama/Llama-2-7b-chat-hf",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -139,12 +139,12 @@ python -m fastchat.serve.openai_api_server \
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:8000/v1",
-  "aiGitCommit.modelName": "vicuna-7b-v1.5",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "http://localhost:8000/v1",
+  "aigitcommit.modelName": "vicuna-7b-v1.5",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -158,12 +158,12 @@ python -m fastchat.serve.openai_api_server \
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-  "aiGitCommit.modelName": "qwen-turbo",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "aigitcommit.modelName": "qwen-turbo",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -171,12 +171,12 @@ python -m fastchat.serve.openai_api_server \
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://open.bigmodel.cn/api/paas/v4",
-  "aiGitCommit.modelName": "glm-4",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "https://open.bigmodel.cn/api/paas/v4",
+  "aigitcommit.modelName": "glm-4",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -184,12 +184,12 @@ python -m fastchat.serve.openai_api_server \
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop",
-  "aiGitCommit.modelName": "ernie-bot-turbo",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop",
+  "aigitcommit.modelName": "ernie-bot-turbo",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -205,12 +205,12 @@ python -m fastchat.serve.openai_api_server \
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "https://your-proxy-domain.com/v1",
-  "aiGitCommit.modelName": "gpt-3.5-turbo",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "https://your-proxy-domain.com/v1",
+  "aigitcommit.modelName": "gpt-3.5-turbo",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 

@@ -127,7 +127,7 @@ export class CommandHandler {
                 if (action === '配置向导') {
                     await this.configManager.showConfigurationWizard();
                 } else if (action === '打开设置') {
-                    vscode.commands.executeCommand('workbench.action.openSettings', 'aiGitCommit');
+                    vscode.commands.executeCommand('workbench.action.openSettings', 'aigitcommit');
                 }
             });
             return false;

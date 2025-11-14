@@ -10,7 +10,7 @@ export class ErrorHandler {
     private retryCallback: (() => Promise<void>) | null = null;
 
     constructor() {
-        this.outputChannel = vscode.window.createOutputChannel('AI Git Commit Generator');
+        this.outputChannel = vscode.window.createOutputChannel('AI Git Commit');
     }
 
     /**
@@ -122,14 +122,14 @@ export class ErrorHandler {
             return '❌ API密钥未配置或无效\n\n' +
                    '解决方案：\n' +
                    '1. 点击"配置向导"按钮，按照提示输入API密钥\n' +
-                   '2. 或点击"打开设置"，在设置中配置 aiGitCommit.apiKey\n' +
+                   '2. 或点击"打开设置"，在设置中配置 aigitcommit.apiKey\n' +
                    '3. 确保API密钥有效且具有访问权限';
         }
         
         if (message.includes('endpoint')) {
             return '❌ API端点配置无效\n\n' +
                    '解决方案：\n' +
-                   '1. 点击"打开设置"，检查 aiGitCommit.apiEndpoint 配置\n' +
+                   '1. 点击"打开设置"，检查 aigitcommit.apiEndpoint 配置\n' +
                    '2. 确保URL格式正确（如：https://api.openai.com/v1）\n' +
                    '3. 如使用本地服务，确保服务已启动且可访问';
         }
@@ -138,7 +138,7 @@ export class ErrorHandler {
             return '❌ 模型名称未配置\n\n' +
                    '解决方案：\n' +
                    '1. 点击"配置向导"设置模型名称\n' +
-                   '2. 或在设置中配置 aiGitCommit.modelName\n' +
+                   '2. 或在设置中配置 aigitcommit.modelName\n' +
                    '3. 常用模型：gpt-4, gpt-3.5-turbo, claude-3-opus 等';
         }
         
@@ -342,11 +342,11 @@ export class ErrorHandler {
     private async handleErrorAction(action: string): Promise<void> {
         switch (action) {
             case '打开设置':
-                await vscode.commands.executeCommand('workbench.action.openSettings', 'aiGitCommit');
+                await vscode.commands.executeCommand('workbench.action.openSettings', 'aigitcommit');
                 break;
             
             case '配置向导':
-                await vscode.commands.executeCommand('aiGitCommit.configureSettings');
+                await vscode.commands.executeCommand('aigitcommit.configureSettings');
                 break;
             
             case '打开源代码管理':

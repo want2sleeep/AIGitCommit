@@ -358,7 +358,7 @@ describe('ErrorHandler', () => {
 
             expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
                 'workbench.action.openSettings',
-                'aiGitCommit'
+                'aigitcommit'
             );
         });
 
@@ -369,7 +369,7 @@ describe('ErrorHandler', () => {
             await errorHandler.handleError(error, 'test');
 
             expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
-                'aiGitCommit.configureSettings'
+                'aigitcommit.configureSettings'
             );
         });
 
@@ -514,7 +514,7 @@ describe('ErrorHandler', () => {
 
     describe('Output Channel Management', () => {
         it('should create output channel on initialization', () => {
-            expect(vscode.window.createOutputChannel).toHaveBeenCalledWith('AI Git Commit Generator');
+            expect(vscode.window.createOutputChannel).toHaveBeenCalledWith('AI Git Commit');
         });
 
         it('should show output channel when requested', () => {

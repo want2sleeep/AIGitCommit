@@ -114,12 +114,12 @@ llama2
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:11434/v1",
-  "aiGitCommit.modelName": "codellama",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
+  "aigitcommit.modelName": "codellama",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -127,12 +127,12 @@ llama2
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:11434/v1",
-  "aiGitCommit.modelName": "mistral",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
+  "aigitcommit.modelName": "mistral",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -140,12 +140,12 @@ llama2
 
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:11434/v1",
-  "aiGitCommit.modelName": "qwen",
-  "aiGitCommit.language": "zh-CN",
-  "aiGitCommit.commitFormat": "conventional",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
+  "aigitcommit.modelName": "qwen",
+  "aigitcommit.language": "zh-CN",
+  "aigitcommit.commitFormat": "conventional",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
@@ -172,7 +172,7 @@ ollama pull codellama:34b
 
 ```json
 {
-  "aiGitCommit.temperature": 0.5
+  "aigitcommit.temperature": 0.5
 }
 ```
 
@@ -182,7 +182,7 @@ ollama pull codellama:34b
 
 ```json
 {
-  "aiGitCommit.maxTokens": 300
+  "aigitcommit.maxTokens": 300
 }
 ```
 
@@ -265,29 +265,29 @@ Error: failed to load model
 ### 轻量级配置（8GB RAM）
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:11434/v1",
-  "aiGitCommit.modelName": "codellama:7b",
-  "aiGitCommit.maxTokens": 300,
-  "aiGitCommit.temperature": 0.5
+  "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
+  "aigitcommit.modelName": "codellama:7b",
+  "aigitcommit.maxTokens": 300,
+  "aigitcommit.temperature": 0.5
 }
 ```
 
 ### 标准配置（16GB RAM）
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:11434/v1",
-  "aiGitCommit.modelName": "codellama:13b",
-  "aiGitCommit.maxTokens": 500,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
+  "aigitcommit.modelName": "codellama:13b",
+  "aigitcommit.maxTokens": 500,
+  "aigitcommit.temperature": 0.7
 }
 ```
 
 ### 高性能配置（32GB+ RAM）
 ```json
 {
-  "aiGitCommit.apiEndpoint": "http://localhost:11434/v1",
-  "aiGitCommit.modelName": "codellama:34b",
-  "aiGitCommit.maxTokens": 800,
-  "aiGitCommit.temperature": 0.7
+  "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
+  "aigitcommit.modelName": "codellama:34b",
+  "aigitcommit.maxTokens": 800,
+  "aigitcommit.temperature": 0.7
 }
 ```
