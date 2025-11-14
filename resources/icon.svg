@@ -1,0 +1,54 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffed4e;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#bgGradient)"/>
+  
+  <!-- Git branch icon -->
+  <g transform="translate(20, 35)">
+    <!-- Main branch line -->
+    <line x1="15" y1="10" x2="15" y2="50" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Branch circles -->
+    <circle cx="15" cy="10" r="5" fill="white"/>
+    <circle cx="15" cy="50" r="5" fill="white"/>
+    
+    <!-- Side branch -->
+    <path d="M 15 25 Q 25 25, 35 35" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle cx="35" cy="35" r="5" fill="white"/>
+  </g>
+  
+  <!-- AI Sparkle icon -->
+  <g transform="translate(70, 35)">
+    <!-- Center star -->
+    <circle cx="18" cy="25" r="8" fill="url(#sparkleGradient)"/>
+    
+    <!-- Sparkle rays -->
+    <line x1="18" y1="10" x2="18" y2="15" stroke="url(#sparkleGradient)" stroke-width="3" stroke-linecap="round"/>
+    <line x1="18" y1="35" x2="18" y2="40" stroke="url(#sparkleGradient)" stroke-width="3" stroke-linecap="round"/>
+    <line x1="3" y1="25" x2="8" y2="25" stroke="url(#sparkleGradient)" stroke-width="3" stroke-linecap="round"/>
+    <line x1="28" y1="25" x2="33" y2="25" stroke="url(#sparkleGradient)" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Diagonal rays -->
+    <line x1="8" y1="15" x2="12" y2="19" stroke="url(#sparkleGradient)" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="28" y1="15" x2="24" y2="19" stroke="url(#sparkleGradient)" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="8" y1="35" x2="12" y2="31" stroke="url(#sparkleGradient)" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="28" y1="35" x2="24" y2="31" stroke="url(#sparkleGradient)" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Message bubble -->
+  <g transform="translate(25, 75)">
+    <rect x="0" y="0" width="78" height="28" rx="14" fill="white" opacity="0.9"/>
+    <text x="39" y="19" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#667eea" text-anchor="middle">COMMIT</text>
+  </g>
+</svg>

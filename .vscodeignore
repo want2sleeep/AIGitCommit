@@ -1,0 +1,36 @@
+# Development files
+.vscode/**
+.vscode-test/**
+src/**
+.gitignore
+.yarnrc
+vsc-extension-quickstart.md
+**/tsconfig.json
+**/.eslintrc.json
+**/*.map
+**/*.ts
+
+# Spec and planning files
+.kiro/**
+
+# Test files
+**/__tests__/**
+**/__mocks__/**
+**/*.test.ts
+**/*.test.js
+**/*.test.js.map
+jest.config.js
+coverage/**
+
+# Documentation (keep only essential)
+MARKETPLACE.md
+resources/ICON_INSTRUCTIONS.md
+resources/SCREENSHOTS.md
+PACKAGING.md
+VERIFICATION_REPORT.md
+
+# Build artifacts
+*.vsix
+
+# Dependencies (will be bundled)
+node_modules/**

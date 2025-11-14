@@ -1,0 +1,151 @@
+{
+  "name": "ai-git-commit",
+  "displayName": "AI Git Commit",
+  "description": "使用AI自动生成高质量的Git提交信息",
+  "version": "0.0.1",
+  "publisher": "SleepSheep",
+  "author": {
+    "name": "SleepSheep"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/want2sleeep/AIGitCommit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/want2sleeep/AIGitCommit/issues"
+  },
+  "homepage": "https://github.com/want2sleeep/AIGitCommit#readme",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "keywords": [
+    "git",
+    "commit",
+    "ai",
+    "llm",
+    "openai",
+    "conventional-commits",
+    "azure-openai",
+    "ollama",
+    "commit-message",
+    "code-quality"
+  ],
+  "activationEvents": [
+    "workspaceContains:.git"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aiGitCommit.generateMessage",
+        "title": "生成AI提交信息",
+        "category": "Git",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "aiGitCommit.configureSettings",
+        "title": "配置AI Git Commit Generator",
+        "category": "Git",
+        "icon": "$(gear)"
+      }
+    ],
+    "configuration": {
+      "title": "AI Git Commit Generator",
+      "properties": {
+        "aiGitCommit.apiEndpoint": {
+          "type": "string",
+          "default": "https://api.openai.com/v1",
+          "description": "OpenAI兼容API的端点URL"
+        },
+        "aiGitCommit.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API密钥（已弃用：密钥将自动迁移到安全存储，请使用配置向导设置）",
+          "deprecationMessage": "请使用配置向导设置API密钥，密钥将安全存储在VSCode SecretStorage中"
+        },
+        "aiGitCommit.modelName": {
+          "type": "string",
+          "default": "gpt-3.5-turbo",
+          "description": "使用的模型名称"
+        },
+        "aiGitCommit.language": {
+          "type": "string",
+          "default": "zh-CN",
+          "enum": [
+            "zh-CN",
+            "en-US"
+          ],
+          "description": "提交信息的语言"
+        },
+        "aiGitCommit.commitFormat": {
+          "type": "string",
+          "default": "conventional",
+          "enum": [
+            "conventional",
+            "simple"
+          ],
+          "description": "提交信息格式"
+        },
+        "aiGitCommit.maxTokens": {
+          "type": "number",
+          "default": 500,
+          "description": "最大token数"
+        },
+        "aiGitCommit.temperature": {
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 2,
+          "description": "温度参数（0-2）"
+        }
+      }
+    },
+    "menus": {
+      "scm/title": [
+        {
+          "command": "aiGitCommit.generateMessage",
+          "group": "navigation",
+          "when": "scmProvider == git"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "aiGitCommit.generateMessage",
+        "key": "ctrl+shift+g c",
+        "mac": "cmd+shift+g c",
+        "when": "scmProvider == git"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vscode/test-electron": "^2.3.8",
+    "eslint": "^8.56.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.5",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "axios": "^1.6.2"
+  }
+}
