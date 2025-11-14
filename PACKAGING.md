@@ -7,7 +7,7 @@
 - **文件名**: `ai-git-commit-0.0.1.vsix`
 - **文件大小**: 78.83 KB
 - **包含文件**: 31 个文件
-- **打包时间**: 2024-11-14
+ - **打包时间**: 2025-11-14
 
 ## 包含的文件
 
@@ -129,7 +129,7 @@ vsce publish
 1. 访问 https://marketplace.visualstudio.com/manage
 2. 点击 "New Extension"
 3. 选择 "Visual Studio Code"
-4. 上传 `ai-git-commit-0.0.1.vsix`
+4. 上传 `ai-git-commit-1.0.0.vsix`
 5. 填写市场信息
 6. 提交审核
 

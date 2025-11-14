@@ -5,6 +5,26 @@ All notable changes to the "AI Git Commit" extension will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2025-11-14
+
+### 🚀 MVP 发布
+
+- 初步可用（MVP）版本，稳定提供核心能力：
+  - 基于 LLM 的提交信息自动生成（支持约定式提交与简单格式）
+  - VSCode 集成（命令面板、SCM 按钮、快捷键）
+  - 配置面板与安全密钥存储（SecretStorage）
+  - OpenAI/Azure OpenAI/Ollama 及其他兼容服务支持
+
+### 📚 文档与配置
+
+- 同步更新 README、示例与市场文案以匹配 1.0.0 状态
+- 完善忽略规则，避免将构建产物与内部文档纳入版本库
+
+### 🔧 维护项
+
+- 版本号提升至 1.0.0，标记稳定的 MVP 可用状态
+- 保持与既有 0.1.x 系列的向后兼容
+
 ## [0.1.5] - 2024-11-15
 
 ### 🐛 Bug 修复

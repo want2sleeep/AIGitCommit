@@ -227,6 +227,14 @@ git, commit, ai, llm, openai, conventional-commits, code-quality, productivity, 
 
 ## 发布说明（Release Notes）
 
+### 1.0.0 - MVP 初步可用版本
+
+稳定提供核心功能：
+- AI 驱动的提交信息生成（支持约定式与简单格式）
+- VSCode 集成（命令面板、SCM 按钮、快捷键）
+- 配置面板与安全密钥存储（SecretStorage）
+- 支持 OpenAI、Azure OpenAI、Ollama 及其他兼容服务
+
 ### 0.0.1 - 初始版本
 
 首个版本发布！包含以下功能：
