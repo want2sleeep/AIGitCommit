@@ -2,7 +2,7 @@
 
 ## ✅ 插件已安装成功！
 
-插件 `AI Git Commit` v0.0.1 已经安装到你的 VSCode 中。
+插件 `AI Git Commit` v1.0.0 已经安装到你的 VSCode 中。
 
 ---
 
@@ -102,7 +102,7 @@ export function testFunction() {
 #### 方法 3: 使用快捷键
 
 1. 确保在 Git 项目中
-2. 按 `Ctrl+Shift+G C`
+2. 按 `Ctrl+Shift+G, C`
 3. 等待生成完成
 
 ---
@@ -253,7 +253,7 @@ refactor(user): 使用箭头函数和模板字符串重构 getUserName
 |------|--------|------|----------|
 | SCM 按钮 | 无 | 最直观 | 习惯用鼠标 |
 | 命令面板 | `Ctrl+Shift+P` | 功能完整 | 需要配置时 |
-| 快捷键 | `Ctrl+Shift+G C` | 最快速 | 熟练用户 |
+| 快捷键 | `Ctrl+Shift+G, C` | 最快速 | 熟练用户 |
 
 ---
 

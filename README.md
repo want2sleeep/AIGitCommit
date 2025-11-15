@@ -1,186 +1,134 @@
 # AI Git Commit
 
-一个智能的 VSCode 插件，使用 AI 自动分析代码变更并生成高质量的 Git 提交信息。支持所有 OpenAI 兼容的 LLM 服务。
+[![VSCode Marketplace](https://img.shields.io/badge/VSCode-Marketplace-blue.svg)](https://marketplace.visualstudio.com/items?itemName=SleepSheep.aigitcommit)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-1.0.0-orange.svg)](package.json)
 
-[English](#english-version) | [中文](#中文版本)
+🚀 **使用AI自动生成高质量的Git提交信息**
 
----
+AI Git Commit 是一个强大的VSCode扩展，它利用大型语言模型（LLM）自动分析您的代码变更，并生成符合规范的Git提交信息。支持多种AI服务提供商，包括OpenAI、Azure OpenAI、Ollama等。
 
-## 中文版本
+## ✨ 主要特性
 
-### ✨ 功能特性
-
-- 🤖 **AI 驱动**: 使用大语言模型智能分析代码变更
-- 📝 **专业格式**: 自动生成符合约定式提交（Conventional Commits）规范的提交信息
-- 🔌 **广泛兼容**: 支持所有 OpenAI 兼容的 API（OpenAI、Azure OpenAI、本地模型等）
-- ⚡ **快速便捷**: 一键生成，支持键盘快捷键和源代码管理视图集成
-- ✏️ **可编辑**: 生成后可预览和编辑提交信息
-- 🔒 **安全存储**: API 密钥安全存储在 VSCode SecretStorage 中
+- 🤖 **智能分析**: 自动分析代码变更，生成准确的提交信息
+- 🌐 **多提供商支持**: 支持 OpenAI、Azure OpenAI、Ollama、自定义API等
+- 📝 **规范格式**: 支持约定式提交（Conventional Commits）和简单格式
 - 🌍 **多语言**: 支持中文和英文提交信息
+- 🔒 **安全存储**: API密钥安全存储在VSCode SecretStorage中
+- ⚡ **快速便捷**: 多种触发方式，一键生成提交信息
+- 🎨 **用户友好**: 直观的界面和丰富的配置选项
 
-### 📦 安装
+## 📦 安装
 
-#### 从 VSCode 市场安装
+### 从VSCode市场安装（推荐）
 
-1. 打开 VSCode
-2. 按 `Ctrl+Shift+X`（)ac: `Cmd+Shift+X`）打开扩展面板
+1. 打开VSCode
+2. 按 `Ctrl+Shift+X` 打开扩展面板
 3. 搜索 "AI Git Commit"
-4. 点击"安装"
+4. 点击 "安装"
 
-#### 从 VSIX 文件安装
+### 从文件安装
 
 1. 下载 `.vsix` 文件
-2. 打开 VSCode
-3. 按 `Ctrl+Shift+P`（Mac: `Cmd+Shift+P`）打开命令面板
-4. 输入 "Install from VSIX"
-5. 选择下载的 `.vsix` 文件
+2. 在VSCode中按 `Ctrl+Shift+P`
+3. 输入 "Extensions: Install from VSIX"
+4. 选择下载的文件
 
-### 🚀 快速开始
+## 🚀 快速开始
 
-#### 1. 配置 API
+### 1. 配置API
 
-使用专用配置面板快速设置：
+首次使用时，需要配置AI服务：
 
-1. 按 `Ctrl+Shift+P`（Mac: `Cmd+Shift+P`）打开命令面板
-2. 输入 "配置 AI Git Commit" 或 "Configure AI Git Commit"
-3. 在配置面板中：
-   - **选择 API 提供商**: 从下拉列表选择（OpenAI、Azure OpenAI、Ollama 或其他）
-   - **输入 API 密钥**: 您的 API 密钥（安全存储）
-   - **Base URL**: 自动填充默认值，可根据需要修改
-   - **模型名称**: 自动填充推荐模型，可自定义
-4. 点击"保存"完成配置
+```bash
+# 打开命令面板
+Ctrl+Shift+P
 
-💡 **提示**: 选择不同的 API 提供商时，Base URL 和模型名称会自动填充推荐值！
+# 输入并执行
+"配置 AI Git Commit"
+```
 
-或者通过设置手动配置：
+按照提示输入：
+- **API端点**: 例如 `https://api.openai.com/v1`
+- **API密钥**: 你的API密钥
+- **模型名称**: 例如 `gpt-3.5-turbo`
 
-1. 按 `Ctrl+,`（Mac: `Cmd+,`）打开设置
-2. 搜索 "AI Git Commit"
-3. 配置以下选项：
-   - **Provider**: API 提供商（openai/azure-openai/ollama/custom）
-   - **API Endpoint**: API 端点 URL
-   - **Model Name**: 模型名称
-   - **Language**: 提交信息语言（中文/英文）
-   - **Commit Format**: 提交格式（conventional/simple）
+### 2. 生成提交信息
 
-#### 2. 生成提交信息
+有三种方式可以使用：
 
-有三种方式触发生成：
+#### 方式1: SCM视图按钮（最简单）
+1. 打开源代码管理视图 (`Ctrl+Shift+G`)
+2. 点击标题栏的 ✨ 图标按钮
+3. 等待AI生成提交信息
 
-**方式 1: 命令面板**
-1. 暂存您的代码变更（`git add`）
-2. 按 `Ctrl+Shift+P`（Mac: `Cmd+Shift+P`）
-3. 输入 "生成AI提交信息"
-4. 等待 AI 生成提交信息
-5. 预览、编辑并确认
+#### 方式2: 命令面板
+1. 按 `Ctrl+Shift+P`
+2. 输入 "生成AI提交信息"
+3. 按回车执行
 
-**方式 2: 键盘快捷键**
-- Windows/Linux: `Ctrl+Shift+G C`
-- Mac: `Cmd+Shift+G C`
+#### 方式3: 快捷键
+1. 按 `Ctrl+Shift+G, C`
+2. 等待生成完成
 
-**方式 3: 源代码管理视图**（推荐）
-1. 打开源代码管理视图（`Ctrl+Shift+G`）
-2. 点击标题栏的 ✨ 图标
-3. 💡 **提示**: 将鼠标悬停在 ✨ 图标上可查看当前配置信息
+## ⚙️ 配置选项
 
-### ⚙️ 配置指南
+打开VSCode设置 (`Ctrl+,`)，搜索 "AI Git Commit"：
 
-> 💡 **详细配置示例**: 查看 [examples](./examples/) 目录获取完整的配置指南和模板
+| 设置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `aigitcommit.provider` | `openai` | API提供商 |
+| `aigitcommit.apiEndpoint` | `https://api.openai.com/v1` | API端点URL |
+| `aigitcommit.modelName` | `gpt-3.5-turbo` | 使用的模型名称 |
+| `aigitcommit.language` | `zh-CN` | 提交信息语言 |
+| `aigitcommit.commitFormat` | `conventional` | 提交信息格式 |
+| `aigitcommit.maxTokens` | `500` | 最大token数 |
+| `aigitcommit.temperature` | `0.7` | 温度参数（0-2） |
 
-#### OpenAI
+### 支持的提供商
 
-```json
-{
-  "aigitcommit.apiEndpoint": "https://api.openai.com/v1",
-  "aigitcommit.modelName": "gpt-3.5-turbo"
+- **OpenAI**: 官方API服务，支持GPT-3.5、GPT-4等模型
+- **Azure OpenAI**: 企业级服务，数据隐私保护
+- **Ollama**: 本地运行，完全保护代码隐私
+- **自定义**: 任何OpenAI兼容的API服务
+
+## 📖 使用示例
+
+### 示例1: 添加新功能
+
+```typescript
+// 新增函数
+export function calculateTotal(items: Item[]): number {
+  return items.reduce((sum, item) => sum + item.price, 0);
 }
 ```
 
-然后运行 "配置 AI Git Commit" 命令设置您的 OpenAI API 密钥。
-
-📖 [查看完整 OpenAI 配置指南](./examples/config-openai.md)
-
-#### Azure OpenAI
-
-```json
-{
-  "aigitcommit.apiEndpoint": "https://your-resource.openai.azure.com/openai/deployments/your-deployment",
-  "aigitcommit.modelName": "gpt-35-turbo"
-}
-```
-
-API 密钥通过配置向导设置。
-
-📖 [查看完整 Azure OpenAI 配置指南](./examples/config-azure-openai.md)
-
-#### 本地模型（Ollama）
-
-```json
-{
-  "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
-  "aigitcommit.modelName": "llama2"
-}
-```
-
-使用 Ollama 时，API 密钥可以留空或设置为任意值。
-
-📖 [查看完整 Ollama 配置指南](./examples/config-ollama.md)
-
-#### 其他 OpenAI 兼容服务
-
-任何支持 OpenAI API 格式的服务都可以使用：
-
-- **LocalAI**: `http://localhost:8080/v1`
-- **LM Studio**: `http://localhost:1234/v1`
-- **Text Generation WebUI**: `http://localhost:5000/v1`
-- **vLLM**: 您的 vLLM 服务端点
-
-📖 [查看更多服务配置示例](./examples/config-other-services.md)
-
-#### 📚 更多资源
-
-- [提示词模板](./examples/prompt-templates.md) - 自定义提示词和优化技巧
-- [约定式提交指南](./examples/conventional-commits-guide.md) - 完整的 Conventional Commits 规范
-
-### 📖 使用示例
-
-#### 示例 1: 功能开发
-
-**代码变更:**
-```diff
-+ export function calculateTotal(items: Item[]): number {
-+   return items.reduce((sum, item) => sum + item.price, 0);
-+ }
-```
-
-**生成的提交信息:**
+**生成的提交信息**:
 ```
 feat(utils): 添加计算总价的函数
 
 实现 calculateTotal 函数用于计算商品列表的总价
 ```
 
-#### 示例 2: Bug 修复
+### 示例2: 修复Bug
 
-**代码变更:**
-```diff
+```typescript
+// 修复边界条件
 - if (user.age > 18) {
 + if (user.age >= 18) {
-    allowAccess();
-  }
 ```
 
-**生成的提交信息:**
+**生成的提交信息**:
 ```
 fix(auth): 修正年龄验证的边界条件
 
 将年龄判断从大于改为大于等于，确保18岁用户可以访问
 ```
 
-#### 示例 3: 重构
+### 示例3: 重构代码
 
-**代码变更:**
-```diff
+```typescript
+// 重构为箭头函数
 - function getUserName(user) {
 -   return user.firstName + ' ' + user.lastName;
 - }
@@ -188,493 +136,286 @@ fix(auth): 修正年龄验证的边界条件
 +   `${user.firstName} ${user.lastName}`;
 ```
 
-**生成的提交信息:**
+**生成的提交信息**:
 ```
 refactor(user): 使用箭头函数和模板字符串重构 getUserName
 
 提高代码可读性并添加类型注解
 ```
 
-### 🎯 支持的服务
+## 🔧 配置示例
 
-| 服务 | API 端点 | 说明 |
-|------|---------|------|
-| **OpenAI** | `https://api.openai.com/v1` | 官方 OpenAI API |
-| **Azure OpenAI** | `https://{resource}.openai.azure.com/openai/deployments/{deployment}` | Azure 托管的 OpenAI 服务 |
-| **Ollama** | `http://localhost:11434/v1` | 本地运行的开源模型 |
-| **LocalAI** | `http://localhost:8080/v1` | 本地 OpenAI 兼容服务 |
-| **LM Studio** | `http://localhost:1234/v1` | 桌面 LLM 应用 |
-| **Text Generation WebUI** | `http://localhost:5000/v1` | Oobabooga 的 WebUI |
-| **vLLM** | 自定义端点 | 高性能 LLM 推理引擎 |
-| **其他** | 任意 OpenAI 兼容端点 | 任何实现 OpenAI API 格式的服务 |
-
-### ❓ 常见问题
-
-#### Q: 如何更改 API 密钥或配置？
-
-A: 有两种方式：
-1. **配置面板**（推荐）: 运行命令 "配置 AI Git Commit" 打开配置面板，修改任何配置项后点击保存
-2. **快速入口**: 在源代码管理视图中，将鼠标悬停在 ✨ 图标上，点击悬停提示中的"编辑配置"链接
-
-所有配置将安全存储，API 密钥使用 VSCode SecretStorage 加密保存。
-
-#### Q: 生成的提交信息不满意怎么办？
-
-A: 您可以：
-1. 在输入框中直接编辑生成的提交信息
-2. 点击"重新生成"按钮获取新的提交信息
-3. 点击"取消"放弃本次操作
-
-#### Q: 支持哪些提交信息格式？
-
-A: 插件支持两种格式：
-- **Conventional Commits**（推荐）: `type(scope): subject`
-- **Simple**: 简单的描述性提交信息
-
-可以在设置中的 `aigitcommit.commitFormat` 配置。
-
-#### Q: 为什么提示"无暂存变更"？
-
-A: 插件只分析已暂存（staged）的变更。请先使用 `git add` 命令或在源代码管理视图中暂存您的变更。
-
-#### Q: API 调用失败怎么办？
-
-A: 请检查：
-1. API 端点 URL 是否正确
-2. API 密钥是否有效
-3. 网络连接是否正常
-4. 模型名称是否正确
-5. 查看输出面板（"AI Git Commit"）的详细错误日志
-
-#### Q: 如何使用本地模型？
-
-A: 推荐使用 Ollama：
-1. 安装 Ollama: https://ollama.ai
-2. 运行模型: `ollama run llama2`
-3. 配置插件:
-   ```json
-   {
-     "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
-     "aigitcommit.modelName": "llama2"
-   }
-   ```
-
-#### Q: 生成的提交信息语言不对？
-
-A: 在设置中修改 `aigitcommit.language`:
-- `zh-CN`: 中文
-- `en-US`: 英文
-
-#### Q: 如何自定义提交信息的详细程度？
-
-A: 可以调整以下参数：
-- `aigitcommit.maxTokens`: 控制生成长度（默认 500）
-- `aigitcommit.temperature`: 控制创造性（0-2，默认 0.7）
-
-#### Q: 插件会发送我的代码到哪里？
-
-A: 插件会将您暂存的代码变更（diff）发送到您配置的 API 端点。如果您关心代码隐私：
-1. 使用本地模型（如 Ollama）
-2. 使用私有部署的 LLM 服务
-3. 使用 Azure OpenAI 等企业级服务
-
-#### Q: 如何查看当前配置？
-
-A: 有两种方式：
-1. **悬停查看**: 在源代码管理视图中，将鼠标悬停在 ✨ 图标上，即可看到当前使用的 API 提供商、Base URL、模型等信息
-2. **配置面板**: 运行命令 "配置 AI Git Commit" 打开配置面板查看完整配置
-
-#### Q: 如何查看详细的错误日志？
-
-A: 
-1. 打开输出面板：`View` > `Output`
-2. 在下拉菜单中选择 "AI Git Commit"
-3. 查看详细的操作日志和错误信息
-
-### 🔧 高级配置
-
-#### 完整配置示例
+### OpenAI配置
 
 ```json
 {
-  // API 配置
+  "aigitcommit.provider": "openai",
   "aigitcommit.apiEndpoint": "https://api.openai.com/v1",
   "aigitcommit.modelName": "gpt-3.5-turbo",
-
-  // 提交信息配置
-  "aigitcommit.language": "zh-CN",
-  "aigitcommit.commitFormat": "conventional",
-
-  // LLM 参数
-  "aigitcommit.maxTokens": 500,
-  "aigitcommit.temperature": 0.7
-}
-```
-
-#### 团队共享配置
-
-在项目根目录创建 `.vscode/settings.json`:
-
-```json
-{
-  "aigitcommit.apiEndpoint": "https://your-company-llm.com/v1",
-  "aigitcommit.modelName": "company-model",
   "aigitcommit.language": "zh-CN",
   "aigitcommit.commitFormat": "conventional"
 }
 ```
 
-团队成员只需配置自己的 API 密钥即可。
-
-### 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-### 📄 许可证
-
-MIT
-
----
-
-## English Version
-
-### ✨ Features
-
-- 🤖 **AI-Powered**: Intelligently analyzes code changes using Large Language Models
-- 📝 **Professional Format**: Automatically generates commit messages following Conventional Commits specification
-- 🔌 **Wide Compatibility**: Supports all OpenAI-compatible APIs (OpenAI, Azure OpenAI, local models, etc.)
-- ⚡ **Fast & Convenient**: One-click generation with keyboard shortcuts and SCM view integration
-- ✏️ **Editable**: Preview and edit generated commit messages
-- 🔒 **Secure Storage**: API keys securely stored in VSCode SecretStorage
-- 🌍 **Multilingual**: Supports Chinese and English commit messages
-
-### 📦 Installation
-
-#### From VSCode Marketplace
-
-1. Open VSCode
-2. Press `Ctrl+Shift+X` (Mac: `Cmd+Shift+X`) to open Extensions panel
-3. Search for "AI Git Commit"
-4. Click "Install"
-
-#### From VSIX File
-
-1. Download the `.vsix` file
-2. Open VSCode
-3. Press `Ctrl+Shift+P` (Mac: `Cmd+Shift+P`) to open Command Palette
-4. Type "Install from VSIX"
-5. Select the downloaded `.vsix` file
-
-### 🚀 Quick Start
-
-#### 1. Configure API
-
-Use the dedicated configuration panel for quick setup:
-
-1. Press `Ctrl+Shift+P` (Mac: `Cmd+Shift+P`) to open Command Palette
-2. Type "Configure AI Git Commit"
-3. In the configuration panel:
-   - **Select API Provider**: Choose from dropdown (OpenAI, Azure OpenAI, Ollama, or Custom)
-   - **Enter API Key**: Your API key (securely stored)
-   - **Base URL**: Auto-filled with default value, modify if needed
-   - **Model Name**: Auto-filled with recommended model, customize as needed
-4. Click "Save" to complete configuration
-
-💡 **Tip**: When you select different API providers, Base URL and Model Name are automatically filled with recommended values!
-
-Or configure manually through settings:
-
-1. Press `Ctrl+,` (Mac: `Cmd+,`) to open Settings
-2. Search for "AI Git Commit"
-3. Configure the following options:
-   - **Provider**: API provider (openai/azure-openai/ollama/custom)
-   - **API Endpoint**: API endpoint URL
-   - **Model Name**: Model name
-   - **Language**: Commit message language (Chinese/English)
-   - **Commit Format**: Commit format (conventional/simple)
-
-#### 2. Generate Commit Message
-
-Three ways to trigger generation:
-
-**Method 1: Command Palette**
-1. Stage your code changes (`git add`)
-2. Press `Ctrl+Shift+P` (Mac: `Cmd+Shift+P`)
-3. Type "Generate AI Commit Message"
-4. Wait for AI to generate commit message
-5. Preview, edit, and confirm
-
-**Method 2: Keyboard Shortcut**
-- Windows/Linux: `Ctrl+Shift+G C`
-- Mac: `Cmd+Shift+G C`
-
-**Method 3: Source Control View** (Recommended)
-1. Open Source Control view (`Ctrl+Shift+G`)
-2. Click the ✨ icon in the title bar
-3. 💡 **Tip**: Hover over the ✨ icon to view current configuration details
-
-### ⚙️ Configuration Guide
-
-> 💡 **Detailed Configuration Examples**: Check the [examples](./examples/) directory for complete configuration guides and templates
-
-#### OpenAI
+### Azure OpenAI配置
 
 ```json
 {
-  "aigitcommit.apiEndpoint": "https://api.openai.com/v1",
-  "aigitcommit.modelName": "gpt-3.5-turbo"
-}
-```
-
-Then run "Configure AI Git Commit" command to set your OpenAI API key.
-
-📖 [View complete OpenAI configuration guide](./examples/config-openai.md)
-
-#### Azure OpenAI
-
-```json
-{
+  "aigitcommit.provider": "azure-openai",
   "aigitcommit.apiEndpoint": "https://your-resource.openai.azure.com/openai/deployments/your-deployment",
-  "aigitcommit.modelName": "gpt-35-turbo"
+  "aigitcommit.modelName": "your-deployment-name",
+  "aigitcommit.language": "zh-CN"
 }
 ```
 
-API key is set through the configuration wizard.
-
-📖 [View complete Azure OpenAI configuration guide](./examples/config-azure-openai.md)
-
-#### Local Models (Ollama)
+### Ollama配置
 
 ```json
 {
+  "aigitcommit.provider": "ollama",
   "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
-  "aigitcommit.modelName": "llama2"
+  "aigitcommit.modelName": "codellama",
+  "aigitcommit.language": "zh-CN"
 }
 ```
 
-When using Ollama, API key can be left empty or set to any value.
+## 🎯 使用场景
 
-📖 [View complete Ollama configuration guide](./examples/config-ollama.md)
+### 个人开发者
+- **推荐**: Ollama + Code Llama
+- **优势**: 完全免费，代码不离开本地
 
-#### Other OpenAI-Compatible Services
+### 小团队
+- **推荐**: OpenAI GPT-3.5
+- **优势**: 性价比高，响应速度快
 
-Any service supporting OpenAI API format can be used:
+### 企业团队
+- **推荐**: Azure OpenAI
+- **优势**: 数据隐私保护，企业级SLA
 
-- **LocalAI**: `http://localhost:8080/v1`
-- **LM Studio**: `http://localhost:1234/v1`
-- **Text Generation WebUI**: `http://localhost:5000/v1`
-- **vLLM**: Your vLLM service endpoint
+### 开源项目
+- **推荐**: OpenAI GPT-4 + 英文提交
+- **优势**: 最佳质量，国际化支持
 
-📖 [View more service configuration examples](./examples/config-other-services.md)
+## 🛠️ 开发
 
-#### 📚 Additional Resources
+### 环境要求
 
-- [Prompt Templates](./examples/prompt-templates.md) - Custom prompts and optimization tips
-- [Conventional Commits Guide](./examples/conventional-commits-guide.md) - Complete Conventional Commits specification
+- Node.js >= 16.x
+- pnpm >= 8.0.0
+- VSCode >= 1.85.0
+- TypeScript >= 5.3.3
 
-### 📖 Usage Examples
+### 安装 pnpm
 
-#### Example 1: Feature Development
+如果您还没有安装 pnpm，请先安装：
 
-**Code Changes:**
-```diff
-+ export function calculateTotal(items: Item[]): number {
-+   return items.reduce((sum, item) => sum + item.price, 0);
-+ }
+```bash
+# 使用 npm 安装
+npm install -g pnpm
+
+# 或使用 Homebrew (macOS)
+brew install pnpm
+
+# 或使用 Scoop (Windows)
+scoop install pnpm
 ```
 
-**Generated Commit Message:**
-```
-feat(utils): add function to calculate total price
+### 本地开发
 
-Implement calculateTotal function to compute total price of item list
-```
+```bash
+# 克隆仓库
+git clone https://github.com/want2sleeep/AIGitCommit.git
+cd AIGitCommit
 
-#### Example 2: Bug Fix
+# 安装依赖
+pnpm install
 
-**Code Changes:**
-```diff
-- if (user.age > 18) {
-+ if (user.age >= 18) {
-    allowAccess();
-  }
-```
+# 编译
+pnpm run compile
 
-**Generated Commit Message:**
-```
-fix(auth): correct age validation boundary condition
+# 运行测试
+pnpm test
 
-Change age check from greater than to greater than or equal to, ensuring 18-year-old users can access
-```
+# 启动开发模式（监听文件变化）
+pnpm run watch
 
-#### Example 3: Refactoring
+# 代码检查
+pnpm run lint
 
-**Code Changes:**
-```diff
-- function getUserName(user) {
--   return user.firstName + ' ' + user.lastName;
-- }
-+ const getUserName = (user: User): string => 
-+   `${user.firstName} ${user.lastName}`;
+# 代码格式化
+pnpm run format
 ```
 
-**Generated Commit Message:**
-```
-refactor(user): refactor getUserName using arrow function and template literals
+### 开发指南
 
-Improve code readability and add type annotations
-```
+#### 代码质量
 
-### 🎯 Supported Services
+本项目使用以下工具确保代码质量：
 
-| Service | API Endpoint | Description |
-|---------|-------------|-------------|
-| **OpenAI** | `https://api.openai.com/v1` | Official OpenAI API |
-| **Azure OpenAI** | `https://{resource}.openai.azure.com/openai/deployments/{deployment}` | Azure-hosted OpenAI service |
-| **Ollama** | `http://localhost:11434/v1` | Locally running open-source models |
-| **LocalAI** | `http://localhost:8080/v1` | Local OpenAI-compatible service |
-| **LM Studio** | `http://localhost:1234/v1` | Desktop LLM application |
-| **Text Generation WebUI** | `http://localhost:5000/v1` | Oobabooga's WebUI |
-| **vLLM** | Custom endpoint | High-performance LLM inference engine |
-| **Others** | Any OpenAI-compatible endpoint | Any service implementing OpenAI API format |
+- **ESLint**: 代码规范检查
+- **Prettier**: 代码格式化
+- **Husky**: Git 钩子管理
+- **lint-staged**: 提交前代码检查
 
-### ❓ FAQ
+在提交代码前，pre-commit 钩子会自动运行：
+1. ESLint 检查并自动修复问题
+2. Prettier 格式化代码
+3. 运行测试套件
 
-#### Q: How to change API key or configuration?
+#### 开发流程
 
-A: Two ways:
-1. **Configuration Panel** (Recommended): Run command "Configure AI Git Commit" to open the configuration panel, modify any settings and click Save
-2. **Quick Access**: In Source Control view, hover over the ✨ icon and click "Edit Configuration" link in the tooltip
-
-All configurations are securely stored, with API keys encrypted using VSCode SecretStorage.
-
-#### Q: What if I'm not satisfied with the generated commit message?
-
-A: You can:
-1. Edit the generated commit message directly in the input box
-2. Click "Regenerate" button to get a new commit message
-3. Click "Cancel" to abort the operation
-
-#### Q: What commit message formats are supported?
-
-A: The extension supports two formats:
-- **Conventional Commits** (recommended): `type(scope): subject`
-- **Simple**: Simple descriptive commit messages
-
-Configure via `aigitcommit.commitFormat` in settings.
-
-#### Q: Why does it say "No staged changes"?
-
-A: The extension only analyzes staged changes. Please use `git add` command or stage your changes in the Source Control view first.
-
-#### Q: What to do if API call fails?
-
-A: Please check:
-1. Is the API endpoint URL correct?
-2. Is the API key valid?
-3. Is the network connection working?
-4. Is the model name correct?
-5. Check detailed error logs in Output panel ("AI Git Commit")
-
-#### Q: How to use local models?
-
-A: Ollama is recommended:
-1. Install Ollama: https://ollama.ai
-2. Run model: `ollama run llama2`
-3. Configure extension:
-   ```json
-   {
-     "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
-     "aigitcommit.modelName": "llama2"
-   }
+1. **创建分支**: 从 `main` 分支创建功能分支
+   ```bash
+   git checkout -b feature/your-feature-name
    ```
 
-#### Q: Generated commit message is in wrong language?
+2. **开发功能**: 编写代码并确保通过所有检查
+   ```bash
+   pnpm run lint        # 检查代码规范
+   pnpm test            # 运行测试
+   pnpm run compile     # 编译 TypeScript
+   ```
 
-A: Modify `aigitcommit.language` in settings:
-- `zh-CN`: Chinese
-- `en-US`: English
+3. **提交代码**: 使用约定式提交格式
+   ```bash
+   git add .
+   git commit -m "feat: add new feature"
+   ```
 
-#### Q: How to customize commit message verbosity?
+4. **推送代码**: 推送到远程仓库
+   ```bash
+   git push origin feature/your-feature-name
+   ```
 
-A: Adjust the following parameters:
-- `aigitcommit.maxTokens`: Control generation length (default 500)
-- `aigitcommit.temperature`: Control creativity (0-2, default 0.7)
+5. **创建 PR**: 在 GitHub 上创建 Pull Request
 
-#### Q: Where does the extension send my code?
+#### 测试
 
-A: The extension sends your staged code changes (diff) to the API endpoint you configured. If you're concerned about code privacy:
-1. Use local models (like Ollama)
-2. Use privately deployed LLM services
-3. Use enterprise services like Azure OpenAI
+```bash
+# 运行所有测试
+pnpm test
 
-#### Q: How to view current configuration?
+# 监听模式（开发时使用）
+pnpm run test:watch
 
-A: Two ways:
-1. **Hover to View**: In Source Control view, hover over the ✨ icon to see current API provider, Base URL, model, and other information
-2. **Configuration Panel**: Run command "Configure AI Git Commit" to open the configuration panel and view complete settings
-
-#### Q: How to view detailed error logs?
-
-A: 
-1. Open Output panel: `View` > `Output`
-2. Select "AI Git Commit" from dropdown menu
-3. View detailed operation logs and error messages
-
-### 🔧 Advanced Configuration
-
-#### Complete Configuration Example
-
-```json
-{
-  // API Configuration
-  "aigitcommit.apiEndpoint": "https://api.openai.com/v1",
-  "aigitcommit.modelName": "gpt-3.5-turbo",
-
-  // Commit Message Configuration
-  "aigitcommit.language": "en-US",
-  "aigitcommit.commitFormat": "conventional",
-
-  // LLM Parameters
-  "aigitcommit.maxTokens": 500,
-  "aigitcommit.temperature": 0.7
-}
+# 生成覆盖率报告
+pnpm run test:coverage
 ```
 
-#### Team Shared Configuration
+测试文件位于 `src/__tests__/` 目录，使用 Jest 测试框架。
 
-Create `.vscode/settings.json` in project root:
+#### 调试
 
-```json
-{
-  "aigitcommit.apiEndpoint": "https://your-company-llm.com/v1",
-  "aigitcommit.modelName": "company-model",
-  "aigitcommit.language": "en-US",
-  "aigitcommit.commitFormat": "conventional"
-}
+在 VSCode 中按 `F5` 启动调试模式：
+1. 会打开一个新的 VSCode 窗口（Extension Development Host）
+2. 在新窗口中测试扩展功能
+3. 可以在原窗口中设置断点进行调试
+
+#### 打包
+
+```bash
+# 编译并打包扩展
+pnpm run vscode:prepublish
+
+# 使用 vsce 打包（需要先安装 vsce）
+pnpm install -g @vscode/vsce
+vsce package
 ```
 
-Team members only need to configure their own API keys.
+### 项目结构
 
-### 🤝 Contributing
+```
+src/
+├── extension.ts           # 扩展入口
+├── constants.ts           # 常量定义
+├── services/              # 服务层
+│   ├── ConfigurationManager.ts
+│   ├── GitService.ts
+│   ├── LLMService.ts
+│   ├── CommandHandler.ts
+│   └── ProviderManager.ts
+├── utils/                 # 工具类
+│   ├── ErrorHandler.ts
+│   └── UIManager.ts
+├── types/                 # 类型定义
+│   └── index.ts
+└── __tests__/             # 测试文件
+```
 
-Issues and Pull Requests are welcome!
+## 📚 文档
 
-### 📄 License
+- [快速开始指南](QUICK_START_GUIDE.md) - 详细的安装和配置说明
+- [配置示例](examples/README.md) - 各种AI服务的配置示例
+- [约定式提交指南](examples/conventional-commits-guide.md) - Conventional Commits规范
+- [提示词模板](examples/prompt-templates.md) - 自定义提示词模板
+- [更新日志](CHANGELOG.md) - 版本更新记录
+- [打包指南](PACKAGING.md) - 扩展打包和发布说明
 
-MIT
+## 🐛 故障排除
+
+### 常见问题
+
+**Q: 提示"无暂存变更"**
+A: 需要先暂存文件变更，使用 `git add` 或在源代码管理视图中点击 `+`
+
+**Q: API调用失败**
+A: 检查API端点、密钥和网络连接，查看输出日志获取详细错误信息
+
+**Q: 找不到命令**
+A: 重启VSCode，确认插件已启用且在Git仓库中
+
+**Q: 生成的提交信息不满意**
+A: 点击"重新生成"，手动编辑内容，或调整温度参数
+
+### 获取帮助
+
+1. 查看VSCode输出面板中的详细日志
+2. 参考配置示例文档
+3. 在GitHub上提交Issue
+
+## 🤝 贡献
+
+欢迎贡献代码、报告问题或提出建议！请查看 [贡献指南](CONTRIBUTING.md) 了解详细信息。
+
+### 快速开始
+
+1. Fork 项目
+2. 克隆到本地: `git clone https://github.com/YOUR_USERNAME/AIGitCommit.git`
+3. 安装依赖: `pnpm install`
+4. 创建特性分支: `git checkout -b feature/AmazingFeature`
+5. 提交更改: `git commit -m 'feat: add some amazing feature'`
+6. 推送到分支: `git push origin feature/AmazingFeature`
+7. 开启 Pull Request
+
+### 开发规范
+
+- 遵循 TypeScript 编码规范
+- 使用约定式提交格式（Conventional Commits）
+- 编写单元测试（目标覆盖率 70%+）
+- 更新相关文档
+- 确保所有测试和检查通过
+- 代码提交前会自动运行 lint 和格式化
+
+## 📄 许可
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+
+## 🙏 致谢
+
+- [Conventional Commits](https://www.conventionalcommits.org/) - 提交信息规范
+- [OpenAI](https://openai.com/) - 强大的AI模型支持
+- [VSCode API](https://code.visualstudio.com/api) - 扩展开发框架
+
+## 📞 联系方式
+
+- **作者**: SleepSheep
+- **邮箱**: victorhuang.hy@gmail.com
+- **GitHub**: [SleepSheep](https://github.com/want2sleeep)
+- **问题反馈**: [GitHub Issues](https://github.com/want2sleeep/AIGitCommit/issues)
 
 ---
 
-## 🌟 Star History
+⭐ 如果这个项目对您有帮助，请给我们一个星标！
 
-If you find this extension helpful, please consider giving it a star on GitHub!
-
-## 📞 Support
-
-- GitHub Issues: [Report a bug or request a feature](https://github.com/your-repo/issues)
-- Email: your-email@example.com
-
----
-
-Made with ❤️ by developers, for developers
+🚀 **让AI帮您写出更好的提交信息！**

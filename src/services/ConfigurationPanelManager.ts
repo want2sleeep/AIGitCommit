@@ -6,26 +6,26 @@ import { ProviderManager } from './ProviderManager';
  * Webview消息接口
  */
 interface WebviewMessage {
-    command: 'load' | 'save' | 'validate' | 'providerChanged';
-    data?: ConfigurationData | { provider: string };
+  command: 'load' | 'save' | 'validate' | 'providerChanged';
+  data?: ConfigurationData | { provider: string };
 }
 
 /**
  * 配置数据接口
  */
 interface ConfigurationData {
-    provider: string;
-    apiKey: string;
-    baseUrl: string;
-    modelName: string;
+  provider: string;
+  apiKey: string;
+  baseUrl: string;
+  modelName: string;
 }
 
 /**
  * 验证结果接口
  */
 interface ValidationResult {
-    valid: boolean;
-    errors: { field: string; message: string }[];
+  valid: boolean;
+  errors: { field: string; message: string }[];
 }
 
 /**
@@ -33,259 +33,261 @@ interface ValidationResult {
  * 负责管理Webview配置面板的生命周期和消息通信
  */
 export class ConfigurationPanelManager {
-    private static instance: ConfigurationPanelManager | undefined;
-    private panel: vscode.WebviewPanel | undefined;
+  private static instance: ConfigurationPanelManager | undefined;
+  private panel: vscode.WebviewPanel | undefined;
 
-    private constructor(
-        private readonly context: vscode.ExtensionContext,
-        private readonly configManager: ConfigurationManager,
-        private readonly providerManager: ProviderManager
-    ) {}
+  private constructor(
+    private readonly context: vscode.ExtensionContext,
+    private readonly configManager: ConfigurationManager,
+    private readonly providerManager: ProviderManager
+  ) {}
 
-    /**
-     * 获取ConfigurationPanelManager实例（单例模式）
-     */
-    static getInstance(
-        context: vscode.ExtensionContext,
-        configManager: ConfigurationManager,
-        providerManager: ProviderManager
-    ): ConfigurationPanelManager {
-        if (!ConfigurationPanelManager.instance) {
-            ConfigurationPanelManager.instance = new ConfigurationPanelManager(
-                context,
-                configManager,
-                providerManager
-            );
-        }
-        return ConfigurationPanelManager.instance;
+  /**
+   * 获取ConfigurationPanelManager实例（单例模式）
+   */
+  static getInstance(
+    context: vscode.ExtensionContext,
+    configManager: ConfigurationManager,
+    providerManager: ProviderManager
+  ): ConfigurationPanelManager {
+    if (!ConfigurationPanelManager.instance) {
+      ConfigurationPanelManager.instance = new ConfigurationPanelManager(
+        context,
+        configManager,
+        providerManager
+      );
+    }
+    return ConfigurationPanelManager.instance;
+  }
+
+  /**
+   * 显示配置面板
+   */
+  showPanel(): void {
+    // 如果面板已存在，则显示它
+    if (this.panel) {
+      this.panel.reveal(vscode.ViewColumn.One);
+      return;
     }
 
-    /**
-     * 显示配置面板
-     */
-    showPanel(): void {
-        // 如果面板已存在，则显示它
-        if (this.panel) {
-            this.panel.reveal(vscode.ViewColumn.One);
-            return;
+    // 创建新的Webview面板
+    this.panel = vscode.window.createWebviewPanel(
+      'aigitcommitConfig',
+      'AI Git Commit 配置',
+      vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        localResourceRoots: [],
+      }
+    );
+
+    // 设置Webview内容
+    this.panel.webview.html = this.getWebviewContent(this.panel.webview);
+
+    // 处理来自Webview的消息
+    this.panel.webview.onDidReceiveMessage(
+      async (message: WebviewMessage) => {
+        await this.handleMessage(message);
+      },
+      undefined,
+      this.context.subscriptions
+    );
+
+    // 面板关闭时清理资源
+    this.panel.onDidDispose(
+      () => {
+        this.panel = undefined;
+      },
+      undefined,
+      this.context.subscriptions
+    );
+
+    // 加载当前配置
+    void this.loadCurrentConfig();
+  }
+
+  /**
+   * 处理来自Webview的消息
+   */
+  private async handleMessage(message: WebviewMessage): Promise<void> {
+    switch (message.command) {
+      case 'load': {
+        await this.loadCurrentConfig();
+        break;
+      }
+
+      case 'save': {
+        if (message.data && 'provider' in message.data && 'apiKey' in message.data) {
+          await this.saveConfig(message.data);
         }
+        break;
+      }
 
-        // 创建新的Webview面板
-        this.panel = vscode.window.createWebviewPanel(
-            'aigitcommitConfig',
-            'AI Git Commit 配置',
-            vscode.ViewColumn.One,
-            {
-                enableScripts: true,
-                retainContextWhenHidden: true,
-                localResourceRoots: []
-            }
-        );
+      case 'validate': {
+        if (message.data && 'provider' in message.data && 'apiKey' in message.data) {
+          const validationResult = this.validateConfig(message.data);
+          void this.panel?.webview.postMessage({
+            command: 'validationResult',
+            data: validationResult,
+          });
+        }
+        break;
+      }
 
-        // 设置Webview内容
-        this.panel.webview.html = this.getWebviewContent(this.panel.webview);
+      case 'providerChanged': {
+        if (message.data && 'provider' in message.data) {
+          const providerId = (message.data as { provider: string }).provider;
+          const defaultConfig = this.providerManager.getDefaultConfig(providerId);
+          void this.panel?.webview.postMessage({
+            command: 'updateDefaults',
+            data: defaultConfig,
+          });
+        }
+        break;
+      }
+    }
+  }
 
-        // 处理来自Webview的消息
-        this.panel.webview.onDidReceiveMessage(
-            async (message: WebviewMessage) => {
-                await this.handleMessage(message);
-            },
-            undefined,
-            this.context.subscriptions
-        );
+  /**
+   * 加载当前配置到Webview
+   */
+  private async loadCurrentConfig(): Promise<void> {
+    try {
+      const fullConfig = await this.configManager.getFullConfig();
 
-        // 面板关闭时清理资源
-        this.panel.onDidDispose(
-            () => {
-                this.panel = undefined;
-            },
-            undefined,
-            this.context.subscriptions
-        );
+      const configData: ConfigurationData = {
+        provider: fullConfig.provider,
+        apiKey: fullConfig.apiKey,
+        baseUrl: fullConfig.apiEndpoint,
+        modelName: fullConfig.modelName,
+      };
 
-        // 加载当前配置
-        this.loadCurrentConfig();
+      void this.panel?.webview.postMessage({
+        command: 'loadConfig',
+        data: configData,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      void vscode.window.showErrorMessage(`加载配置失败: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * 保存配置
+   */
+  private async saveConfig(config: ConfigurationData): Promise<void> {
+    try {
+      // 验证配置
+      const validation = this.validateConfig(config);
+      if (!validation.valid) {
+        void this.panel?.webview.postMessage({
+          command: 'saveResult',
+          data: {
+            success: false,
+            errors: validation.errors,
+          },
+        });
+        return;
+      }
+
+      // 获取当前完整配置
+      const currentConfig = await this.configManager.getFullConfig();
+
+      // 更新配置
+      await this.configManager.saveFullConfig({
+        ...currentConfig,
+        provider: config.provider,
+        apiKey: config.apiKey,
+        apiEndpoint: config.baseUrl,
+        modelName: config.modelName,
+      });
+
+      // 发送成功消息
+      void this.panel?.webview.postMessage({
+        command: 'saveResult',
+        data: {
+          success: true,
+          message: '配置已成功保存',
+        },
+      });
+
+      void vscode.window.showInformationMessage('配置已成功保存');
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const errorMessage = `保存配置失败: ${errorMsg}`;
+      void this.panel?.webview.postMessage({
+        command: 'saveResult',
+        data: {
+          success: false,
+          errors: [{ field: 'general', message: errorMessage }],
+        },
+      });
+      void vscode.window.showErrorMessage(errorMessage);
+    }
+  }
+
+  /**
+   * 验证配置
+   */
+  private validateConfig(config: ConfigurationData): ValidationResult {
+    const errors: { field: string; message: string }[] = [];
+
+    // 验证API密钥
+    if (!config.apiKey || config.apiKey.trim() === '') {
+      errors.push({
+        field: 'apiKey',
+        message: 'API密钥不能为空',
+      });
     }
 
-    /**
-     * 处理来自Webview的消息
-     */
-    private async handleMessage(message: WebviewMessage): Promise<void> {
-        switch (message.command) {
-            case 'load': {
-                await this.loadCurrentConfig();
-                break;
-            }
-
-            case 'save': {
-                if (message.data && 'provider' in message.data && 'apiKey' in message.data) {
-                    await this.saveConfig(message.data as ConfigurationData);
-                }
-                break;
-            }
-
-            case 'validate': {
-                if (message.data && 'provider' in message.data && 'apiKey' in message.data) {
-                    const validationResult = this.validateConfig(message.data as ConfigurationData);
-                    this.panel?.webview.postMessage({
-                        command: 'validationResult',
-                        data: validationResult
-                    });
-                }
-                break;
-            }
-
-            case 'providerChanged': {
-                if (message.data && 'provider' in message.data) {
-                    const providerId = (message.data as { provider: string }).provider;
-                    const defaultConfig = this.providerManager.getDefaultConfig(providerId);
-                    this.panel?.webview.postMessage({
-                        command: 'updateDefaults',
-                        data: defaultConfig
-                    });
-                }
-                break;
-            }
-        }
+    // 验证Base URL
+    if (!config.baseUrl || config.baseUrl.trim() === '') {
+      errors.push({
+        field: 'baseUrl',
+        message: 'Base URL不能为空',
+      });
+    } else if (!this.isValidUrl(config.baseUrl)) {
+      errors.push({
+        field: 'baseUrl',
+        message: 'Base URL格式无效，必须是有效的URL',
+      });
     }
 
-    /**
-     * 加载当前配置到Webview
-     */
-    private async loadCurrentConfig(): Promise<void> {
-        try {
-            const fullConfig = await this.configManager.getFullConfig();
-            
-            const configData: ConfigurationData = {
-                provider: fullConfig.provider,
-                apiKey: fullConfig.apiKey,
-                baseUrl: fullConfig.apiEndpoint,
-                modelName: fullConfig.modelName
-            };
-
-            this.panel?.webview.postMessage({
-                command: 'loadConfig',
-                data: configData
-            });
-        } catch (error) {
-            vscode.window.showErrorMessage(`加载配置失败: ${error}`);
-        }
+    // 验证模型名称
+    if (!config.modelName || config.modelName.trim() === '') {
+      errors.push({
+        field: 'modelName',
+        message: '模型名称不能为空',
+      });
     }
 
-    /**
-     * 保存配置
-     */
-    private async saveConfig(config: ConfigurationData): Promise<void> {
-        try {
-            // 验证配置
-            const validation = this.validateConfig(config);
-            if (!validation.valid) {
-                this.panel?.webview.postMessage({
-                    command: 'saveResult',
-                    data: {
-                        success: false,
-                        errors: validation.errors
-                    }
-                });
-                return;
-            }
+    return {
+      valid: errors.length === 0,
+      errors,
+    };
+  }
 
-            // 获取当前完整配置
-            const currentConfig = await this.configManager.getFullConfig();
-
-            // 更新配置
-            await this.configManager.saveFullConfig({
-                ...currentConfig,
-                provider: config.provider,
-                apiKey: config.apiKey,
-                apiEndpoint: config.baseUrl,
-                modelName: config.modelName
-            });
-
-            // 发送成功消息
-            this.panel?.webview.postMessage({
-                command: 'saveResult',
-                data: {
-                    success: true,
-                    message: '配置已成功保存'
-                }
-            });
-
-            vscode.window.showInformationMessage('配置已成功保存');
-        } catch (error) {
-            const errorMessage = `保存配置失败: ${error}`;
-            this.panel?.webview.postMessage({
-                command: 'saveResult',
-                data: {
-                    success: false,
-                    errors: [{ field: 'general', message: errorMessage }]
-                }
-            });
-            vscode.window.showErrorMessage(errorMessage);
-        }
+  /**
+   * 验证URL格式
+   */
+  private isValidUrl(url: string): boolean {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+    } catch {
+      return false;
     }
+  }
 
-    /**
-     * 验证配置
-     */
-    private validateConfig(config: ConfigurationData): ValidationResult {
-        const errors: { field: string; message: string }[] = [];
+  /**
+   * 获取Webview HTML内容
+   */
+  private getWebviewContent(webview: vscode.Webview): string {
+    const nonce = this.getNonce();
+    const providers = this.providerManager.getProviders();
 
-        // 验证API密钥
-        if (!config.apiKey || config.apiKey.trim() === '') {
-            errors.push({
-                field: 'apiKey',
-                message: 'API密钥不能为空'
-            });
-        }
-
-        // 验证Base URL
-        if (!config.baseUrl || config.baseUrl.trim() === '') {
-            errors.push({
-                field: 'baseUrl',
-                message: 'Base URL不能为空'
-            });
-        } else if (!this.isValidUrl(config.baseUrl)) {
-            errors.push({
-                field: 'baseUrl',
-                message: 'Base URL格式无效，必须是有效的URL'
-            });
-        }
-
-        // 验证模型名称
-        if (!config.modelName || config.modelName.trim() === '') {
-            errors.push({
-                field: 'modelName',
-                message: '模型名称不能为空'
-            });
-        }
-
-        return {
-            valid: errors.length === 0,
-            errors
-        };
-    }
-
-    /**
-     * 验证URL格式
-     */
-    private isValidUrl(url: string): boolean {
-        try {
-            const urlObj = new URL(url);
-            return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
-        } catch {
-            return false;
-        }
-    }
-
-    /**
-     * 获取Webview HTML内容
-     */
-    private getWebviewContent(webview: vscode.Webview): string {
-        const nonce = this.getNonce();
-        const providers = this.providerManager.getProviders();
-
-        return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -441,7 +443,7 @@ export class ConfigurationPanelManager {
             <div class="form-group">
                 <label for="provider-selector" class="required">API提供商</label>
                 <select id="provider-selector" class="form-control" required>
-                    ${providers.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+                    ${providers.map((p) => `<option value="${p.id}">${p.name}</option>`).join('')}
                 </select>
                 <small class="form-text">选择您的LLM服务提供商</small>
                 <span class="error-text" id="provider-error"></span>
@@ -614,25 +616,25 @@ export class ConfigurationPanelManager {
     </script>
 </body>
 </html>`;
-    }
+  }
 
-    /**
-     * 生成随机nonce用于CSP
-     */
-    private getNonce(): string {
-        let text = '';
-        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for (let i = 0; i < 32; i++) {
-            text += possible.charAt(Math.floor(Math.random() * possible.length));
-        }
-        return text;
+  /**
+   * 生成随机nonce用于CSP
+   */
+  private getNonce(): string {
+    let text = '';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 32; i++) {
+      text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
+    return text;
+  }
 
-    /**
-     * 释放资源
-     */
-    dispose(): void {
-        this.panel?.dispose();
-        this.panel = undefined;
-    }
+  /**
+   * 释放资源
+   */
+  dispose(): void {
+    this.panel?.dispose();
+    this.panel = undefined;
+  }
 }
