@@ -64,7 +64,6 @@ coverage-analysis.md
 # 构建产物
 # ===========================================
 *.vsix
-out/
 dist/
 build/
 

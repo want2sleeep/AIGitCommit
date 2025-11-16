@@ -698,11 +698,22 @@ pnpm run vscode:prepublish
 
 # 打包
 pnpm install -g @vscode/vsce
-vsce package
+vsce package --no-dependencies
 
 # 测试安装
 code --install-extension aigitcommit-X.Y.Z.vsix
 ```
+
+**关于 `--no-dependencies` 标志：**
+
+项目使用 pnpm 作为包管理器，但 vsce 工具内部使用 `npm list` 来验证依赖树。这会导致依赖验证失败，即使依赖实际上是正确的。
+
+使用 `--no-dependencies` 标志可以跳过 vsce 的依赖验证步骤，因为：
+- pnpm 已经在安装阶段验证了依赖完整性
+- 这是 vsce 官方支持的标志，专门用于处理非 npm 包管理器的场景
+- 不会影响最终 VSIX 包的内容或功能
+
+CI/CD 工作流已经配置使用此标志，本地打包时也应该使用以保持一致性。
 
 #### 3. 检查工作流语法
 
@@ -761,7 +772,7 @@ pnpm test
 
 # 本地打包
 pnpm run vscode:prepublish
-vsce package
+vsce package --no-dependencies
 
 # 本地安装测试
 code --install-extension aigitcommit-X.Y.Z.vsix

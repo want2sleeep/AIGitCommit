@@ -102,7 +102,7 @@ jobs:
       - name: Package extension
         run: |
           pnpm install -g @vscode/vsce
-          vsce package
+          vsce package --no-dependencies
       
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
