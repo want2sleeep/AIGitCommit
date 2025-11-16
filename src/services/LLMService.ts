@@ -1,15 +1,15 @@
 import axios, { AxiosError } from 'axios';
 import { ExtensionConfig, GitChange, LLMRequest, LLMResponse, Message } from '../types';
+import { APIError, NetworkError } from '../errors';
+import { API_CONSTANTS, GIT_CONSTANTS } from '../constants';
+import { sleep } from '../utils/retry';
+import { isError, isAPIError, isNetworkError } from '../utils/typeGuards';
 
 /**
  * LLM服务类
  * 负责调用OpenAI兼容API生成提交信息
  */
 export class LLMService {
-  private static readonly REQUEST_TIMEOUT = 30000; // 30秒超时
-  private static readonly MAX_RETRIES = 3; // 最多重试3次
-  private static readonly INITIAL_RETRY_DELAY = 1000; // 初始重试延迟1秒
-
   /**
    * 生成提交信息
    * @param changes Git变更列表
@@ -168,14 +168,11 @@ ${changesText}
    * @returns 格式化后的变更文本
    */
   private formatChanges(changes: GitChange[]): string {
-    const MAX_DIFF_LENGTH = 20000; // 总diff长度限制
-    const MAX_FILE_DIFF_LENGTH = 5000; // 单个文件diff长度限制
-
     let totalLength = 0;
     const formattedChanges: string[] = [];
 
     for (const change of changes) {
-      if (totalLength >= MAX_DIFF_LENGTH) {
+      if (totalLength >= GIT_CONSTANTS.MAX_DIFF_LENGTH) {
         formattedChanges.push('\n... (更多变更已省略)');
         break;
       }
@@ -183,8 +180,8 @@ ${changesText}
       let diff = change.diff;
 
       // 限制单个文件的diff长度
-      if (diff.length > MAX_FILE_DIFF_LENGTH) {
-        diff = diff.substring(0, MAX_FILE_DIFF_LENGTH) + '\n... (diff已截断)';
+      if (diff.length > GIT_CONSTANTS.MAX_FILE_DIFF_LINES) {
+        diff = diff.substring(0, GIT_CONSTANTS.MAX_FILE_DIFF_LINES) + '\n... (diff已截断)';
       }
 
       const statusText = this.getStatusText(change.status);
@@ -227,29 +224,32 @@ ${diff}
    */
   private async callAPI(messages: Message[], config: ExtensionConfig): Promise<string> {
     let lastError: Error | null = null;
+    let retryCount = 0;
 
-    for (let attempt = 0; attempt < LLMService.MAX_RETRIES; attempt++) {
+    for (let attempt = 0; attempt < API_CONSTANTS.MAX_RETRIES; attempt++) {
       try {
         // 如果不是第一次尝试，等待一段时间（指数退避）
         if (attempt > 0) {
-          const delay = LLMService.INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
-          await this.sleep(delay);
+          const delay = API_CONSTANTS.INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
+          await sleep(delay);
+          retryCount++;
         }
 
         const response = await this.makeAPIRequest(messages, config);
+
         return response;
       } catch (error) {
-        lastError = error as Error;
+        lastError = isError(error) ? error : new Error(String(error));
 
         // 判断是否应该重试
         if (!this.shouldRetry(error, attempt)) {
-          throw this.handleAPIError(error);
+          throw this.handleAPIError(error, config, retryCount);
         }
       }
     }
 
     // 所有重试都失败
-    throw this.handleAPIError(lastError);
+    throw this.handleAPIError(lastError, config, retryCount);
   }
 
   /**
@@ -271,30 +271,92 @@ ${diff}
       ? config.apiEndpoint
       : `${config.apiEndpoint.replace(/\/$/, '')}/chat/completions`;
 
-    const response = await axios.post<LLMResponse>(endpoint, requestBody, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey}`,
-      },
-      timeout: LLMService.REQUEST_TIMEOUT,
-    });
+    try {
+      const response = await axios.post<LLMResponse>(endpoint, requestBody, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.apiKey}`,
+        },
+        timeout: API_CONSTANTS.REQUEST_TIMEOUT,
+      });
 
-    // 验证响应
-    if (!response.data || !response.data.choices || response.data.choices.length === 0) {
-      throw new Error('API返回了无效的响应格式');
+      // 验证响应
+      if (!response.data || !response.data.choices || response.data.choices.length === 0) {
+        throw new APIError(
+          'API返回了无效的响应格式：缺少choices数组',
+          response.status,
+          response.data
+        );
+      }
+
+      const firstChoice = response.data.choices[0];
+      if (!firstChoice) {
+        throw new APIError('API响应中没有选项：choices数组为空', response.status, response.data);
+      }
+
+      const message = firstChoice.message;
+      if (!message || !message.content) {
+        throw new APIError(
+          'API响应中没有生成的内容：message.content为空',
+          response.status,
+          response.data
+        );
+      }
+
+      return message.content;
+    } catch (error) {
+      // 如果已经是我们的自定义错误，直接抛出
+      if (error instanceof APIError || error instanceof NetworkError) {
+        throw error;
+      }
+
+      // 否则，包装为适当的错误类型
+      if (axios.isAxiosError(error)) {
+        throw this.wrapAxiosError(error, config);
+      }
+
+      // 其他未知错误
+      throw new APIError(
+        `API请求失败: ${error instanceof Error ? error.message : String(error)}`,
+        undefined,
+        error
+      );
+    }
+  }
+
+  /**
+   * 从响应数据中提取Record类型
+   * @param data 响应数据
+   * @returns Record对象或undefined
+   */
+  private extractResponseData(data: unknown): Record<string, unknown> | undefined {
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      return data as Record<string, unknown>;
+    }
+    return undefined;
+  }
+
+  /**
+   * 从响应数据中提取错误消息
+   * @param responseData 响应数据
+   * @returns 错误消息字符串
+   */
+  private extractErrorMessage(responseData: Record<string, unknown> | undefined): string {
+    if (!responseData || typeof responseData !== 'object') {
+      return '';
     }
 
-    const firstChoice = response.data.choices[0];
-    if (!firstChoice) {
-      throw new Error('API响应中没有选项');
+    if ('error' in responseData) {
+      const errorObj = responseData['error'];
+      if (errorObj && typeof errorObj === 'object' && 'message' in errorObj) {
+        const message = (errorObj as Record<string, unknown>)['message'];
+        if (typeof message === 'string') {
+          return message;
+        }
+      }
     }
 
-    const message = firstChoice.message;
-    if (!message || !message.content) {
-      throw new Error('API响应中没有生成的内容');
-    }
-
-    return message.content;
+    return '';
   }
 
   /**
@@ -305,8 +367,14 @@ ${diff}
    */
   private shouldRetry(error: unknown, attempt: number): boolean {
     // 已达到最大重试次数
-    if (attempt >= LLMService.MAX_RETRIES - 1) {
+    if (attempt >= API_CONSTANTS.MAX_RETRIES - 1) {
       return false;
+    }
+
+    // 检查自定义错误类型
+    if (isAPIError(error) || isNetworkError(error)) {
+      // 使用错误对象的recoverable属性
+      return error.recoverable;
     }
 
     // 如果是axios错误
@@ -340,65 +408,121 @@ ${diff}
       return false;
     }
 
-    // 其他类型的错误，默认重试
-    return true;
+    // 其他类型的错误，默认不重试
+    return false;
   }
 
   /**
-   * 处理API错误
+   * 包装Axios错误为自定义错误类型
+   * @param error Axios错误对象
+   * @param config 插件配置（用于提供上下文）
+   * @returns 自定义错误对象
+   */
+  private wrapAxiosError(error: AxiosError, config: ExtensionConfig): APIError | NetworkError {
+    if (!error.response) {
+      return this.createNetworkError(error, config);
+    }
+
+    const status = error.response.status;
+    const responseData = this.extractResponseData(error.response.data);
+    const apiErrorMessage = this.extractErrorMessage(responseData);
+
+    return this.createAPIError(status, apiErrorMessage, responseData, config);
+  }
+
+  /**
+   * 创建网络错误
+   * @param error Axios错误对象
+   * @param config 插件配置
+   * @returns NetworkError对象
+   */
+  private createNetworkError(error: AxiosError, config: ExtensionConfig): NetworkError {
+    const errorCode = error.code;
+
+    const networkErrorMap: Record<string, string> = {
+      ECONNABORTED: `请求超时（${API_CONSTANTS.REQUEST_TIMEOUT}ms）：请检查网络连接或稍后再试`,
+      ETIMEDOUT: `请求超时（${API_CONSTANTS.REQUEST_TIMEOUT}ms）：请检查网络连接或稍后再试`,
+      ENOTFOUND: `无法连接到API服务器：请检查API端点配置 (${config.apiEndpoint})`,
+      ECONNREFUSED: `连接被拒绝：请检查API端点是否正确 (${config.apiEndpoint})`,
+    };
+
+    const message =
+      networkErrorMap[errorCode || ''] || `网络错误 (${errorCode || 'UNKNOWN'}): ${error.message}`;
+
+    return new NetworkError(message, error);
+  }
+
+  /**
+   * 创建API错误
+   * @param status HTTP状态码
+   * @param apiErrorMessage API返回的错误消息
+   * @param responseData 响应数据
+   * @param config 插件配置
+   * @returns APIError对象
+   */
+  private createAPIError(
+    status: number,
+    apiErrorMessage: string,
+    responseData: Record<string, unknown> | undefined,
+    config: ExtensionConfig
+  ): APIError {
+    const errorMessageMap: Record<number, string> = {
+      401: `API认证失败：请检查API密钥是否正确${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
+      403: `API访问被拒绝：请检查API密钥权限${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
+      404: `模型不存在：请检查模型名称是否正确 (${config.modelName})${apiErrorMessage ? ` - ${apiErrorMessage}` : ''}`,
+      429: `API请求频率超限：请稍后再试${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
+      500: `API服务器内部错误：请稍后再试${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
+      502: `API服务暂时不可用 (${status})：请稍后再试${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
+      503: `API服务暂时不可用 (${status})：请稍后再试${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
+      504: `API服务暂时不可用 (${status})：请稍后再试${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
+    };
+
+    const message = errorMessageMap[status] || apiErrorMessage || `API请求失败 (状态码: ${status})`;
+
+    return new APIError(message, status, responseData);
+  }
+
+  /**
+   * 处理API错误，添加重试上下文信息
    * @param error 错误对象
+   * @param config 插件配置
+   * @param retryCount 已重试次数
    * @returns 格式化的错误对象
    */
-  private handleAPIError(error: unknown): Error {
+  private handleAPIError(
+    error: unknown,
+    config: ExtensionConfig,
+    retryCount: number
+  ): APIError | NetworkError {
+    // 如果已经是自定义错误，添加重试信息
+    if (isAPIError(error) || isNetworkError(error)) {
+      const retryInfo = retryCount > 0 ? ` (已重试 ${retryCount} 次)` : '';
+      const enhancedMessage = `${error.message}${retryInfo}`;
+
+      if (isAPIError(error)) {
+        return new APIError(enhancedMessage, error.statusCode, error.response);
+      } else {
+        return new NetworkError(enhancedMessage, error.cause);
+      }
+    }
+
+    // 如果是Axios错误，包装它
     if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError;
-      const status = axiosError.response?.status;
-      const responseData = axiosError.response?.data as Record<string, unknown>;
+      const wrappedError = this.wrapAxiosError(error, config);
+      const retryInfo = retryCount > 0 ? ` (已重试 ${retryCount} 次)` : '';
+      const enhancedMessage = `${wrappedError.message}${retryInfo}`;
 
-      // 根据状态码返回不同的错误信息
-      switch (status) {
-        case 401:
-          return new Error('API认证失败：请检查API密钥是否正确');
-        case 403:
-          return new Error('API访问被拒绝：请检查API密钥权限');
-        case 404:
-          return new Error(`模型不存在：请检查模型名称是否正确`);
-        case 429:
-          return new Error('API请求频率超限：请稍后再试');
-        case 500:
-          return new Error('API服务器内部错误：请稍后再试');
-        case 502:
-        case 503:
-        case 504:
-          return new Error('API服务暂时不可用：请稍后再试');
-        default:
-          // 尝试从响应中提取错误信息
-          if (responseData && typeof responseData === 'object' && 'error' in responseData) {
-            const errorObj = responseData['error'] as Record<string, unknown>;
-            if (errorObj && 'message' in errorObj && typeof errorObj['message'] === 'string') {
-              return new Error(`API错误：${errorObj['message']}`);
-            }
-          }
-          return new Error(`API请求失败 (状态码: ${status})`);
+      if (wrappedError instanceof APIError) {
+        return new APIError(enhancedMessage, wrappedError.statusCode, wrappedError.response);
+      } else {
+        return new NetworkError(enhancedMessage, wrappedError.cause);
       }
     }
 
-    // 网络错误
-    if (typeof error === 'object' && error !== null && 'code' in error) {
-      const errorCode = (error as { code: string }).code;
-      if (errorCode === 'ECONNABORTED' || errorCode === 'ETIMEDOUT') {
-        return new Error('请求超时：请检查网络连接或稍后再试');
-      }
-      if (errorCode === 'ENOTFOUND') {
-        return new Error('无法连接到API服务器：请检查API端点配置');
-      }
-      if (errorCode === 'ECONNREFUSED') {
-        return new Error('连接被拒绝：请检查API端点是否正确');
-      }
-    }
-
-    // 其他错误
-    return error instanceof Error ? error : new Error(String(error));
+    // 其他未知错误，包装为APIError
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const retryInfo = retryCount > 0 ? ` (已重试 ${retryCount} 次)` : '';
+    return new APIError(`未知错误: ${errorMessage}${retryInfo}`, undefined, error);
   }
 
   /**
@@ -433,22 +557,14 @@ ${diff}
    */
   private parseCommitMessage(message: string): string {
     // 1. 首先移除think标签
-    const originalMessage = message;
     let cleaned = this.removeThinkTags(message);
 
-    // 2. 记录日志（如果检测到think标签）
-    if (cleaned !== originalMessage) {
-      console.warn('[LLMService] 检测到并移除了think标签');
-      console.debug('[LLMService] 原始响应:', originalMessage);
-      console.debug('[LLMService] 处理后:', cleaned);
-    }
-
-    // 3. 验证内容不为空（在移除think标签后）
+    // 2. 验证内容不为空（在移除think标签后）
     if (!cleaned || cleaned.trim().length === 0) {
       throw new Error('移除think标签后提交信息为空，请重新生成');
     }
 
-    // 4. 继续现有的清理逻辑
+    // 3. 继续现有的清理逻辑
     // 移除可能的引号包裹
     cleaned = cleaned.trim();
     if (
@@ -466,7 +582,7 @@ ${diff}
       throw new Error('生成的提交信息为空');
     }
 
-    // 5. 验证和优化提交信息
+    // 4. 验证和优化提交信息
     cleaned = this.validateAndOptimizeCommitMessage(cleaned);
 
     return cleaned;
@@ -516,13 +632,5 @@ ${diff}
     }
 
     return lines.join('\n').trim();
-  }
-
-  /**
-   * 睡眠指定毫秒数
-   * @param ms 毫秒数
-   */
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

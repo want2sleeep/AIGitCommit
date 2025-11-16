@@ -4,6 +4,10 @@ import { ProviderManager } from './ProviderManager';
 
 /**
  * Webview消息接口
+ * 定义了Webview和Extension之间通信的消息格式
+ *
+ * @property command - 消息命令类型
+ * @property data - 可选的消息数据，根据命令类型不同而不同
  */
 interface WebviewMessage {
   command: 'load' | 'save' | 'validate' | 'providerChanged';
@@ -12,6 +16,12 @@ interface WebviewMessage {
 
 /**
  * 配置数据接口
+ * 定义了配置面板中用户可编辑的配置项
+ *
+ * @property provider - API提供商ID
+ * @property apiKey - API密钥
+ * @property baseUrl - API端点URL
+ * @property modelName - 模型名称
  */
 interface ConfigurationData {
   provider: string;
@@ -22,6 +32,10 @@ interface ConfigurationData {
 
 /**
  * 验证结果接口
+ * 定义了配置验证的结果格式
+ *
+ * @property valid - 配置是否有效
+ * @property errors - 验证错误列表，每个错误包含字段名和错误消息
  */
 interface ValidationResult {
   valid: boolean;
@@ -44,6 +58,12 @@ export class ConfigurationPanelManager {
 
   /**
    * 获取ConfigurationPanelManager实例（单例模式）
+   * 确保整个扩展生命周期中只有一个配置面板管理器实例
+   *
+   * @param context - VSCode扩展上下文
+   * @param configManager - 配置管理器实例
+   * @param providerManager - 提供商管理器实例
+   * @returns ConfigurationPanelManager的单例实例
    */
   static getInstance(
     context: vscode.ExtensionContext,
@@ -62,6 +82,8 @@ export class ConfigurationPanelManager {
 
   /**
    * 显示配置面板
+   * 如果面板已存在则将其显示到前台，否则创建新的Webview面板
+   * 面板支持用户配置API提供商、密钥、端点和模型等信息
    */
   showPanel(): void {
     // 如果面板已存在，则显示它
@@ -109,6 +131,13 @@ export class ConfigurationPanelManager {
 
   /**
    * 处理来自Webview的消息
+   * 根据消息命令类型执行相应的操作：
+   * - load: 加载当前配置到Webview
+   * - save: 保存用户修改的配置
+   * - validate: 验证配置的有效性
+   * - providerChanged: 提供商变更时更新默认配置
+   *
+   * @param message - 来自Webview的消息对象
    */
   private async handleMessage(message: WebviewMessage): Promise<void> {
     switch (message.command) {
@@ -151,6 +180,8 @@ export class ConfigurationPanelManager {
 
   /**
    * 加载当前配置到Webview
+   * 从ConfigurationManager读取完整配置并发送到Webview进行显示
+   * 如果加载失败，会向用户显示错误消息
    */
   private async loadCurrentConfig(): Promise<void> {
     try {
@@ -175,6 +206,10 @@ export class ConfigurationPanelManager {
 
   /**
    * 保存配置
+   * 验证配置有效性后，将配置保存到VSCode设置和SecretStorage
+   * 保存结果会通过消息发送回Webview，并显示相应的成功或错误提示
+   *
+   * @param config - 要保存的配置数据
    */
   private async saveConfig(config: ConfigurationData): Promise<void> {
     try {
@@ -229,6 +264,13 @@ export class ConfigurationPanelManager {
 
   /**
    * 验证配置
+   * 检查配置的各个字段是否符合要求：
+   * - API密钥不能为空
+   * - Base URL不能为空且必须是有效的HTTP/HTTPS URL
+   * - 模型名称不能为空
+   *
+   * @param config - 要验证的配置数据
+   * @returns 验证结果，包含是否有效和错误列表
    */
   private validateConfig(config: ConfigurationData): ValidationResult {
     const errors: { field: string; message: string }[] = [];
@@ -270,6 +312,10 @@ export class ConfigurationPanelManager {
 
   /**
    * 验证URL格式
+   * 检查字符串是否为有效的HTTP或HTTPS URL
+   *
+   * @param url - 要验证的URL字符串
+   * @returns 如果是有效的HTTP/HTTPS URL返回true，否则返回false
    */
   private isValidUrl(url: string): boolean {
     try {
@@ -282,6 +328,16 @@ export class ConfigurationPanelManager {
 
   /**
    * 获取Webview HTML内容
+   * 生成配置面板的完整HTML，包括：
+   * - 提供商选择器
+   * - API密钥输入框（密码类型）
+   * - Base URL输入框
+   * - 模型名称输入框
+   * - 保存和取消按钮
+   * - 表单验证和错误显示逻辑
+   *
+   * @param webview - VSCode Webview实例
+   * @returns 完整的HTML字符串
    */
   private getWebviewContent(webview: vscode.Webview): string {
     const nonce = this.getNonce();
@@ -619,7 +675,10 @@ export class ConfigurationPanelManager {
   }
 
   /**
-   * 生成随机nonce用于CSP
+   * 生成随机nonce用于CSP（Content Security Policy）
+   * 用于Webview的内容安全策略，允许内联脚本执行
+   *
+   * @returns 32位随机字符串
    */
   private getNonce(): string {
     let text = '';
@@ -632,6 +691,8 @@ export class ConfigurationPanelManager {
 
   /**
    * 释放资源
+   * 关闭并清理Webview面板，释放相关资源
+   * 应在扩展停用时调用
    */
   dispose(): void {
     this.panel?.dispose();

@@ -7,15 +7,14 @@ import {
   GitRepository,
   GitFileChange,
 } from '../types';
+import { GitOperationError } from '../errors';
+import { GIT_CONSTANTS } from '../constants';
 
 /**
  * Git服务
  * 负责封装Git操作，获取仓库变更信息
  */
 export class GitService {
-  private static readonly MAX_DIFF_LENGTH = 20000; // 总diff最大字符数
-  private static readonly MAX_FILE_DIFF_LINES = 5000; // 单个文件diff最大行数
-  private static readonly MAX_FILE_SIZE = 100 * 1024; // 100KB，超过此大小的文件不获取diff
   private static readonly BINARY_FILE_EXTENSIONS = [
     '.png',
     '.jpg',
@@ -100,46 +99,86 @@ export class GitService {
 
   /**
    * 获取Git仓库根目录
-   * @returns 仓库根目录路径，如果不是Git仓库则返回空字符串
+   * @returns 仓库根目录路径
+   * @throws {GitOperationError} 当Git仓库不可用时
    */
   getRepositoryRoot(): string {
     if (!this.isGitRepository() || !this.git) {
-      return '';
+      throw new GitOperationError(
+        '当前工作区不是Git仓库。无法获取仓库根目录。',
+        'getRepositoryRoot'
+      );
     }
     const repository = this.git.repositories[0];
     if (!repository) {
-      return '';
+      throw new GitOperationError(
+        '无法获取Git仓库实例。Git扩展可能未正确初始化。',
+        'getRepositoryRoot'
+      );
     }
-    return repository.rootUri.fsPath;
+
+    try {
+      return repository.rootUri.fsPath;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new GitOperationError(`获取仓库根目录失败: ${errorMessage}`, 'getRepositoryRoot');
+    }
   }
 
   /**
    * 获取暂存区的变更
    * @returns Git变更列表
+   * @throws {GitOperationError} 当Git仓库不可用或获取变更失败时
    */
   async getStagedChanges(): Promise<GitChange[]> {
     if (!this.isGitRepository() || !this.git) {
-      throw new Error('当前工作区不是Git仓库');
+      throw new GitOperationError(
+        '当前工作区不是Git仓库。请确保在Git仓库中打开项目，并且已安装VSCode Git扩展。',
+        'getStagedChanges'
+      );
     }
 
     const repository = this.git.repositories[0];
     if (!repository) {
-      throw new Error('无法获取Git仓库实例');
+      throw new GitOperationError(
+        '无法获取Git仓库实例。Git扩展可能未正确初始化，请尝试重新加载窗口。',
+        'getStagedChanges'
+      );
     }
 
-    const changes: GitChange[] = [];
+    try {
+      const changes: GitChange[] = [];
 
-    // 获取暂存区的变更
-    const indexChanges = repository.state.indexChanges || [];
+      // 获取暂存区的变更
+      const indexChanges = repository.state.indexChanges || [];
 
-    for (const change of indexChanges) {
-      const gitChange = await this.convertToGitChange(change, repository);
-      if (gitChange) {
-        changes.push(gitChange);
+      for (const change of indexChanges) {
+        try {
+          const gitChange = await this.convertToGitChange(change, repository);
+          if (gitChange) {
+            changes.push(gitChange);
+          }
+        } catch (error) {
+          // 记录单个文件处理失败，但继续处理其他文件
+          // 添加一个占位符，表明该文件处理失败
+          changes.push({
+            path: change.uri.fsPath,
+            status: this.mapStatus(change.status),
+            diff: '[处理文件时出错]',
+            additions: 0,
+            deletions: 0,
+          });
+        }
       }
-    }
 
-    return changes;
+      return changes;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new GitOperationError(
+        `获取暂存区变更失败: ${errorMessage}。请检查Git仓库状态是否正常。`,
+        'getStagedChanges'
+      );
+    }
   }
 
   /**
@@ -147,6 +186,7 @@ export class GitService {
    * @param change VSCode Git变更对象
    * @param repository Git仓库对象
    * @returns GitChange对象或null（如果应该过滤）
+   * @throws {GitOperationError} 当文件转换失败时
    */
   private async convertToGitChange(
     change: GitFileChange,
@@ -154,56 +194,70 @@ export class GitService {
   ): Promise<GitChange | null> {
     const filePath = change.uri.fsPath;
 
-    // 检查是否为二进制文件
-    if (this.isBinaryFile(filePath)) {
-      return {
-        path: change.uri.fsPath,
-        status: this.mapStatus(change.status),
-        diff: '[Binary file]',
-        additions: 0,
-        deletions: 0,
-      };
-    }
-
-    // 检查是否应该简化处理
-    if (this.shouldSimplifyFile(filePath)) {
-      const status = this.mapStatus(change.status);
-      return {
-        path: change.uri.fsPath,
-        status: status,
-        diff: `[${this.getStatusText(status)} - 自动生成文件，已省略详细diff]`,
-        additions: 0,
-        deletions: 0,
-      };
-    }
-
-    // 检查文件大小
     try {
-      const stat = await vscode.workspace.fs.stat(change.uri);
-      if (stat.size > GitService.MAX_FILE_SIZE) {
+      // 检查是否为二进制文件
+      if (this.isBinaryFile(filePath)) {
         return {
           path: change.uri.fsPath,
           status: this.mapStatus(change.status),
-          diff: '[File too large]',
+          diff: '[Binary file]',
           additions: 0,
           deletions: 0,
         };
       }
+
+      // 检查是否应该简化处理
+      if (this.shouldSimplifyFile(filePath)) {
+        const status = this.mapStatus(change.status);
+        return {
+          path: change.uri.fsPath,
+          status: status,
+          diff: `[${this.getStatusText(status)} - 自动生成文件，已省略详细diff]`,
+          additions: 0,
+          deletions: 0,
+        };
+      }
+
+      // 检查文件大小
+      try {
+        const stat = await vscode.workspace.fs.stat(change.uri);
+        if (stat.size > GIT_CONSTANTS.MAX_FILE_SIZE) {
+          return {
+            path: change.uri.fsPath,
+            status: this.mapStatus(change.status),
+            diff: '[File too large]',
+            additions: 0,
+            deletions: 0,
+          };
+        }
+      } catch (error) {
+        // 文件可能已被删除，继续处理
+      }
+
+      // 获取diff
+      const diff = await this.getDiff(change.uri, repository);
+      const { additions, deletions } = this.countDiffLines(diff);
+
+      return {
+        path: change.uri.fsPath,
+        status: this.mapStatus(change.status),
+        diff: this.limitDiffLength(diff),
+        additions,
+        deletions,
+      };
     } catch (error) {
-      // 文件可能已被删除，继续处理
+      // 如果是GitOperationError，直接抛出
+      if (error instanceof GitOperationError) {
+        throw error;
+      }
+
+      // 否则包装为GitOperationError
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new GitOperationError(
+        `转换文件变更失败 (${filePath}): ${errorMessage}`,
+        'convertToGitChange'
+      );
     }
-
-    // 获取diff
-    const diff = await this.getDiff(change.uri, repository);
-    const { additions, deletions } = this.countDiffLines(diff);
-
-    return {
-      path: change.uri.fsPath,
-      status: this.mapStatus(change.status),
-      diff: this.limitDiffLength(diff),
-      additions,
-      deletions,
-    };
   }
 
   /**
@@ -211,30 +265,52 @@ export class GitService {
    * @param uri 文件URI
    * @param repository Git仓库对象
    * @returns diff内容
+   * @throws {GitOperationError} 当无法获取文件diff时
    */
   private async getDiff(uri: vscode.Uri, repository: GitRepository): Promise<string> {
     try {
-      // 获取HEAD版本的内容
-      const headContent = await repository.show('HEAD', uri.path);
-
-      // 获取暂存区的内容
-      const indexContent = await repository.show(':', uri.path);
-
-      // 简单的diff生成（实际应用中可以使用更复杂的diff算法）
-      return this.generateSimpleDiff(headContent, indexContent, uri.path);
+      return await this.getDiffForModifiedFile(uri, repository);
     } catch (error) {
-      // 如果是新文件，HEAD中不存在
+      return await this.getDiffForSpecialFile(uri, repository);
+    }
+  }
+
+  /**
+   * 获取修改文件的diff
+   * @param uri 文件URI
+   * @param repository Git仓库对象
+   * @returns diff内容
+   */
+  private async getDiffForModifiedFile(
+    uri: vscode.Uri,
+    repository: GitRepository
+  ): Promise<string> {
+    const headContent = await repository.show('HEAD', uri.path);
+    const indexContent = await repository.show(':', uri.path);
+    return this.generateSimpleDiff(headContent, indexContent, uri.path);
+  }
+
+  /**
+   * 获取特殊文件（新增或删除）的diff
+   * @param uri 文件URI
+   * @param repository Git仓库对象
+   * @returns diff内容
+   * @throws {GitOperationError} 当无法获取文件diff时
+   */
+  private async getDiffForSpecialFile(uri: vscode.Uri, repository: GitRepository): Promise<string> {
+    try {
+      const indexContent = await repository.show(':', uri.path);
+      return this.generateAddedFileDiff(indexContent, uri.path);
+    } catch {
       try {
-        const indexContent = await repository.show(':', uri.path);
-        return this.generateAddedFileDiff(indexContent, uri.path);
-      } catch {
-        // 如果是删除的文件
-        try {
-          const headContent = await repository.show('HEAD', uri.path);
-          return this.generateDeletedFileDiff(headContent, uri.path);
-        } catch {
-          return '';
-        }
+        const headContent = await repository.show('HEAD', uri.path);
+        return this.generateDeletedFileDiff(headContent, uri.path);
+      } catch (finalError) {
+        const errorMessage = finalError instanceof Error ? finalError.message : String(finalError);
+        throw new GitOperationError(
+          `无法获取文件 ${uri.fsPath} 的diff内容: ${errorMessage}。文件可能已被移动或删除。`,
+          'getDiff'
+        );
       }
     }
   }
@@ -406,17 +482,17 @@ export class GitService {
     const lines = diff.split('\n');
 
     // 限制行数
-    if (lines.length > GitService.MAX_FILE_DIFF_LINES) {
-      const truncatedLines = lines.slice(0, GitService.MAX_FILE_DIFF_LINES);
+    if (lines.length > GIT_CONSTANTS.MAX_FILE_DIFF_LINES) {
+      const truncatedLines = lines.slice(0, GIT_CONSTANTS.MAX_FILE_DIFF_LINES);
       truncatedLines.push(
-        `\n... (truncated ${lines.length - GitService.MAX_FILE_DIFF_LINES} lines)`
+        `\n... (truncated ${lines.length - GIT_CONSTANTS.MAX_FILE_DIFF_LINES} lines)`
       );
       diff = truncatedLines.join('\n');
     }
 
     // 限制总字符数
-    if (diff.length > GitService.MAX_DIFF_LENGTH) {
-      diff = diff.substring(0, GitService.MAX_DIFF_LENGTH) + '\n... (truncated)';
+    if (diff.length > GIT_CONSTANTS.MAX_DIFF_LENGTH) {
+      diff = diff.substring(0, GIT_CONSTANTS.MAX_DIFF_LENGTH) + '\n... (truncated)';
     }
 
     return diff;
@@ -441,7 +517,7 @@ export class GitService {
       formatted += `变更: +${change.additions} -${change.deletions}\n`;
 
       // 检查是否会超出总长度限制
-      if (totalDiffLength + change.diff.length <= GitService.MAX_DIFF_LENGTH) {
+      if (totalDiffLength + change.diff.length <= GIT_CONSTANTS.MAX_DIFF_LENGTH) {
         formatted += `\n${change.diff}\n\n`;
         totalDiffLength += change.diff.length;
       } else {
@@ -479,22 +555,46 @@ export class GitService {
   /**
    * 执行Git提交
    * @param message 提交信息
+   * @throws {GitOperationError} 当Git仓库不可用或提交失败时
    */
   async commitWithMessage(message: string): Promise<void> {
     if (!this.isGitRepository() || !this.git) {
-      throw new Error('当前工作区不是Git仓库');
+      throw new GitOperationError(
+        '当前工作区不是Git仓库。请确保在Git仓库中打开项目。',
+        'commitWithMessage'
+      );
     }
 
     const repository = this.git.repositories[0];
     if (!repository) {
-      throw new Error('无法获取Git仓库实例');
+      throw new GitOperationError(
+        '无法获取Git仓库实例。Git扩展可能未正确初始化。',
+        'commitWithMessage'
+      );
+    }
+
+    if (!message || message.trim().length === 0) {
+      throw new GitOperationError('提交信息不能为空。请提供有效的提交信息。', 'commitWithMessage');
     }
 
     try {
       await repository.commit(message);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`提交失败: ${errorMessage}`);
+
+      // 提供更具体的错误信息
+      let detailedMessage = `提交失败: ${errorMessage}`;
+
+      if (errorMessage.includes('not configured')) {
+        detailedMessage +=
+          '\n请配置Git用户名和邮箱: git config user.name "Your Name" 和 git config user.email "your@email.com"';
+      } else if (errorMessage.includes('no changes')) {
+        detailedMessage += '\n暂存区没有变更可以提交。';
+      } else if (errorMessage.includes('conflict')) {
+        detailedMessage += '\n存在未解决的冲突，请先解决冲突后再提交。';
+      }
+
+      throw new GitOperationError(detailedMessage, 'commitWithMessage');
     }
   }
 

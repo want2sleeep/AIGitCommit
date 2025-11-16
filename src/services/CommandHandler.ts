@@ -4,6 +4,7 @@ import { GitService } from './GitService';
 import { LLMService } from './LLMService';
 import { UIManager } from '../utils/UIManager';
 import { ErrorHandler } from '../utils/ErrorHandler';
+import { isError } from '../utils/typeGuards';
 
 /**
  * 命令处理器类
@@ -64,7 +65,8 @@ export class CommandHandler {
         }
       }
     } catch (error) {
-      await this.errorHandler.handleError(error as Error, 'generateCommitMessage');
+      const err = isError(error) ? error : new Error(String(error));
+      await this.errorHandler.handleError(err, 'generateCommitMessage');
     } finally {
       // 清除重试回调
       this.errorHandler.setRetryCallback(null);
@@ -151,7 +153,8 @@ export class CommandHandler {
         return commitMessage;
       });
     } catch (error) {
-      await this.errorHandler.handleError(error as Error, 'generateMessage');
+      const err = isError(error) ? error : new Error(String(error));
+      await this.errorHandler.handleError(err, 'generateMessage');
       return null;
     }
   }
@@ -171,7 +174,8 @@ export class CommandHandler {
       void vscode.window.showInformationMessage('✅ 提交成功！');
       this.uiManager.showStatusBarMessage('✅ 提交成功', 3000);
     } catch (error) {
-      await this.errorHandler.handleError(error as Error, 'performCommit');
+      const err = isError(error) ? error : new Error(String(error));
+      await this.errorHandler.handleError(err, 'performCommit');
       throw error;
     }
   }

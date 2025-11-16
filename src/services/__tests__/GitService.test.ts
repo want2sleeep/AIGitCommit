@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { GitService } from '../GitService';
 import { ChangeStatus } from '../../types';
+import { GitOperationError } from '../../errors';
 
 describe('GitService', () => {
   let gitService: GitService;
@@ -81,18 +82,19 @@ describe('GitService', () => {
       expect(result).toBe('/test/repo');
     });
 
-    it('should return empty string when not a Git repository', () => {
+    it('should throw GitOperationError when not a Git repository', () => {
       mockGitApi.repositories = [];
 
-      const result = gitService.getRepositoryRoot();
-      expect(result).toBe('');
+      expect(() => gitService.getRepositoryRoot()).toThrow(GitOperationError);
+      expect(() => gitService.getRepositoryRoot()).toThrow('当前工作区不是Git仓库');
     });
   });
 
   describe('getStagedChanges', () => {
-    it('should throw error when not a Git repository', async () => {
+    it('should throw GitOperationError when not a Git repository', async () => {
       mockGitApi.repositories = [];
 
+      await expect(gitService.getStagedChanges()).rejects.toThrow(GitOperationError);
       await expect(gitService.getStagedChanges()).rejects.toThrow('当前工作区不是Git仓库');
     });
 
@@ -255,16 +257,41 @@ describe('GitService', () => {
       expect(mockRepository.commit).toHaveBeenCalledWith('test commit message');
     });
 
-    it('should throw error when not a Git repository', async () => {
+    it('should throw GitOperationError when not a Git repository', async () => {
       mockGitApi.repositories = [];
 
+      await expect(gitService.commitWithMessage('test')).rejects.toThrow(GitOperationError);
       await expect(gitService.commitWithMessage('test')).rejects.toThrow('当前工作区不是Git仓库');
     });
 
-    it('should throw error when commit fails', async () => {
-      mockRepository.commit.mockRejectedValueOnce(new Error('Commit failed'));
+    it('should throw GitOperationError when commit message is empty', async () => {
+      await expect(gitService.commitWithMessage('')).rejects.toThrow(GitOperationError);
+      await expect(gitService.commitWithMessage('')).rejects.toThrow('提交信息不能为空');
+    });
 
+    it('should throw GitOperationError when commit fails', async () => {
+      mockRepository.commit.mockRejectedValue(new Error('Commit failed'));
+
+      await expect(gitService.commitWithMessage('test')).rejects.toThrow(GitOperationError);
       await expect(gitService.commitWithMessage('test')).rejects.toThrow('提交失败');
+    });
+
+    it('should provide helpful error message for unconfigured git user', async () => {
+      mockRepository.commit.mockRejectedValueOnce(new Error('user.name not configured'));
+
+      await expect(gitService.commitWithMessage('test')).rejects.toThrow('请配置Git用户名和邮箱');
+    });
+
+    it('should provide helpful error message for no changes', async () => {
+      mockRepository.commit.mockRejectedValueOnce(new Error('no changes added to commit'));
+
+      await expect(gitService.commitWithMessage('test')).rejects.toThrow('暂存区没有变更可以提交');
+    });
+
+    it('should provide helpful error message for conflicts', async () => {
+      mockRepository.commit.mockRejectedValueOnce(new Error('conflict detected'));
+
+      await expect(gitService.commitWithMessage('test')).rejects.toThrow('存在未解决的冲突');
     });
   });
 
@@ -440,6 +467,130 @@ describe('GitService', () => {
       const result = await gitService.getStagedChanges();
 
       expect(result[0]?.status).toBe(ChangeStatus.Copied);
+    });
+  });
+
+  describe('boundary conditions', () => {
+    it('should handle multiple files with mixed statuses', async () => {
+      const mockChanges = [
+        {
+          uri: { fsPath: '/test/repo/added.ts', path: '/test/repo/added.ts' },
+          status: 1, // INDEX_ADDED
+        },
+        {
+          uri: { fsPath: '/test/repo/modified.ts', path: '/test/repo/modified.ts' },
+          status: 0, // INDEX_MODIFIED
+        },
+        {
+          uri: { fsPath: '/test/repo/deleted.ts', path: '/test/repo/deleted.ts' },
+          status: 2, // INDEX_DELETED
+        },
+      ];
+      mockRepository.state.indexChanges = mockChanges;
+
+      // Mock for added file
+      mockRepository.show
+        .mockRejectedValueOnce(new Error('Not in HEAD'))
+        .mockResolvedValueOnce('new content\n')
+        // Mock for modified file
+        .mockResolvedValueOnce('old content\n')
+        .mockResolvedValueOnce('modified content\n')
+        // Mock for deleted file
+        .mockRejectedValueOnce(new Error('Not in HEAD'))
+        .mockRejectedValueOnce(new Error('Not in index'))
+        .mockResolvedValueOnce('deleted content\n');
+
+      const result = await gitService.getStagedChanges();
+
+      expect(result).toHaveLength(3);
+      expect(result[0]?.status).toBe(ChangeStatus.Added);
+      expect(result[1]?.status).toBe(ChangeStatus.Modified);
+      expect(result[2]?.status).toBe(ChangeStatus.Deleted);
+    });
+
+    it('should handle individual file processing errors gracefully', async () => {
+      const mockChanges = [
+        {
+          uri: { fsPath: '/test/repo/good.ts', path: '/test/repo/good.ts' },
+          status: 0,
+        },
+        {
+          uri: { fsPath: '/test/repo/bad.ts', path: '/test/repo/bad.ts' },
+          status: 0,
+        },
+      ];
+      mockRepository.state.indexChanges = mockChanges;
+
+      // First file succeeds
+      mockRepository.show
+        .mockResolvedValueOnce('old\n')
+        .mockResolvedValueOnce('new\n')
+        // Second file fails completely
+        .mockRejectedValueOnce(new Error('Fatal error'))
+        .mockRejectedValueOnce(new Error('Fatal error'))
+        .mockRejectedValueOnce(new Error('Fatal error'));
+
+      const result = await gitService.getStagedChanges();
+
+      expect(result).toHaveLength(2);
+      expect(result[0]?.path).toBe('/test/repo/good.ts');
+      expect(result[0]?.diff).toContain('-old');
+      expect(result[1]?.path).toBe('/test/repo/bad.ts');
+      expect(result[1]?.diff).toBe('[处理文件时出错]');
+    });
+
+    it('should truncate very long diffs', async () => {
+      const longContent = 'line\n'.repeat(6000); // Exceeds MAX_FILE_DIFF_LINES
+      const mockChange = {
+        uri: { fsPath: '/test/repo/long.ts', path: '/test/repo/long.ts' },
+        status: 1,
+      };
+      mockRepository.state.indexChanges = [mockChange];
+      mockRepository.show.mockRejectedValueOnce(new Error('Not in HEAD'));
+      mockRepository.show.mockResolvedValueOnce(longContent);
+
+      const result = await gitService.getStagedChanges();
+
+      expect(result[0]?.diff).toContain('truncated');
+    });
+
+    it('should handle whitespace-only commit message', async () => {
+      await expect(gitService.commitWithMessage('   \n\t  ')).rejects.toThrow(GitOperationError);
+      await expect(gitService.commitWithMessage('   \n\t  ')).rejects.toThrow('提交信息不能为空');
+    });
+
+    it('should handle file stat errors gracefully', async () => {
+      const mockChange = {
+        uri: {
+          fsPath: '/test/repo/deleted-before-stat.ts',
+          path: '/test/repo/deleted-before-stat.ts',
+        },
+        status: 0,
+      };
+      mockRepository.state.indexChanges = [mockChange];
+      (vscode.workspace.fs.stat as jest.Mock).mockRejectedValueOnce(new Error('File not found'));
+      mockRepository.show.mockResolvedValueOnce('old\n').mockResolvedValueOnce('new\n');
+
+      const result = await gitService.getStagedChanges();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.path).toBe('/test/repo/deleted-before-stat.ts');
+    });
+
+    it('should handle very large diff content', async () => {
+      const veryLongLine = 'a'.repeat(25000); // Exceeds MAX_DIFF_LENGTH
+      const mockChange = {
+        uri: { fsPath: '/test/repo/huge.ts', path: '/test/repo/huge.ts' },
+        status: 1,
+      };
+      mockRepository.state.indexChanges = [mockChange];
+      mockRepository.show.mockRejectedValueOnce(new Error('Not in HEAD'));
+      mockRepository.show.mockResolvedValueOnce(veryLongLine);
+
+      const result = await gitService.getStagedChanges();
+
+      expect(result[0]?.diff.length).toBeLessThanOrEqual(20100); // MAX_DIFF_LENGTH + some buffer
+      expect(result[0]?.diff).toContain('truncated');
     });
   });
 });

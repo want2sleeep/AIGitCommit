@@ -9,9 +9,11 @@ export const window = {
   showInformationMessage: jest.fn(),
   showErrorMessage: jest.fn(),
   showWarningMessage: jest.fn(),
+  showQuickPick: jest.fn(),
   withProgress: jest.fn(),
   createOutputChannel: jest.fn(),
   createStatusBarItem: jest.fn(),
+  setStatusBarMessage: jest.fn(),
 };
 
 export enum ConfigurationTarget {

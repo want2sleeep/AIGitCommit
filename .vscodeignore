@@ -1,38 +1,76 @@
-# Development files
+# ===========================================
+# 源代码和开发文件
+# ===========================================
 .vscode/**
 .vscode-test/**
-src/**
+src/
 .gitignore
 .yarnrc
+.pnpmrc
+.npmrc
 vsc-extension-quickstart.md
+CHANGELOG.md
+CONTRIBUTING.md
+
+# ===========================================
+# TypeScript配置
+# ===========================================
 **/tsconfig.json
+**/tsconfig.*.json
+
+# ===========================================
+# 代码质量工具配置
+# ===========================================
 **/.eslintrc.json
-**/*.map
-**/*.ts
+**/.eslintrc.js
+**/.eslintrc.cjs
+**/.prettierrc
+**/.prettierrc.json
+.prettierignore
 
-# Spec and planning files
-.kiro/**
-
-# Test files
+# ===========================================
+# 测试文件和配置
+# ===========================================
 **/__tests__/**
 **/__mocks__/**
 **/*.test.ts
 **/*.test.js
+**/*.spec.ts
+**/*.spec.js
 **/*.test.js.map
+**/*.test-d.ts
 jest.config.js
-coverage/**
+jest.config.ts
+jest.setup.js
+jest.setup.ts
 
-# Documentation (keep only essential)
+# ===========================================
+# 构建和源映射
+# ===========================================
+**/*.map
+**/*.tsbuildinfo
+
+# ===========================================
+# 开发文档（保留核心文档）
+# ===========================================
 MARKETPLACE.md
 resources/ICON_INSTRUCTIONS.md
 resources/SCREENSHOTS.md
 PACKAGING.md
 VERIFICATION_REPORT.md
+coverage-analysis.md
 
-# Build artifacts
+# ===========================================
+# 构建产物
+# ===========================================
 *.vsix
+out/
+dist/
+build/
 
-# Development dependencies only (production dependencies like axios will be included)
+# ===========================================
+# 开发依赖（仅保留生产依赖）
+# ===========================================
 node_modules/**/@types/**
 node_modules/**/typescript/**
 node_modules/**/eslint/**
@@ -40,3 +78,41 @@ node_modules/**/jest/**
 node_modules/**/ts-jest/**
 node_modules/**/@typescript-eslint/**
 node_modules/**/@vscode/test-electron/**
+node_modules/**/prettier/**
+node_modules/**/husky/**
+node_modules/**/lint-staged/**
+
+# ===========================================
+# Git和版本控制
+# ===========================================
+.git/
+.gitignore
+
+# ===========================================
+# CI/CD配置
+# ===========================================
+.github/
+.husky/
+
+# ===========================================
+# 临时和缓存文件
+# ===========================================
+*.log
+*.tmp
+.cache/
+.eslintcache
+coverage/
+.nyc_output/
+
+# ===========================================
+# 环境配置
+# ===========================================
+.env
+.env.*
+!.env.example
+
+# ===========================================
+# 操作系统文件
+# ===========================================
+.DS_Store
+Thumbs.db

@@ -122,7 +122,7 @@ describe('ConfigurationManager', () => {
       const result = await configManager.validateConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('API端点不能为空');
+      expect(result.errors.some((e) => e.includes('API端点不能为空'))).toBe(true);
     });
 
     it('should detect invalid API endpoint URL', async () => {
@@ -135,7 +135,7 @@ describe('ConfigurationManager', () => {
       const result = await configManager.validateConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('API端点格式无效，必须是有效的URL');
+      expect(result.errors.some((e) => e.includes('API端点格式无效'))).toBe(true);
     });
 
     it('should detect missing API key', async () => {
@@ -144,7 +144,7 @@ describe('ConfigurationManager', () => {
       const result = await configManager.validateConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('API密钥不能为空');
+      expect(result.errors.some((e) => e.includes('API密钥不能为空'))).toBe(true);
     });
 
     it('should detect missing model name', async () => {
@@ -157,7 +157,7 @@ describe('ConfigurationManager', () => {
       const result = await configManager.validateConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('模型名称不能为空');
+      expect(result.errors.some((e) => e.includes('模型名称不能为空'))).toBe(true);
     });
 
     it('should detect invalid language', async () => {
@@ -170,7 +170,7 @@ describe('ConfigurationManager', () => {
       const result = await configManager.validateConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('语言必须是以下之一'))).toBe(true);
+      expect(result.errors.some((e) => e.includes('语言配置无效'))).toBe(true);
     });
 
     it('should detect invalid commit format', async () => {
@@ -183,7 +183,7 @@ describe('ConfigurationManager', () => {
       const result = await configManager.validateConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('提交格式必须是以下之一'))).toBe(true);
+      expect(result.errors.some((e) => e.includes('提交格式无效'))).toBe(true);
     });
 
     it('should detect invalid maxTokens (too small)', async () => {
@@ -196,7 +196,7 @@ describe('ConfigurationManager', () => {
       const result = await configManager.validateConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('最大token数必须大于0');
+      expect(result.errors.some((e) => e.includes('最大token数必须大于0'))).toBe(true);
     });
 
     it('should detect invalid maxTokens (too large)', async () => {
@@ -209,7 +209,7 @@ describe('ConfigurationManager', () => {
       const result = await configManager.validateConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('最大token数不能超过4000');
+      expect(result.errors.some((e) => e.includes('最大token数不能超过4000'))).toBe(true);
     });
 
     it('should detect invalid temperature (too low)', async () => {
@@ -222,7 +222,7 @@ describe('ConfigurationManager', () => {
       const result = await configManager.validateConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('温度参数必须在0到2之间');
+      expect(result.errors.some((e) => e.includes('温度参数必须在0到2之间'))).toBe(true);
     });
 
     it('should detect invalid temperature (too high)', async () => {
@@ -235,7 +235,7 @@ describe('ConfigurationManager', () => {
       const result = await configManager.validateConfig();
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('温度参数必须在0到2之间');
+      expect(result.errors.some((e) => e.includes('温度参数必须在0到2之间'))).toBe(true);
     });
 
     it('should detect multiple validation errors', async () => {

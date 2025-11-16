@@ -530,19 +530,24 @@ describe('ErrorHandler', () => {
   });
 
   describe('Retry Callback Management', () => {
-    it('should set retry callback', () => {
-      const callback = jest.fn();
+    it('should set retry callback', async () => {
+      const callback = jest.fn().mockResolvedValue(undefined);
       errorHandler.setRetryCallback(callback);
 
       // Verify by triggering retry
       (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('重试');
       const error = new Error('API error');
 
-      errorHandler.handleError(error, 'test');
+      await errorHandler.handleError(error, 'test');
+
+      // Wait for async operations
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(callback).toHaveBeenCalled();
     });
 
-    it('should clear retry callback', () => {
-      const callback = jest.fn();
+    it('should clear retry callback', async () => {
+      const callback = jest.fn().mockResolvedValue(undefined);
       errorHandler.setRetryCallback(callback);
       errorHandler.setRetryCallback(null);
 
@@ -550,10 +555,242 @@ describe('ErrorHandler', () => {
       (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('重试');
       const error = new Error('API error');
 
-      errorHandler.handleError(error, 'test');
+      await errorHandler.handleError(error, 'test');
+
+      // Wait for async operations
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       // Callback should not be called
       expect(callback).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Edge Cases and Additional Coverage', () => {
+    it('should handle error classification with mixed case keywords', async () => {
+      const errors = [
+        new Error('Configuration Error'),
+        new Error('GIT Repository not found'),
+        new Error('API Error occurred'),
+        new Error('NETWORK timeout'),
+      ];
+
+      const expectedTypes = [
+        ErrorType.ConfigurationError,
+        ErrorType.GitError,
+        ErrorType.APIError,
+        ErrorType.NetworkError,
+      ];
+
+      for (let i = 0; i < errors.length; i++) {
+        const error = errors[i];
+        const expectedType = expectedTypes[i];
+        if (!error || !expectedType) continue;
+
+        await errorHandler.handleError(error, 'test');
+
+        const logCalls = mockOutputChannel.appendLine.mock.calls;
+        const typeLog = logCalls.find((call: any[]) => call[0].includes('Type:'));
+        expect(typeLog[0]).toContain(expectedType);
+
+        mockOutputChannel.appendLine.mockClear();
+      }
+    });
+
+    it('should handle errors with multiple matching keywords', async () => {
+      const error = new Error('Git configuration error in repository');
+      await errorHandler.handleError(error, 'test');
+
+      const logCalls = mockOutputChannel.appendLine.mock.calls;
+      const typeLog = logCalls.find((call: any[]) => call[0].includes('Type:'));
+      // Should classify as configuration error (checked first)
+      expect(typeLog[0]).toContain(ErrorType.ConfigurationError);
+    });
+
+    it('should handle error when user dismisses action dialog', async () => {
+      const error = new Error('Configuration missing');
+      (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+
+      await errorHandler.handleError(error, 'test');
+
+      // Should not throw error when user dismisses
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalled();
+    });
+
+    it('should handle errors with empty messages', async () => {
+      const error = new Error('');
+      (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+
+      await errorHandler.handleError(error, 'test');
+
+      expect(vscode.window.showErrorMessage).toHaveBeenCalled();
+      const message = (vscode.window.showErrorMessage as jest.Mock).mock.calls[0][0];
+      expect(message).toContain('未知错误');
+    });
+
+    it('should handle errors without error name property', async () => {
+      const error = new Error('Test error');
+      delete (error as any).name;
+
+      await errorHandler.handleError(error, 'test');
+
+      expect(mockOutputChannel.appendLine).toHaveBeenCalled();
+    });
+
+    it('should classify errors with API status codes in different formats', async () => {
+      const errors = [
+        new Error('Error 401'),
+        new Error('Status: 403'),
+        new Error('HTTP 429'),
+        new Error('Code 500'),
+      ];
+
+      for (const error of errors) {
+        await errorHandler.handleError(error, 'test');
+
+        const logCalls = mockOutputChannel.appendLine.mock.calls;
+        const typeLog = logCalls.find((call: any[]) => call[0].includes('Type:'));
+        expect(typeLog[0]).toContain(ErrorType.APIError);
+
+        mockOutputChannel.appendLine.mockClear();
+      }
+    });
+
+    it('should handle generic configuration error message', async () => {
+      const error = new Error('Configuration validation failed');
+      (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+
+      await errorHandler.handleError(error, 'test');
+
+      const message = (vscode.window.showErrorMessage as jest.Mock).mock.calls[0][0];
+      expect(message).toContain('配置错误');
+      expect(message).toContain('Configuration validation failed');
+    });
+
+    it('should handle generic git error message', async () => {
+      const error = new Error('Git operation failed');
+      (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+
+      await errorHandler.handleError(error, 'test');
+
+      const message = (vscode.window.showErrorMessage as jest.Mock).mock.calls[0][0];
+      expect(message).toContain('Git错误');
+      expect(message).toContain('Git operation failed');
+    });
+
+    it('should handle generic API error message', async () => {
+      const error = new Error('API request failed');
+      (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+
+      await errorHandler.handleError(error, 'test');
+
+      const message = (vscode.window.showErrorMessage as jest.Mock).mock.calls[0][0];
+      expect(message).toContain('API调用失败');
+      expect(message).toContain('API request failed');
+    });
+
+    it('should handle generic network error message', async () => {
+      const error = new Error('Network connection failed');
+      (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+
+      await errorHandler.handleError(error, 'test');
+
+      const message = (vscode.window.showErrorMessage as jest.Mock).mock.calls[0][0];
+      expect(message).toContain('网络连接失败');
+    });
+
+    it('should handle 502 and 503 server errors', async () => {
+      const errors = [
+        new Error('API error 502 Bad Gateway'),
+        new Error('API returned 503 Service Unavailable'),
+      ];
+
+      for (const error of errors) {
+        (vscode.window.showErrorMessage as jest.Mock).mockClear();
+        await errorHandler.handleError(error, 'test');
+
+        const message = (vscode.window.showErrorMessage as jest.Mock).mock.calls[0][0];
+        expect(message).toContain('服务器错误');
+        expect(message).toContain('5');
+      }
+    });
+
+    it('should log retry operation info when retry is triggered', async () => {
+      const error = new Error('API timeout');
+      const retryCallback = jest.fn().mockResolvedValue(undefined);
+      errorHandler.setRetryCallback(retryCallback);
+
+      (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('重试');
+
+      await errorHandler.handleError(error, 'test');
+
+      // Should log retry info
+      const logCalls = mockOutputChannel.appendLine.mock.calls.map((call: any[]) => call[0]);
+      expect(logCalls.some((log: string) => log.includes('重试'))).toBe(true);
+    });
+
+    it('should handle unknown action gracefully', async () => {
+      const error = new Error('Test error');
+      (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Unknown Action');
+
+      await errorHandler.handleError(error, 'test');
+
+      // Should not throw error or execute any command
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalled();
+      expect(mockOutputChannel.show).not.toHaveBeenCalled();
+    });
+
+    it('should classify error by name when message is generic', async () => {
+      const error = new Error('Something went wrong');
+      error.name = 'NetworkError';
+
+      await errorHandler.handleError(error, 'test');
+
+      const logCalls = mockOutputChannel.appendLine.mock.calls;
+      const typeLog = logCalls.find((call: any[]) => call[0].includes('Type:'));
+      expect(typeLog[0]).toContain(ErrorType.NetworkError);
+    });
+
+    it('should handle errors with special characters in message', async () => {
+      const error = new Error('Error: API key "test@123" is invalid!');
+      (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+
+      await errorHandler.handleError(error, 'test');
+
+      const message = (vscode.window.showErrorMessage as jest.Mock).mock.calls[0][0];
+      expect(message).toContain('API密钥');
+    });
+
+    it('should handle very long error messages', async () => {
+      const longMessage = 'Error: ' + 'x'.repeat(1000);
+      const error = new Error(longMessage);
+      (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+
+      await errorHandler.handleError(error, 'test');
+
+      expect(vscode.window.showErrorMessage).toHaveBeenCalled();
+      expect(mockOutputChannel.appendLine).toHaveBeenCalled();
+    });
+
+    it('should handle errors with newlines in message', async () => {
+      const error = new Error('Line 1\nLine 2\nLine 3');
+      (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+
+      await errorHandler.handleError(error, 'test');
+
+      expect(mockOutputChannel.appendLine).toHaveBeenCalled();
+    });
+
+    it('should handle multiple sequential errors', async () => {
+      const errors = [new Error('Error 1'), new Error('Error 2'), new Error('Error 3')];
+
+      for (const error of errors) {
+        await errorHandler.handleError(error, 'test');
+      }
+
+      // All errors should be logged
+      expect(mockOutputChannel.appendLine).toHaveBeenCalled();
+      const logCalls = mockOutputChannel.appendLine.mock.calls;
+      expect(logCalls.length).toBeGreaterThan(errors.length);
     });
   });
 });

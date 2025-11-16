@@ -209,7 +209,7 @@ describe('LLMService', () => {
       mockedAxios.post.mockResolvedValueOnce({ data: mockResponse });
 
       await expect(llmService.generateCommitMessage(mockChanges, mockConfig)).rejects.toThrow(
-        '生成的提交信息为空'
+        '移除think标签后提交信息为空'
       );
     });
 

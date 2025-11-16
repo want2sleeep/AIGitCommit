@@ -845,5 +845,197 @@ describe('ConfigurationPanelManager', () => {
 
       expect(mockPanel.dispose).toHaveBeenCalled();
     });
+
+    it('should handle dispose when panel does not exist', () => {
+      // Don't create panel
+      expect(() => panelManager.dispose()).not.toThrow();
+    });
+  });
+
+  describe('singleton pattern', () => {
+    it('should return same instance on multiple getInstance calls', () => {
+      const instance1 = ConfigurationPanelManager.getInstance(
+        mockContext,
+        mockConfigManager,
+        mockProviderManager
+      );
+      const instance2 = ConfigurationPanelManager.getInstance(
+        mockContext,
+        mockConfigManager,
+        mockProviderManager
+      );
+
+      expect(instance1).toBe(instance2);
+    });
+  });
+
+  describe('message handling edge cases', () => {
+    let messageHandler: (message: any) => Promise<void>;
+
+    beforeEach(() => {
+      panelManager.showPanel();
+      messageHandler = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
+    });
+
+    it('should handle save command with missing data', async () => {
+      await messageHandler({ command: 'save' });
+
+      expect(mockConfigManager.saveFullConfig).not.toHaveBeenCalled();
+    });
+
+    it('should handle save command with incomplete data', async () => {
+      await messageHandler({ command: 'save', data: { provider: 'openai' } });
+
+      expect(mockConfigManager.saveFullConfig).not.toHaveBeenCalled();
+    });
+
+    it('should handle validate command with missing data', async () => {
+      await messageHandler({ command: 'validate' });
+
+      expect(mockWebview.postMessage).not.toHaveBeenCalledWith(
+        expect.objectContaining({ command: 'validationResult' })
+      );
+    });
+
+    it('should handle validate command with incomplete data', async () => {
+      await messageHandler({ command: 'validate', data: { provider: 'openai' } });
+
+      expect(mockWebview.postMessage).not.toHaveBeenCalledWith(
+        expect.objectContaining({ command: 'validationResult' })
+      );
+    });
+
+    it('should handle providerChanged command with missing data', async () => {
+      await messageHandler({ command: 'providerChanged' });
+
+      expect(mockProviderManager.getDefaultConfig).not.toHaveBeenCalled();
+    });
+
+    it('should handle providerChanged command with incomplete data', async () => {
+      await messageHandler({ command: 'providerChanged', data: {} });
+
+      expect(mockProviderManager.getDefaultConfig).not.toHaveBeenCalled();
+    });
+
+    it('should handle unknown command gracefully', async () => {
+      await expect(messageHandler({ command: 'unknown' as any })).resolves.not.toThrow();
+    });
+
+    it('should handle save with non-Error exception', async () => {
+      mockConfigManager.getFullConfig.mockResolvedValue({
+        provider: 'openai',
+        apiKey: 'test-key',
+        apiEndpoint: 'https://api.openai.com/v1',
+        modelName: 'gpt-3.5-turbo',
+        language: 'zh-CN',
+        commitFormat: 'conventional',
+        maxTokens: 500,
+        temperature: 0.7,
+      });
+      mockConfigManager.saveFullConfig.mockRejectedValue('String error');
+
+      const configData = {
+        provider: 'openai',
+        apiKey: 'test-key',
+        baseUrl: 'https://api.openai.com/v1',
+        modelName: 'gpt-3.5-turbo',
+      };
+
+      await messageHandler({ command: 'save', data: configData });
+
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('保存配置失败')
+      );
+    });
+
+    it('should handle load with non-Error exception', async () => {
+      mockConfigManager.getFullConfig.mockRejectedValue('String error');
+
+      await messageHandler({ command: 'load' });
+
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('加载配置失败')
+      );
+    });
+  });
+
+  describe('URL validation', () => {
+    let messageHandler: (message: any) => Promise<void>;
+
+    beforeEach(() => {
+      panelManager.showPanel();
+      messageHandler = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
+    });
+
+    it('should reject URLs with unsupported protocols', async () => {
+      const testCases = [
+        'ftp://example.com',
+        'file:///path/to/file',
+        'ws://example.com',
+        'wss://example.com',
+      ];
+
+      for (const baseUrl of testCases) {
+        const config = {
+          provider: 'openai',
+          apiKey: 'test-key',
+          baseUrl,
+          modelName: 'gpt-3.5-turbo',
+        };
+
+        await messageHandler({ command: 'validate', data: config });
+
+        expect(mockWebview.postMessage).toHaveBeenCalledWith({
+          command: 'validationResult',
+          data: {
+            valid: false,
+            errors: expect.arrayContaining([
+              expect.objectContaining({
+                field: 'baseUrl',
+                message: 'Base URL格式无效，必须是有效的URL',
+              }),
+            ]),
+          },
+        });
+      }
+    });
+
+    it('should accept URLs with ports', async () => {
+      const config = {
+        provider: 'ollama',
+        apiKey: 'test-key',
+        baseUrl: 'http://localhost:8080/v1',
+        modelName: 'llama2',
+      };
+
+      await messageHandler({ command: 'validate', data: config });
+
+      expect(mockWebview.postMessage).toHaveBeenCalledWith({
+        command: 'validationResult',
+        data: {
+          valid: true,
+          errors: [],
+        },
+      });
+    });
+
+    it('should accept URLs with paths', async () => {
+      const config = {
+        provider: 'openai',
+        apiKey: 'test-key',
+        baseUrl: 'https://api.openai.com/v1/chat/completions',
+        modelName: 'gpt-3.5-turbo',
+      };
+
+      await messageHandler({ command: 'validate', data: config });
+
+      expect(mockWebview.postMessage).toHaveBeenCalledWith({
+        command: 'validationResult',
+        data: {
+          valid: true,
+          errors: [],
+        },
+      });
+    });
   });
 });
