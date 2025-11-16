@@ -2,6 +2,11 @@ import axios from 'axios';
 import { LLMService } from '../LLMService';
 import { ExtensionConfig, GitChange, ChangeStatus, LLMResponse } from '../../types';
 
+// Mock sleep function to resolve immediately in tests - MUST be before other imports
+jest.mock('../../utils/retry', () => ({
+  sleep: jest.fn().mockResolvedValue(undefined),
+}));
+
 // Mock axios
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -723,14 +728,6 @@ describe('LLMService', () => {
       },
     ];
 
-    beforeEach(() => {
-      jest.useFakeTimers();
-    });
-
-    afterEach(() => {
-      jest.useRealTimers();
-    });
-
     it('should retry on 429 rate limit error', async () => {
       const error: any = {
         response: {
@@ -759,11 +756,8 @@ describe('LLMService', () => {
       mockedAxios.post.mockRejectedValueOnce(error).mockResolvedValueOnce({ data: mockResponse });
       (axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true);
 
-      const promise = llmService.generateCommitMessage(mockChanges, mockConfig);
+      const result = await llmService.generateCommitMessage(mockChanges, mockConfig);
 
-      await jest.runAllTimersAsync();
-
-      const result = await promise;
       expect(result).toBe('success after retry');
       expect(mockedAxios.post).toHaveBeenCalledTimes(2);
     });
@@ -796,11 +790,8 @@ describe('LLMService', () => {
       mockedAxios.post.mockRejectedValueOnce(error).mockResolvedValueOnce({ data: mockResponse });
       (axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true);
 
-      const promise = llmService.generateCommitMessage(mockChanges, mockConfig);
+      const result = await llmService.generateCommitMessage(mockChanges, mockConfig);
 
-      await jest.runAllTimersAsync();
-
-      const result = await promise;
       expect(result).toBe('success after retry');
       expect(mockedAxios.post).toHaveBeenCalledTimes(2);
     });
@@ -832,11 +823,8 @@ describe('LLMService', () => {
       mockedAxios.post.mockRejectedValueOnce(error).mockResolvedValueOnce({ data: mockResponse });
       (axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true);
 
-      const promise = llmService.generateCommitMessage(mockChanges, mockConfig);
+      const result = await llmService.generateCommitMessage(mockChanges, mockConfig);
 
-      await jest.runAllTimersAsync();
-
-      const result = await promise;
       expect(result).toBe('success after retry');
       expect(mockedAxios.post).toHaveBeenCalledTimes(2);
     });
@@ -852,10 +840,9 @@ describe('LLMService', () => {
       mockedAxios.post.mockRejectedValue(error);
       (axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true);
 
-      await expect(llmService.generateCommitMessage(mockChanges, mockConfig)).rejects.toThrow(
-        'API认证失败'
-      );
+      const promise = llmService.generateCommitMessage(mockChanges, mockConfig);
 
+      await expect(promise).rejects.toThrow('API认证失败');
       expect(mockedAxios.post).toHaveBeenCalledTimes(1);
     });
 
@@ -870,10 +857,9 @@ describe('LLMService', () => {
       mockedAxios.post.mockRejectedValue(error);
       (axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true);
 
-      await expect(llmService.generateCommitMessage(mockChanges, mockConfig)).rejects.toThrow(
-        '模型不存在'
-      );
+      const promise = llmService.generateCommitMessage(mockChanges, mockConfig);
 
+      await expect(promise).rejects.toThrow('模型不存在');
       expect(mockedAxios.post).toHaveBeenCalledTimes(1);
     });
 
@@ -888,11 +874,9 @@ describe('LLMService', () => {
       mockedAxios.post.mockRejectedValue(error);
       (axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true);
 
-      const promise = llmService.generateCommitMessage(mockChanges, mockConfig);
-
-      await jest.runAllTimersAsync();
-
-      await expect(promise).rejects.toThrow('API服务器内部错误');
+      await expect(llmService.generateCommitMessage(mockChanges, mockConfig)).rejects.toThrow(
+        'API服务器内部错误'
+      );
       expect(mockedAxios.post).toHaveBeenCalledTimes(3);
     });
 
@@ -927,11 +911,8 @@ describe('LLMService', () => {
         .mockResolvedValueOnce({ data: mockResponse });
       (axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true);
 
-      const promise = llmService.generateCommitMessage(mockChanges, mockConfig);
+      const result = await llmService.generateCommitMessage(mockChanges, mockConfig);
 
-      await jest.runAllTimersAsync();
-
-      const result = await promise;
       expect(result).toBe('success on third try');
       expect(mockedAxios.post).toHaveBeenCalledTimes(3);
     });

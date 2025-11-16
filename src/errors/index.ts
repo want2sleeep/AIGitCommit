@@ -80,8 +80,13 @@ export class APIError extends BaseError {
     public readonly statusCode?: number,
     public readonly response?: unknown
   ) {
-    // Rate limit (429) and service unavailable (503) errors are recoverable
-    const isRecoverable = statusCode === 429 || statusCode === 503;
+    // Rate limit (429), server errors (500, 502, 503, 504) are recoverable
+    const isRecoverable =
+      statusCode === 429 ||
+      statusCode === 500 ||
+      statusCode === 502 ||
+      statusCode === 503 ||
+      statusCode === 504;
     super(message, 'API_ERROR', isRecoverable);
   }
 }
