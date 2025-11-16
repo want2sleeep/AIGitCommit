@@ -28,11 +28,11 @@ const PROVIDERS: ProviderConfig[] = [
     description: 'OpenAI官方API服务',
   },
   {
-    id: 'azure-openai',
-    name: 'Azure OpenAI',
-    defaultBaseUrl: 'https://<your-resource>.openai.azure.com/openai/deployments/<your-deployment>',
-    defaultModel: 'gpt-35-turbo',
-    description: 'Microsoft Azure OpenAI服务',
+    id: 'qwen',
+    name: 'Qwen',
+    defaultBaseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    defaultModel: 'qwen-turbo',
+    description: '阿里云通义千问API服务',
   },
   {
     id: 'ollama',
@@ -42,11 +42,25 @@ const PROVIDERS: ProviderConfig[] = [
     description: '本地Ollama服务',
   },
   {
-    id: 'custom',
-    name: '其他',
+    id: 'vllm',
+    name: 'vLLM',
+    defaultBaseUrl: 'http://localhost:8000/v1',
+    defaultModel: 'meta-llama/Llama-2-7b-chat-hf',
+    description: '本地vLLM服务',
+  },
+  {
+    id: 'gemini',
+    name: 'Google Gemini',
+    defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    defaultModel: 'gemini-1.5-flash',
+    description: 'Google Gemini API服务',
+  },
+  {
+    id: 'openai-compatible',
+    name: 'OpenAI Compatible',
     defaultBaseUrl: '',
     defaultModel: '',
-    description: '自定义OpenAI兼容服务',
+    description: 'Custom OpenAI-compatible API service',
   },
 ];
 

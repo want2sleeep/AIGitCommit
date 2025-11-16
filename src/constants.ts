@@ -125,14 +125,17 @@ export enum Provider {
   /** OpenAI官方API服务 - 使用OpenAI的GPT模型 */
   OpenAI = 'openai',
 
-  /** Azure OpenAI服务 - 微软Azure托管的OpenAI服务 */
-  AzureOpenAI = 'azure-openai',
+  /** Qwen通义千问服务 - 阿里云通义千问API */
+  Qwen = 'qwen',
 
   /** Ollama本地服务 - 在本地运行的开源LLM */
   Ollama = 'ollama',
 
-  /** 自定义提供商 - 任何其他OpenAI兼容的API服务 */
-  Custom = 'custom',
+  /** vLLM本地服务 - 高性能LLM推理引擎 */
+  VLLM = 'vllm',
+
+  /** OpenAI Compatible 提供商 - 任何其他OpenAI兼容的API服务 */
+  OpenAICompatible = 'openai-compatible',
 }
 
 /**

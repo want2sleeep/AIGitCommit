@@ -42,56 +42,91 @@ export class ErrorHandler {
    * @param error 错误对象
    * @returns 错误类型
    */
+  // 错误关键词映射表
+  private readonly errorKeywords = {
+    [ErrorType.ConfigurationError]: ['configuration', 'config', 'api key', 'endpoint'],
+    [ErrorType.GitError]: ['git', 'repository', 'staged', 'commit'],
+    [ErrorType.NetworkError]: ['network', 'timeout', 'econnrefused', 'enotfound'],
+    [ErrorType.APIError]: ['api', '401', '403', '429', '500', 'unauthorized', 'rate limit'],
+  };
+
+  /**
+   * 分类错误类型
+   * @param error 错误对象
+   * @returns 错误类型
+   */
   private classifyError(error: Error): ErrorType {
     const errorMessage = error.message.toLowerCase();
     const errorName = error.name.toLowerCase();
 
-    // 配置错误
-    if (
-      errorMessage.includes('configuration') ||
-      errorMessage.includes('config') ||
-      errorMessage.includes('api key') ||
-      errorMessage.includes('endpoint')
-    ) {
+    // 按优先级检查错误类型
+    if (this.isConfigurationError(errorMessage)) {
       return ErrorType.ConfigurationError;
     }
 
-    // Git错误
-    if (
-      errorMessage.includes('git') ||
-      errorMessage.includes('repository') ||
-      errorMessage.includes('staged') ||
-      errorMessage.includes('commit')
-    ) {
+    if (this.isGitError(errorMessage)) {
       return ErrorType.GitError;
     }
 
-    // 网络错误
-    if (
-      errorMessage.includes('network') ||
-      errorMessage.includes('timeout') ||
-      errorMessage.includes('econnrefused') ||
-      errorMessage.includes('enotfound') ||
-      errorName.includes('network')
-    ) {
+    if (this.isNetworkError(errorMessage, errorName)) {
       return ErrorType.NetworkError;
     }
 
-    // API错误
-    if (
-      errorMessage.includes('api') ||
-      errorMessage.includes('401') ||
-      errorMessage.includes('403') ||
-      errorMessage.includes('429') ||
-      errorMessage.includes('500') ||
-      errorMessage.includes('unauthorized') ||
-      errorMessage.includes('rate limit')
-    ) {
+    if (this.isAPIError(errorMessage)) {
       return ErrorType.APIError;
     }
 
-    // 未知错误
     return ErrorType.UnknownError;
+  }
+
+  /**
+   * 检查是否为配置错误
+   * @param message 错误消息
+   * @returns 是否为配置错误
+   */
+  private isConfigurationError(message: string): boolean {
+    return this.containsAnyKeyword(message, this.errorKeywords[ErrorType.ConfigurationError]);
+  }
+
+  /**
+   * 检查是否为Git错误
+   * @param message 错误消息
+   * @returns 是否为Git错误
+   */
+  private isGitError(message: string): boolean {
+    return this.containsAnyKeyword(message, this.errorKeywords[ErrorType.GitError]);
+  }
+
+  /**
+   * 检查是否为网络错误
+   * @param message 错误消息
+   * @param name 错误名称
+   * @returns 是否为网络错误
+   */
+  private isNetworkError(message: string, name: string): boolean {
+    return (
+      this.containsAnyKeyword(message, this.errorKeywords[ErrorType.NetworkError]) ||
+      name.includes('network')
+    );
+  }
+
+  /**
+   * 检查是否为API错误
+   * @param message 错误消息
+   * @returns 是否为API错误
+   */
+  private isAPIError(message: string): boolean {
+    return this.containsAnyKeyword(message, this.errorKeywords[ErrorType.APIError]);
+  }
+
+  /**
+   * 检查消息是否包含任意关键词
+   * @param message 消息文本
+   * @param keywords 关键词数组
+   * @returns 是否包含任意关键词
+   */
+  private containsAnyKeyword(message: string, keywords: string[]): boolean {
+    return keywords.some((keyword) => message.includes(keyword));
   }
 
   /**
@@ -206,69 +241,69 @@ export class ErrorHandler {
     );
   }
 
+  // API错误消息映射表
+  private readonly apiErrorMessages: Record<string, string> = {
+    '401':
+      '❌ API认证失败（401 Unauthorized）\n\n解决方案：\n1. 检查API密钥是否正确配置\n2. 确认API密钥未过期或被撤销\n3. 点击"打开设置"重新配置API密钥\n4. 点击"重试"在修正配置后重新尝试',
+    '403':
+      '❌ API访问被拒绝（403 Forbidden）\n\n解决方案：\n1. 检查API密钥是否具有所需权限\n2. 确认账户余额充足（如适用）\n3. 验证API端点是否正确\n4. 点击"查看日志"了解详细错误信息',
+    '429':
+      '❌ API请求频率超限（429 Rate Limit）\n\n解决方案：\n1. 等待几分钟后点击"重试"\n2. 检查是否有其他应用在使用同一API密钥\n3. 考虑升级API服务计划以获得更高限额\n4. 点击"查看日志"查看具体限流信息',
+    '404':
+      '❌ API端点或模型不存在（404 Not Found）\n\n解决方案：\n1. 检查API端点URL是否正确\n2. 验证模型名称是否正确（如：gpt-4, gpt-3.5-turbo）\n3. 确认所选模型在您的API服务中可用\n4. 点击"打开设置"修正配置',
+    '5xx':
+      '❌ API服务器错误（5xx Server Error）\n\n解决方案：\n1. 这是服务端问题，通常是暂时性的\n2. 等待几分钟后点击"重试"\n3. 检查API服务状态页面\n4. 如持续出现，点击"查看日志"并联系服务提供商',
+  };
+
   /**
    * 获取API错误消息
+   * @param error 错误对象
+   * @returns 格式化的错误消息
    */
   private getAPIErrorMessage(error: Error): string {
     const message = error.message.toLowerCase();
 
-    if (message.includes('401') || message.includes('unauthorized')) {
-      return (
-        '❌ API认证失败（401 Unauthorized）\n\n' +
-        '解决方案：\n' +
-        '1. 检查API密钥是否正确配置\n' +
-        '2. 确认API密钥未过期或被撤销\n' +
-        '3. 点击"打开设置"重新配置API密钥\n' +
-        '4. 点击"重试"在修正配置后重新尝试'
-      );
+    // 检查特定的错误类型
+    const errorType = this.detectAPIErrorType(message);
+    if (errorType && this.apiErrorMessages[errorType]) {
+      return this.apiErrorMessages[errorType];
     }
 
-    if (message.includes('403') || message.includes('forbidden')) {
-      return (
-        '❌ API访问被拒绝（403 Forbidden）\n\n' +
-        '解决方案：\n' +
-        '1. 检查API密钥是否具有所需权限\n' +
-        '2. 确认账户余额充足（如适用）\n' +
-        '3. 验证API端点是否正确\n' +
-        '4. 点击"查看日志"了解详细错误信息'
-      );
-    }
+    // 默认错误消息
+    return this.buildDefaultAPIErrorMessage(error.message);
+  }
 
-    if (message.includes('429') || message.includes('rate limit')) {
-      return (
-        '❌ API请求频率超限（429 Rate Limit）\n\n' +
-        '解决方案：\n' +
-        '1. 等待几分钟后点击"重试"\n' +
-        '2. 检查是否有其他应用在使用同一API密钥\n' +
-        '3. 考虑升级API服务计划以获得更高限额\n' +
-        '4. 点击"查看日志"查看具体限流信息'
-      );
-    }
+  // API错误类型检测映射
+  private readonly apiErrorPatterns: Array<{ keywords: string[]; type: string }> = [
+    { keywords: ['401', 'unauthorized'], type: '401' },
+    { keywords: ['403', 'forbidden'], type: '403' },
+    { keywords: ['429', 'rate limit'], type: '429' },
+    { keywords: ['404'], type: '404' },
+    { keywords: ['500', '502', '503'], type: '5xx' },
+  ];
 
-    if (message.includes('404')) {
-      return (
-        '❌ API端点或模型不存在（404 Not Found）\n\n' +
-        '解决方案：\n' +
-        '1. 检查API端点URL是否正确\n' +
-        '2. 验证模型名称是否正确（如：gpt-4, gpt-3.5-turbo）\n' +
-        '3. 确认所选模型在您的API服务中可用\n' +
-        '4. 点击"打开设置"修正配置'
-      );
+  /**
+   * 检测API错误类型
+   * @param message 错误消息
+   * @returns 错误类型标识
+   */
+  private detectAPIErrorType(message: string): string | null {
+    for (const pattern of this.apiErrorPatterns) {
+      if (pattern.keywords.some((keyword) => message.includes(keyword))) {
+        return pattern.type;
+      }
     }
+    return null;
+  }
 
-    if (message.includes('500') || message.includes('502') || message.includes('503')) {
-      return (
-        '❌ API服务器错误（5xx Server Error）\n\n' +
-        '解决方案：\n' +
-        '1. 这是服务端问题，通常是暂时性的\n' +
-        '2. 等待几分钟后点击"重试"\n' +
-        '3. 检查API服务状态页面\n' +
-        '4. 如持续出现，点击"查看日志"并联系服务提供商'
-      );
-    }
-
+  /**
+   * 构建默认API错误消息
+   * @param originalMessage 原始错误消息
+   * @returns 格式化的错误消息
+   */
+  private buildDefaultAPIErrorMessage(originalMessage: string): string {
     return (
-      `❌ API调用失败\n\n${error.message}\n\n` +
+      `❌ API调用失败\n\n${originalMessage}\n\n` +
       '解决方案：\n' +
       '1. 点击"重试"重新尝试\n' +
       '2. 点击"查看日志"了解详细错误信息\n' +

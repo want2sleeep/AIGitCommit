@@ -89,11 +89,11 @@ describe('ConfigurationPanelManager', () => {
           description: 'OpenAI官方API服务',
         },
         {
-          id: 'azure-openai',
-          name: 'Azure OpenAI',
-          defaultBaseUrl: 'https://<your-resource>.openai.azure.com',
-          defaultModel: 'gpt-35-turbo',
-          description: 'Microsoft Azure OpenAI服务',
+          id: 'qwen',
+          name: 'Qwen (通义千问)',
+          defaultBaseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+          defaultModel: 'qwen-turbo',
+          description: '阿里云通义千问API服务',
         },
         {
           id: 'ollama',
@@ -103,8 +103,15 @@ describe('ConfigurationPanelManager', () => {
           description: '本地Ollama服务',
         },
         {
-          id: 'custom',
-          name: '其他',
+          id: 'vllm',
+          name: 'vLLM',
+          defaultBaseUrl: 'http://localhost:8000/v1',
+          defaultModel: 'meta-llama/Llama-2-7b-chat-hf',
+          description: '本地vLLM服务',
+        },
+        {
+          id: 'openai-compatible',
+          name: 'OpenAI Compatible',
           defaultBaseUrl: '',
           defaultModel: '',
           description: '自定义OpenAI兼容服务',
@@ -198,9 +205,10 @@ describe('ConfigurationPanelManager', () => {
       panelManager.showPanel();
 
       expect(mockWebview.html).toContain('value="openai"');
-      expect(mockWebview.html).toContain('value="azure-openai"');
+      expect(mockWebview.html).toContain('value="qwen"');
       expect(mockWebview.html).toContain('value="ollama"');
-      expect(mockWebview.html).toContain('value="custom"');
+      expect(mockWebview.html).toContain('value="vllm"');
+      expect(mockWebview.html).toContain('value="openai-compatible"');
     });
   });
 
@@ -264,19 +272,19 @@ describe('ConfigurationPanelManager', () => {
         });
 
         const configData = {
-          provider: 'azure-openai',
+          provider: 'qwen',
           apiKey: 'new-key',
-          baseUrl: 'https://myresource.openai.azure.com',
-          modelName: 'gpt-4',
+          baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+          modelName: 'qwen-turbo',
         };
 
         await messageHandler({ command: 'save', data: configData });
 
         expect(mockConfigManager.saveFullConfig).toHaveBeenCalledWith({
-          provider: 'azure-openai',
+          provider: 'qwen',
           apiKey: 'new-key',
-          apiEndpoint: 'https://myresource.openai.azure.com',
-          modelName: 'gpt-4',
+          apiEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+          modelName: 'qwen-turbo',
           language: 'zh-CN',
           commitFormat: 'conventional',
           maxTokens: 500,
@@ -547,9 +555,9 @@ describe('ConfigurationPanelManager', () => {
           modelName: 'gpt-35-turbo',
         });
 
-        await messageHandler({ command: 'providerChanged', data: { provider: 'azure-openai' } });
+        await messageHandler({ command: 'providerChanged', data: { provider: 'qwen' } });
 
-        expect(mockProviderManager.getDefaultConfig).toHaveBeenCalledWith('azure-openai');
+        expect(mockProviderManager.getDefaultConfig).toHaveBeenCalledWith('qwen');
         expect(mockWebview.postMessage).toHaveBeenCalledWith({
           command: 'updateDefaults',
           data: {
@@ -577,15 +585,18 @@ describe('ConfigurationPanelManager', () => {
         });
       });
 
-      it('should clear defaults when provider changes to custom', async () => {
+      it('should clear defaults when provider changes to openai-compatible', async () => {
         mockProviderManager.getDefaultConfig.mockReturnValue({
           baseUrl: '',
           modelName: '',
         });
 
-        await messageHandler({ command: 'providerChanged', data: { provider: 'custom' } });
+        await messageHandler({
+          command: 'providerChanged',
+          data: { provider: 'openai-compatible' },
+        });
 
-        expect(mockProviderManager.getDefaultConfig).toHaveBeenCalledWith('custom');
+        expect(mockProviderManager.getDefaultConfig).toHaveBeenCalledWith('openai-compatible');
         expect(mockWebview.postMessage).toHaveBeenCalledWith({
           command: 'updateDefaults',
           data: {
@@ -600,9 +611,9 @@ describe('ConfigurationPanelManager', () => {
   describe('loadCurrentConfig', () => {
     it('should load and post configuration to webview', async () => {
       mockConfigManager.getFullConfig.mockResolvedValue({
-        provider: 'azure-openai',
-        apiKey: 'azure-key',
-        apiEndpoint: 'https://myresource.openai.azure.com',
+        provider: 'qwen',
+        apiKey: 'qwen-key',
+        apiEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
         modelName: 'gpt-4',
         language: 'en-US',
         commitFormat: 'simple',
@@ -617,9 +628,9 @@ describe('ConfigurationPanelManager', () => {
       expect(mockWebview.postMessage).toHaveBeenCalledWith({
         command: 'loadConfig',
         data: {
-          provider: 'azure-openai',
-          apiKey: 'azure-key',
-          baseUrl: 'https://myresource.openai.azure.com',
+          provider: 'qwen',
+          apiKey: 'qwen-key',
+          baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
           modelName: 'gpt-4',
         },
       });

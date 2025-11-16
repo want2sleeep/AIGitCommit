@@ -178,6 +178,102 @@ export interface Usage {
 }
 
 /**
+ * Gemini API请求接口
+ * 符合Google Gemini API格式
+ *
+ * @property contents - 对话内容数组
+ * @property generationConfig - 可选，生成配置
+ */
+export interface GeminiRequest {
+  contents: GeminiContent[];
+  generationConfig?: GeminiGenerationConfig;
+}
+
+/**
+ * Gemini内容接口
+ * 表示Gemini API中的单条消息内容
+ *
+ * @property role - 消息角色（user或model）
+ * @property parts - 消息部分数组
+ */
+export interface GeminiContent {
+  role: string;
+  parts: GeminiPart[];
+}
+
+/**
+ * Gemini消息部分接口
+ * 表示消息的文本部分
+ *
+ * @property text - 文本内容
+ */
+export interface GeminiPart {
+  text: string;
+}
+
+/**
+ * Gemini生成配置接口
+ * 控制Gemini API的生成行为
+ *
+ * @property temperature - 可选，生成的随机性（0-2）
+ * @property maxOutputTokens - 可选，生成的最大token数
+ */
+export interface GeminiGenerationConfig {
+  temperature?: number;
+  maxOutputTokens?: number;
+}
+
+/**
+ * Gemini API响应接口
+ * 符合Google Gemini API响应格式
+ *
+ * @property candidates - 生成的候选项数组
+ * @property promptFeedback - 可选，提示词反馈信息
+ */
+export interface GeminiResponse {
+  candidates: GeminiCandidate[];
+  promptFeedback?: GeminiPromptFeedback;
+}
+
+/**
+ * Gemini候选项接口
+ * 表示API返回的单个生成结果
+ *
+ * @property content - 生成的内容
+ * @property finishReason - 完成原因
+ * @property index - 候选项索引
+ * @property safetyRatings - 可选，安全评级
+ */
+export interface GeminiCandidate {
+  content: GeminiContent;
+  finishReason: string;
+  index: number;
+  safetyRatings?: GeminiSafetyRating[];
+}
+
+/**
+ * Gemini安全评级接口
+ * 表示内容的安全评级
+ *
+ * @property category - 安全类别
+ * @property probability - 概率等级
+ */
+export interface GeminiSafetyRating {
+  category: string;
+  probability: string;
+}
+
+/**
+ * Gemini提示词反馈接口
+ * 提供关于提示词的反馈信息
+ *
+ * @property safetyRatings - 可选，安全评级数组
+ */
+export interface GeminiPromptFeedback {
+  safetyRatings?: GeminiSafetyRating[];
+}
+
+/**
  * 提交操作类型接口
  * 表示用户对生成的提交信息的操作选择
  *

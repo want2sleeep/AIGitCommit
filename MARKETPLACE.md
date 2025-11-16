@@ -34,8 +34,9 @@ AI 会深入分析你的代码变更，理解你做了什么修改，然后生�
 #### 多服务支持
 支持所有 OpenAI 兼容的 LLM 服务：
 - **OpenAI** - 官方 GPT 模型
-- **Azure OpenAI** - 企业级服务
+- **Qwen** - 阿里云大模型
 - **Ollama** - 本地开源模型
+- **vLLM** - 高性能推理引擎
 - **LocalAI** - 私有部署
 - **LM Studio** - 桌面应用
 - 以及任何 OpenAI 兼容的服务
@@ -93,11 +94,23 @@ fix(auth): 修正年龄验证的边界条件
 }
 ```
 
-#### 本地模型（Ollama）
+#### 本地模型（Ollama/vLLM）
+
+**Ollama:**
 ```json
 {
+  "aigitcommit.provider": "ollama",
   "aigitcommit.apiEndpoint": "http://localhost:11434/v1",
   "aigitcommit.modelName": "llama2"
+}
+```
+
+**vLLM:**
+```json
+{
+  "aigitcommit.provider": "vllm",
+  "aigitcommit.apiEndpoint": "http://localhost:8000/v1",
+  "aigitcommit.modelName": "meta-llama/Llama-2-7b-chat-hf"
 }
 ```
 
@@ -157,7 +170,7 @@ fix(auth): 修正年龄验证的边界条件
 
 ## 标签（Tags）
 
-git, commit, ai, llm, openai, conventional-commits, code-quality, productivity, automation, azure-openai, ollama, local-llm
+git, commit, ai, llm, openai, conventional-commits, code-quality, productivity, automation, azure-openai, ollama, vllm, local-llm
 
 ---
 
@@ -178,8 +191,9 @@ git, commit, ai, llm, openai, conventional-commits, code-quality, productivity, 
 - code analysis
 - commit generator
 - git automation
-- azure openai
+- qwen
 - ollama
+- vllm
 
 ---
 
@@ -233,7 +247,7 @@ git, commit, ai, llm, openai, conventional-commits, code-quality, productivity, 
 - AI 驱动的提交信息生成（支持约定式与简单格式）
 - VSCode 集成（命令面板、SCM 按钮、快捷键）
 - 配置面板与安全密钥存储（SecretStorage）
-- 支持 OpenAI、Azure OpenAI、Ollama 及其他兼容服务
+- 支持 OpenAI、Qwen、Ollama、vLLM 及 OpenAI Compatible 兼容服务
 
 ### 0.0.1 - 初始版本
 
@@ -268,10 +282,10 @@ git, commit, ai, llm, openai, conventional-commits, code-quality, productivity, 
 ## 市场页面 Q&A
 
 ### Q: 这个插件免费吗？
-A: 是的，插件本身完全免费。但使用 OpenAI 等服务可能需要 API 费用。你也可以使用免费的本地模型（如 Ollama）。
+A: 是的，插件本身完全免费。但使用 OpenAI 等服务可能需要 API 费用。你也可以使用免费的本地模型（如 Ollama、vLLM）。
 
 ### Q: 我的代码会被发送到哪里？
-A: 代码变更（diff）会被发送到你配置的 API 端点。如果担心隐私，可以使用本地模型（Ollama、LocalAI 等）。
+A: 代码变更（diff）会被发送到你配置的 API 端点。如果担心隐私，可以使用本地模型（Ollama、vLLM、LocalAI 等）。
 
 ### Q: 支持哪些语言？
 A: 插件界面支持中文和英文。生成的提交信息语言可以在设置中配置。
@@ -282,7 +296,7 @@ A: 需要一个 Git 仓库和一个 OpenAI 兼容的 API（或本地模型）。
 ### Q: 如何获取 API 密钥？
 A: 
 - OpenAI: https://platform.openai.com/api-keys
-- Azure OpenAI: 通过 Azure 门户
+- Qwen: https://dashscope.console.aliyun.com/apiKey
 - 本地模型: 不需要真实的 API 密钥
 
 ---

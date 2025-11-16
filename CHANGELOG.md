@@ -5,7 +5,79 @@ All notable changes to the "AI Git Commit" extension will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+
+
+## [1.2.0] - 2025-11-16
+
+### ✨ 新增功能
+
+#### 多提供商支持增强
+
+- ✅ **Google Gemini API 支持**: 新增 Google Gemini API 作为 LLM 提供商选项
+  - 在配置向导中添加 Gemini 选项
+  - 默认使用 `gemini-1.5-flash` 模型
+  - 默认端点: `https://generativelanguage.googleapis.com/v1beta`
+  - 支持 Gemini 特定的 API 格式和认证方式
+  - 请求格式转换（OpenAI → Gemini）
+  - 响应解析和错误处理
+  - System role 自动合并到 user message
+  - API 密钥通过 URL 参数传递
+
+- ✅ **完整的提供商生态**: 现已支持 6 种 LLM 提供商
+  - **OpenAI** - GPT-3.5/GPT-4 等官方模型
+  - **Google Gemini** - Google 最新 AI 模型（新增）
+  - **Qwen** - 阿里云通义千问大模型
+  - **Ollama** - 本地开源模型运行环境
+  - **vLLM** - 高性能本地 LLM 推理引擎
+  - **OpenAI Compatible** - 任何兼容 OpenAI API 的服务（包括 Azure OpenAI、LocalAI 等）
+
+### 🔧 代码质量改进
+
+#### ESLint 警告修复
+
+- ✅ **代码复杂度优化**: 解决所有复杂度相关的 ESLint 警告
+  - ErrorHandler: 重构 `classifyError` 方法（复杂度 21 → ≤10）
+  - LLMService: 重构 `makeAPIRequest`、`shouldRetry`、`createAPIError` 方法
+  - ConfigurationPanelManager: 重构 `handleMessage` 方法（复杂度 13 → ≤10）
+  - GitService: 重构 `commitWithMessage` 方法（复杂度 11 → ≤10）
+
+- ✅ **函数行数优化**: 解决所有 max-lines-per-function 警告
+  - ConfigurationPanelManager: 重构 `getWebviewContent` 方法（334行 → 模块化）
+  - GitService: 重构 `convertToGitChange` 方法（71行 → ≤50行）
+  - extension.ts: 重构 `activate` 和 `registerCommands` 方法
+  - UIManager: 重构 `showCommitMessageInput` 方法（58行 → ≤50行）
+  - ErrorHandler: 重构 `getAPIErrorMessage` 方法（66行 → ≤50行）
+  - LLMService: 重构 `makeAPIRequest` 方法（65行 → ≤50行）
+
+- ✅ **嵌套深度优化**: 解决所有 max-depth 警告
+  - 使用提前返回模式减少嵌套
+  - 提取嵌套逻辑到独立方法
+  - 改进代码可读性
+
+#### 代码重构
+
+- ✅ **方法提取**: 将大型方法拆分为多个小型、专注的方法
+  - 提取错误分类逻辑到独立分类器
+  - 提取请求构建和响应验证逻辑
+  - 提取 HTML 模板生成逻辑
+  - 提取服务初始化和配置逻辑
+
+- ✅ **查找表优化**: 使用 Map 和 Set 替代复杂的条件判断
+  - 消息处理器映射
+  - 可重试状态码集合
+  - 错误消息映射表
+
+### 🧪 测试和验证
+
+- ✅ **ESLint 清洁**: 运行 `pnpm run lint` 无警告或错误
+- ✅ **测试通过**: 所有单元测试和集成测试通过
+- ✅ **覆盖率维持**: 保持 70%+ 的代码覆盖率
+- ✅ **编译成功**: TypeScript 编译无错误
+
+### 📚 文档
+
+- ✅ **Gemini 配置指南**: 更新文档说明如何配置 Gemini API
+- ✅ **代码质量改进**: 记录所有重构和优化工作
 
 ---
 
@@ -287,7 +359,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 基于 LLM 的提交信息自动生成（支持约定式提交与简单格式）
   - VSCode 集成（命令面板、SCM 按钮、快捷键）
   - 配置面板与安全密钥存储（SecretStorage）
-  - OpenAI/Azure OpenAI/Ollama 及其他兼容服务支持
+  - OpenAI/Qwen/Ollama/vLLM 及 OpenAI Compatible 兼容服务支持
 
 ### 📚 文档与配置
 
@@ -359,9 +431,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### API 提供商选择器
 
 - ✅ **下拉选择器**: 提供 API 提供商下拉选择器，支持快速选择常用服务
-- ✅ **预定义提供商**: 内置 OpenAI、Azure OpenAI、Ollama 和自定义选项
+- ✅ **预定义提供商**: 内置 OpenAI、Qwen、Ollama、vLLM 和 OpenAI Compatible 选项
 - ✅ **自动填充**: 选择提供商时自动填充推荐的 Base URL 和模型名称
-- ✅ **自定义支持**: 支持自定义 OpenAI 兼容服务配置
+- ✅ **OpenAI Compatible 支持**: 支持任何 OpenAI 兼容的 API 服务配置
 - ✅ **提供商管理**: 新增 ProviderManager 模块管理提供商配置
 
 #### 源代码管理视图增强
@@ -385,7 +457,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### 核心功能
 
 - **AI 驱动的提交信息生成**: 使用大语言模型智能分析代码变更并生成专业的提交信息
-- **OpenAI 兼容 API 支持**: 支持所有 OpenAI 兼容的 LLM 服务（OpenAI、Azure OpenAI、Ollama、LocalAI 等）
+- **OpenAI 兼容 API 支持**: 支持所有 OpenAI 兼容的 LLM 服务（OpenAI、Qwen、Ollama、vLLM、LocalAI 等）
 - **约定式提交格式**: 自动生成符合 Conventional Commits 规范的提交信息
 - **多语言支持**: 支持中文和英文提交信息生成
 

@@ -11,8 +11,15 @@ describe('ProviderManager', () => {
     it('should return all predefined providers', () => {
       const providers = providerManager.getProviders();
 
-      expect(providers).toHaveLength(4);
-      expect(providers.map((p) => p.id)).toEqual(['openai', 'azure-openai', 'ollama', 'custom']);
+      expect(providers).toHaveLength(6);
+      expect(providers.map((p) => p.id)).toEqual([
+        'openai',
+        'qwen',
+        'ollama',
+        'vllm',
+        'gemini',
+        'openai-compatible',
+      ]);
     });
 
     it('should return a copy of providers array', () => {
@@ -48,15 +55,15 @@ describe('ProviderManager', () => {
       expect(provider?.description).toBe('OpenAI官方API服务');
     });
 
-    it('should return Azure OpenAI provider', () => {
-      const provider = providerManager.getProviderById('azure-openai');
+    it('should return Qwen provider', () => {
+      const provider = providerManager.getProviderById('qwen');
 
       expect(provider).toBeDefined();
-      expect(provider?.id).toBe('azure-openai');
-      expect(provider?.name).toBe('Azure OpenAI');
-      expect(provider?.defaultBaseUrl).toContain('azure');
-      expect(provider?.defaultModel).toBe('gpt-35-turbo');
-      expect(provider?.description).toBe('Microsoft Azure OpenAI服务');
+      expect(provider?.id).toBe('qwen');
+      expect(provider?.name).toBe('Qwen');
+      expect(provider?.defaultBaseUrl).toBe('https://dashscope.aliyuncs.com/compatible-mode/v1');
+      expect(provider?.defaultModel).toBe('qwen-turbo');
+      expect(provider?.description).toBe('阿里云通义千问API服务');
     });
 
     it('should return Ollama provider', () => {
@@ -70,15 +77,37 @@ describe('ProviderManager', () => {
       expect(provider?.description).toBe('本地Ollama服务');
     });
 
-    it('should return custom provider', () => {
-      const provider = providerManager.getProviderById('custom');
+    it('should return vLLM provider', () => {
+      const provider = providerManager.getProviderById('vllm');
 
       expect(provider).toBeDefined();
-      expect(provider?.id).toBe('custom');
-      expect(provider?.name).toBe('其他');
+      expect(provider?.id).toBe('vllm');
+      expect(provider?.name).toBe('vLLM');
+      expect(provider?.defaultBaseUrl).toBe('http://localhost:8000/v1');
+      expect(provider?.defaultModel).toBe('meta-llama/Llama-2-7b-chat-hf');
+      expect(provider?.description).toBe('本地vLLM服务');
+    });
+
+    it('should return Gemini provider', () => {
+      const provider = providerManager.getProviderById('gemini');
+
+      expect(provider).toBeDefined();
+      expect(provider?.id).toBe('gemini');
+      expect(provider?.name).toBe('Google Gemini');
+      expect(provider?.defaultBaseUrl).toBe('https://generativelanguage.googleapis.com/v1beta');
+      expect(provider?.defaultModel).toBe('gemini-1.5-flash');
+      expect(provider?.description).toBe('Google Gemini API服务');
+    });
+
+    it('should return openai-compatible provider', () => {
+      const provider = providerManager.getProviderById('openai-compatible');
+
+      expect(provider).toBeDefined();
+      expect(provider?.id).toBe('openai-compatible');
+      expect(provider?.name).toBe('OpenAI Compatible');
       expect(provider?.defaultBaseUrl).toBe('');
       expect(provider?.defaultModel).toBe('');
-      expect(provider?.description).toBe('自定义OpenAI兼容服务');
+      expect(provider?.description).toBe('Custom OpenAI-compatible API service');
     });
 
     it('should return undefined for non-existent provider', () => {
@@ -104,11 +133,13 @@ describe('ProviderManager', () => {
       });
     });
 
-    it('should return default config for Azure OpenAI', () => {
-      const config = providerManager.getDefaultConfig('azure-openai');
+    it('should return default config for Qwen', () => {
+      const config = providerManager.getDefaultConfig('qwen');
 
-      expect(config.baseUrl).toContain('azure');
-      expect(config.modelName).toBe('gpt-35-turbo');
+      expect(config).toEqual({
+        baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        modelName: 'qwen-turbo',
+      });
     });
 
     it('should return default config for Ollama', () => {
@@ -120,8 +151,26 @@ describe('ProviderManager', () => {
       });
     });
 
-    it('should return empty config for custom provider', () => {
-      const config = providerManager.getDefaultConfig('custom');
+    it('should return default config for vLLM', () => {
+      const config = providerManager.getDefaultConfig('vllm');
+
+      expect(config).toEqual({
+        baseUrl: 'http://localhost:8000/v1',
+        modelName: 'meta-llama/Llama-2-7b-chat-hf',
+      });
+    });
+
+    it('should return default config for Gemini', () => {
+      const config = providerManager.getDefaultConfig('gemini');
+
+      expect(config).toEqual({
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+        modelName: 'gemini-1.5-flash',
+      });
+    });
+
+    it('should return empty config for openai-compatible provider', () => {
+      const config = providerManager.getDefaultConfig('openai-compatible');
 
       expect(config).toEqual({
         baseUrl: '',
@@ -177,7 +226,7 @@ describe('ProviderManager', () => {
 
     it('should have valid URLs for non-custom providers', () => {
       const providers = providerManager.getProviders();
-      const nonCustomProviders = providers.filter((p) => p.id !== 'custom');
+      const nonCustomProviders = providers.filter((p) => p.id !== 'openai-compatible');
 
       nonCustomProviders.forEach((provider) => {
         expect(provider.defaultBaseUrl).toBeTruthy();
@@ -187,7 +236,7 @@ describe('ProviderManager', () => {
 
     it('should have valid model names for non-custom providers', () => {
       const providers = providerManager.getProviders();
-      const nonCustomProviders = providers.filter((p) => p.id !== 'custom');
+      const nonCustomProviders = providers.filter((p) => p.id !== 'openai-compatible');
 
       nonCustomProviders.forEach((provider) => {
         expect(provider.defaultModel).toBeTruthy();

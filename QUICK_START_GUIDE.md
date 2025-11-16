@@ -63,6 +63,13 @@ API 端点: http://localhost:11434/v1
 API 密钥: (任意值或留空)
 ```
 
+**使用 vLLM (本地):**
+```
+API 端点: http://localhost:8000/v1
+模型名称: meta-llama/Llama-2-7b-chat-hf
+API 密钥: (任意值或留空)
+```
+
 ---
 
 ### 步骤 4: 测试生成功能
@@ -263,7 +270,7 @@ refactor(user): 使用箭头函数和模板字符串重构 getUserName
 
 1. **使用更快的模型**: 
    - GPT-3.5-turbo 比 GPT-4 快
-   - 本地模型（Ollama）最快
+   - 本地模型（Ollama、vLLM）最快
 
 2. **减少 diff 大小**:
    - 分批提交变更
@@ -318,7 +325,7 @@ code --uninstall-extension SleepSheep.ai-git-commit
 - 可以随时重新生成不满意的提交信息
 - 生成的内容可以直接编辑
 - 支持中英文切换
-- 本地模型（Ollama）不需要网络连接
+- 本地模型（Ollama、vLLM）不需要网络连接
 
 ---
 

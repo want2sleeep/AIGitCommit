@@ -2,17 +2,17 @@
 
 [![VSCode Marketplace](https://img.shields.io/badge/VSCode-Marketplace-blue.svg)](https://marketplace.visualstudio.com/items?itemName=SleepSheep.aigitcommit)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.1.1-orange.svg)](package.json)
+[![Version](https://img.shields.io/badge/Version-1.2.0-orange.svg)](package.json)
 [![Publish Status](https://github.com/want2sleeep/AIGitCommit/actions/workflows/publish.yml/badge.svg)](https://github.com/want2sleeep/AIGitCommit/actions/workflows/publish.yml)
 
 🚀 **使用AI自动生成高质量的Git提交信息**
 
-AI Git Commit 是一个强大的VSCode扩展，它利用大型语言模型（LLM）自动分析您的代码变更，并生成符合规范的Git提交信息。支持多种AI服务提供商，包括OpenAI、Azure OpenAI、Ollama等。
+AI Git Commit 是一个强大的VSCode扩展，它利用大型语言模型（LLM）自动分析您的代码变更，并生成符合规范的Git提交信息。支持多种AI服务提供商，包括 OpenAI、Google Gemini、Qwen、Ollama、vLLM 及 OpenAI Compatible 兼容服务。
 
 ## ✨ 主要特性
 
 - 🤖 **智能分析**: 自动分析代码变更，生成准确的提交信息
-- 🌐 **多提供商支持**: 支持 OpenAI、Azure OpenAI、Ollama、自定义API等
+- 🌐 **多提供商支持**: 支持 OpenAI、Google Gemini、Qwen、Ollama、vLLM、OpenAI Compatible 等
 - 📝 **规范格式**: 支持约定式提交（Conventional Commits）和简单格式
 - 🌍 **多语言**: 支持中文和英文提交信息
 - 🔒 **安全存储**: API密钥安全存储在VSCode SecretStorage中
@@ -89,9 +89,11 @@ Ctrl+Shift+P
 ### 支持的提供商
 
 - **OpenAI**: 官方API服务，支持GPT-3.5、GPT-4等模型
-- **Azure OpenAI**: 企业级服务，数据隐私保护
+- **Google Gemini**: Google最新AI模型，支持Gemini 1.5 Flash等
+- **Qwen**: 阿里云通义千问大模型服务
 - **Ollama**: 本地运行，完全保护代码隐私
-- **自定义**: 任何OpenAI兼容的API服务
+- **vLLM**: 高性能本地推理引擎
+- **OpenAI Compatible**: 任何 OpenAI 兼容的 API 服务（包括 Azure OpenAI、LocalAI 等）
 
 ## 📖 使用示例
 
@@ -158,13 +160,24 @@ refactor(user): 使用箭头函数和模板字符串重构 getUserName
 }
 ```
 
-### Azure OpenAI配置
+### Google Gemini配置
 
 ```json
 {
-  "aigitcommit.provider": "azure-openai",
-  "aigitcommit.apiEndpoint": "https://your-resource.openai.azure.com/openai/deployments/your-deployment",
-  "aigitcommit.modelName": "your-deployment-name",
+  "aigitcommit.provider": "gemini",
+  "aigitcommit.apiEndpoint": "https://generativelanguage.googleapis.com/v1beta",
+  "aigitcommit.modelName": "gemini-1.5-flash",
+  "aigitcommit.language": "zh-CN"
+}
+```
+
+### Qwen配置
+
+```json
+{
+  "aigitcommit.provider": "qwen",
+  "aigitcommit.apiEndpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "aigitcommit.modelName": "qwen-turbo",
   "aigitcommit.language": "zh-CN"
 }
 ```
@@ -180,10 +193,21 @@ refactor(user): 使用箭头函数和模板字符串重构 getUserName
 }
 ```
 
+### vLLM配置
+
+```json
+{
+  "aigitcommit.provider": "vllm",
+  "aigitcommit.apiEndpoint": "http://localhost:8000/v1",
+  "aigitcommit.modelName": "meta-llama/Llama-2-7b-chat-hf",
+  "aigitcommit.language": "zh-CN"
+}
+```
+
 ## 🎯 使用场景
 
 ### 个人开发者
-- **推荐**: Ollama + Code Llama
+- **推荐**: Ollama + Code Llama 或 vLLM + Llama 2
 - **优势**: 完全免费，代码不离开本地
 
 ### 小团队
@@ -191,8 +215,8 @@ refactor(user): 使用箭头函数和模板字符串重构 getUserName
 - **优势**: 性价比高，响应速度快
 
 ### 企业团队
-- **推荐**: Azure OpenAI
-- **优势**: 数据隐私保护，企业级SLA
+- **推荐**: Qwen
+- **优势**: 国内访问快速，价格实惠，支持中文优化
 
 ### 开源项目
 - **推荐**: OpenAI GPT-4 + 英文提交

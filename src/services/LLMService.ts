@@ -1,5 +1,13 @@
 import axios, { AxiosError } from 'axios';
-import { ExtensionConfig, GitChange, LLMRequest, LLMResponse, Message } from '../types';
+import {
+  ExtensionConfig,
+  GitChange,
+  LLMRequest,
+  LLMResponse,
+  Message,
+  GeminiRequest,
+  GeminiResponse,
+} from '../types';
 import { APIError, NetworkError } from '../errors';
 import { API_CONSTANTS, GIT_CONSTANTS } from '../constants';
 import { sleep } from '../utils/retry';
@@ -7,9 +15,93 @@ import { isError, isAPIError, isNetworkError } from '../utils/typeGuards';
 
 /**
  * LLM服务类
- * 负责调用OpenAI兼容API生成提交信息
+ * 负责调用OpenAI兼容API和Gemini API生成提交信息
  */
 export class LLMService {
+  /**
+   * 检测是否为Gemini提供商
+   * @param config 插件配置
+   * @returns 是否为Gemini提供商
+   */
+  private isGeminiProvider(config: ExtensionConfig): boolean {
+    return (
+      config.apiEndpoint.includes('generativelanguage.googleapis.com') ||
+      config.modelName.startsWith('gemini')
+    );
+  }
+
+  /**
+   * 构建Gemini API端点
+   * @param config 插件配置
+   * @returns Gemini API端点URL
+   */
+  private buildGeminiEndpoint(config: ExtensionConfig): string {
+    const baseUrl = config.apiEndpoint.replace(/\/$/, '');
+    const model = config.modelName;
+    return `${baseUrl}/models/${model}:generateContent?key=${config.apiKey}`;
+  }
+
+  /**
+   * 构建Gemini请求
+   * 将OpenAI格式的messages转换为Gemini格式
+   * @param messages 消息数组
+   * @param config 插件配置
+   * @returns Gemini请求对象
+   */
+  private buildGeminiRequest(messages: Message[], config: ExtensionConfig): GeminiRequest {
+    // Gemini不支持system role，需要将system消息合并到user消息中
+    let combinedText = '';
+
+    for (const message of messages) {
+      if (message.role === 'system') {
+        combinedText += `${message.content}\n\n`;
+      } else if (message.role === 'user') {
+        combinedText += message.content;
+      }
+    }
+
+    return {
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: combinedText }],
+        },
+      ],
+      generationConfig: {
+        temperature: config.temperature,
+        maxOutputTokens: config.maxTokens,
+      },
+    };
+  }
+
+  /**
+   * 解析Gemini响应
+   * 从Gemini响应中提取生成的文本
+   * @param response Gemini响应对象
+   * @returns 生成的文本内容
+   */
+  private parseGeminiResponse(response: GeminiResponse): string {
+    if (!response.candidates || response.candidates.length === 0) {
+      throw new APIError('Gemini API返回了无效的响应格式：缺少candidates数组', undefined, response);
+    }
+
+    const firstCandidate = response.candidates[0];
+    if (!firstCandidate) {
+      throw new APIError('Gemini API响应中没有候选项：candidates数组为空', undefined, response);
+    }
+
+    const content = firstCandidate.content;
+    if (!content || !content.parts || content.parts.length === 0) {
+      throw new APIError('Gemini API响应中没有生成的内容：content.parts为空', undefined, response);
+    }
+
+    const text = content.parts[0]?.text;
+    if (!text) {
+      throw new APIError('Gemini API响应中没有文本内容：parts[0].text为空', undefined, response);
+    }
+
+    return text;
+  }
   /**
    * 生成提交信息
    * @param changes Git变更列表
@@ -259,6 +351,21 @@ ${diff}
    * @returns API响应的提交信息
    */
   private async makeAPIRequest(messages: Message[], config: ExtensionConfig): Promise<string> {
+    // 检测是否为Gemini提供商
+    if (this.isGeminiProvider(config)) {
+      return await this.makeGeminiRequest(messages, config);
+    }
+
+    return await this.makeOpenAIRequest(messages, config);
+  }
+
+  /**
+   * 执行OpenAI兼容API请求
+   * @param messages 消息数组
+   * @param config 插件配置
+   * @returns API响应的提交信息
+   */
+  private async makeOpenAIRequest(messages: Message[], config: ExtensionConfig): Promise<string> {
     const requestBody: LLMRequest = {
       model: config.modelName,
       messages: messages,
@@ -280,48 +387,83 @@ ${diff}
         timeout: API_CONSTANTS.REQUEST_TIMEOUT,
       });
 
-      // 验证响应
-      if (!response.data || !response.data.choices || response.data.choices.length === 0) {
-        throw new APIError(
-          'API返回了无效的响应格式：缺少choices数组',
-          response.status,
-          response.data
-        );
-      }
-
-      const firstChoice = response.data.choices[0];
-      if (!firstChoice) {
-        throw new APIError('API响应中没有选项：choices数组为空', response.status, response.data);
-      }
-
-      const message = firstChoice.message;
-      if (!message || !message.content) {
-        throw new APIError(
-          'API响应中没有生成的内容：message.content为空',
-          response.status,
-          response.data
-        );
-      }
-
-      return message.content;
+      return this.parseOpenAIResponse(response.data, response.status);
     } catch (error) {
-      // 如果已经是我们的自定义错误，直接抛出
-      if (error instanceof APIError || error instanceof NetworkError) {
-        throw error;
-      }
-
-      // 否则，包装为适当的错误类型
-      if (axios.isAxiosError(error)) {
-        throw this.wrapAxiosError(error, config);
-      }
-
-      // 其他未知错误
-      throw new APIError(
-        `API请求失败: ${error instanceof Error ? error.message : String(error)}`,
-        undefined,
-        error
-      );
+      return this.handleRequestError(error, config);
     }
+  }
+
+  /**
+   * 执行Gemini API请求
+   * @param messages 消息数组
+   * @param config 插件配置
+   * @returns API响应的提交信息
+   */
+  private async makeGeminiRequest(messages: Message[], config: ExtensionConfig): Promise<string> {
+    const requestBody = this.buildGeminiRequest(messages, config);
+    const endpoint = this.buildGeminiEndpoint(config);
+
+    try {
+      const response = await axios.post<GeminiResponse>(endpoint, requestBody, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: API_CONSTANTS.REQUEST_TIMEOUT,
+      });
+
+      return this.parseGeminiResponse(response.data);
+    } catch (error) {
+      return this.handleRequestError(error, config);
+    }
+  }
+
+  /**
+   * 解析OpenAI响应
+   * @param data 响应数据
+   * @param status HTTP状态码
+   * @returns 生成的文本内容
+   */
+  private parseOpenAIResponse(data: LLMResponse, status: number): string {
+    if (!data || !data.choices || data.choices.length === 0) {
+      throw new APIError('API返回了无效的响应格式：缺少choices数组', status, data);
+    }
+
+    const firstChoice = data.choices[0];
+    if (!firstChoice) {
+      throw new APIError('API响应中没有选项：choices数组为空', status, data);
+    }
+
+    const message = firstChoice.message;
+    if (!message || !message.content) {
+      throw new APIError('API响应中没有生成的内容：message.content为空', status, data);
+    }
+
+    return message.content;
+  }
+
+  /**
+   * 处理请求错误
+   * @param error 错误对象
+   * @param config 插件配置
+   * @returns 永远不返回，总是抛出错误
+   */
+  private handleRequestError(error: unknown, config: ExtensionConfig): never {
+    // 如果已经是我们的自定义错误，直接抛出
+    if (error instanceof APIError || error instanceof NetworkError) {
+      throw error;
+    }
+
+    // 否则，包装为适当的错误类型
+    if (axios.isAxiosError(error)) {
+      throw this.wrapAxiosError(error, config);
+    }
+
+    // 其他未知错误
+    throw new APIError(
+      `API请求失败: ${error instanceof Error ? error.message : String(error)}`,
+      undefined,
+      error
+    );
   }
 
   /**
@@ -359,6 +501,17 @@ ${diff}
     return '';
   }
 
+  // 可重试的HTTP状态码
+  private readonly retryableStatusCodes = new Set([429, 500, 502, 503, 504]);
+
+  // 可重试的错误码
+  private readonly retryableErrorCodes = new Set([
+    'ECONNABORTED',
+    'ETIMEDOUT',
+    'ENOTFOUND',
+    'ECONNREFUSED',
+  ]);
+
   /**
    * 判断是否应该重试
    * @param error 错误对象
@@ -373,42 +526,34 @@ ${diff}
 
     // 检查自定义错误类型
     if (isAPIError(error) || isNetworkError(error)) {
-      // 使用错误对象的recoverable属性
       return error.recoverable;
     }
 
-    // 如果是axios错误
+    // 检查axios错误
     if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError;
-      const status = axiosError.response?.status;
-
-      // 以下状态码应该重试
-      if (
-        status === 429 || // 限流
-        status === 500 || // 服务器错误
-        status === 502 || // 网关错误
-        status === 503 || // 服务不可用
-        status === 504
-      ) {
-        // 网关超时
-        return true;
-      }
-
-      // 网络错误应该重试
-      if (
-        axiosError.code === 'ECONNABORTED' ||
-        axiosError.code === 'ETIMEDOUT' ||
-        axiosError.code === 'ENOTFOUND' ||
-        axiosError.code === 'ECONNREFUSED'
-      ) {
-        return true;
-      }
-
-      // 其他错误不重试（如401认证失败、404模型不存在等）
-      return false;
+      return this.isRetryableAxiosError(error as AxiosError);
     }
 
     // 其他类型的错误，默认不重试
+    return false;
+  }
+
+  /**
+   * 检查是否为可重试的Axios错误
+   * @param error Axios错误对象
+   * @returns 是否可重试
+   */
+  private isRetryableAxiosError(error: AxiosError): boolean {
+    const status = error.response?.status;
+    if (status && this.retryableStatusCodes.has(status)) {
+      return true;
+    }
+
+    const errorCode = error.code;
+    if (errorCode && this.retryableErrorCodes.has(errorCode)) {
+      return true;
+    }
+
     return false;
   }
 
@@ -452,6 +597,18 @@ ${diff}
     return new NetworkError(message, error);
   }
 
+  // API错误消息模板
+  private readonly apiErrorTemplates: Record<number, string> = {
+    401: 'API认证失败：请检查API密钥是否正确',
+    403: 'API访问被拒绝：请检查API密钥权限',
+    404: '模型不存在：请检查模型名称是否正确',
+    429: 'API请求频率超限：请稍后再试',
+    500: 'API服务器内部错误：请稍后再试',
+    502: 'API服务暂时不可用：请稍后再试',
+    503: 'API服务暂时不可用：请稍后再试',
+    504: 'API服务暂时不可用：请稍后再试',
+  };
+
   /**
    * 创建API错误
    * @param status HTTP状态码
@@ -466,20 +623,40 @@ ${diff}
     responseData: Record<string, unknown> | undefined,
     config: ExtensionConfig
   ): APIError {
-    const errorMessageMap: Record<number, string> = {
-      401: `API认证失败：请检查API密钥是否正确${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
-      403: `API访问被拒绝：请检查API密钥权限${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
-      404: `模型不存在：请检查模型名称是否正确 (${config.modelName})${apiErrorMessage ? ` - ${apiErrorMessage}` : ''}`,
-      429: `API请求频率超限：请稍后再试${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
-      500: `API服务器内部错误：请稍后再试${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
-      502: `API服务暂时不可用 (${status})：请稍后再试${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
-      503: `API服务暂时不可用 (${status})：请稍后再试${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
-      504: `API服务暂时不可用 (${status})：请稍后再试${apiErrorMessage ? ` (${apiErrorMessage})` : ''}`,
-    };
-
-    const message = errorMessageMap[status] || apiErrorMessage || `API请求失败 (状态码: ${status})`;
-
+    const message = this.formatAPIErrorMessage(status, apiErrorMessage, config);
     return new APIError(message, status, responseData);
+  }
+
+  /**
+   * 格式化API错误消息
+   * @param status HTTP状态码
+   * @param apiErrorMessage API返回的错误消息
+   * @param config 插件配置
+   * @returns 格式化的错误消息
+   */
+  private formatAPIErrorMessage(
+    status: number,
+    apiErrorMessage: string,
+    config: ExtensionConfig
+  ): string {
+    const template = this.apiErrorTemplates[status];
+
+    if (!template) {
+      return apiErrorMessage || `API请求失败 (状态码: ${status})`;
+    }
+
+    // 为404错误添加模型名称
+    let message = template;
+    if (status === 404) {
+      message += ` (${config.modelName})`;
+    }
+
+    // 添加API返回的错误消息
+    if (apiErrorMessage) {
+      message += status === 404 ? ` - ${apiErrorMessage}` : ` (${apiErrorMessage})`;
+    }
+
+    return message;
   }
 
   /**

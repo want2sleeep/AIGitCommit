@@ -1,0 +1,23 @@
+# Build output
+out/
+dist/
+*.vsix
+
+# Dependencies
+node_modules/
+
+# Test files
+**/__tests__/
+*.test.ts
+*.spec.ts
+
+# Scripts directory (has its own tsconfig)
+scripts/
+
+# Configuration files
+*.config.js
+*.config.ts
+
+# Coverage
+coverage/
+.nyc_output/

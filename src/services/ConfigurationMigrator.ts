@@ -67,9 +67,9 @@ export class ConfigurationMigrator {
 
     const lowerEndpoint = endpoint.toLowerCase();
 
-    // 检测Azure OpenAI
-    if (lowerEndpoint.includes('azure') || lowerEndpoint.includes('.openai.azure.com')) {
-      return 'azure-openai';
+    // 检测Qwen通义千问
+    if (lowerEndpoint.includes('dashscope.aliyuncs.com')) {
+      return 'qwen';
     }
 
     // 检测Ollama
@@ -77,12 +77,17 @@ export class ConfigurationMigrator {
       return 'ollama';
     }
 
+    // 检测vLLM
+    if (lowerEndpoint.includes('localhost:8000') || lowerEndpoint.includes('127.0.0.1:8000')) {
+      return 'vllm';
+    }
+
     // 检测OpenAI官方
     if (lowerEndpoint.includes('api.openai.com')) {
       return 'openai';
     }
 
-    // 其他情况视为自定义
-    return 'custom';
+    // 其他情况视为 OpenAI Compatible
+    return 'openai-compatible';
   }
 }

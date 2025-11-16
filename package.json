@@ -2,7 +2,7 @@
   "name": "aigitcommit",
   "displayName": "AI Git Commit",
   "description": "使用AI自动生成高质量的Git提交信息",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "publisher": "SleepSheep",
   "author": {
     "name": "SleepSheep"
@@ -30,9 +30,12 @@
     "ai",
     "llm",
     "openai",
-    "conventional-commits",
-    "azure-openai",
+    "gemini",
+    "qwen",
     "ollama",
+    "vllm",
+    "openai-compatible",
+    "conventional-commits",
     "commit-message",
     "code-quality"
   ],
@@ -63,14 +66,18 @@
           "default": "openai",
           "enum": [
             "openai",
-            "azure-openai",
+            "gemini",
+            "qwen",
             "ollama",
-            "custom"
+            "vllm",
+            "openai-compatible"
           ],
           "enumDescriptions": [
             "OpenAI官方API服务",
-            "Microsoft Azure OpenAI服务",
+            "Google Gemini API服务",
+            "阿里云通义千问服务",
             "本地Ollama服务",
+            "本地vLLM服务",
             "自定义OpenAI兼容服务"
           ],
           "description": "API提供商"
@@ -144,7 +151,7 @@
   "packageManager": "pnpm@10.18.1",
   "scripts": {
     "vscode:prepublish": "pnpm run compile",
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ && tsc -p scripts/version/tsconfig.json",
     "watch": "tsc -watch -p ./",
     "pretest": "pnpm run compile && pnpm run lint",
     "lint": "eslint src --ext ts",
@@ -154,7 +161,13 @@
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "prepare": "husky"
+    "prepare": "husky",
+    "version:bump": "node scripts/version-bump.js",
+    "version:current": "node scripts/version-bump.js current",
+    "version:help": "node scripts/version-bump.js --help",
+    "version:major": "node scripts/version-bump.js major",
+    "version:minor": "node scripts/version-bump.js minor",
+    "version:patch": "node scripts/version-bump.js patch"
   },
   "lint-staged": {
     "*.ts": [

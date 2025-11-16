@@ -350,13 +350,13 @@ describe('ConfigurationManager', () => {
   describe('getProvider', () => {
     it('should return configured provider', () => {
       mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
-        if (key === 'provider') return 'azure-openai';
+        if (key === 'provider') return 'qwen';
         return defaultConfigs[key] !== undefined ? defaultConfigs[key] : defaultValue;
       });
 
       const provider = configManager.getProvider();
 
-      expect(provider).toBe('azure-openai');
+      expect(provider).toBe('qwen');
     });
 
     it('should return default provider when not configured', () => {
@@ -378,11 +378,11 @@ describe('ConfigurationManager', () => {
     });
 
     it('should set provider to workspace configuration when specified', async () => {
-      await configManager.setProvider('azure-openai', vscode.ConfigurationTarget.Workspace);
+      await configManager.setProvider('qwen', vscode.ConfigurationTarget.Workspace);
 
       expect(mockConfig.update).toHaveBeenCalledWith(
         'provider',
-        'azure-openai',
+        'qwen',
         vscode.ConfigurationTarget.Workspace
       );
     });
@@ -555,7 +555,7 @@ describe('ConfigurationManager', () => {
 
     it('should infer provider from endpoint when provider not configured', async () => {
       mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
-        if (key === 'apiEndpoint') return 'https://myresource.openai.azure.com';
+        if (key === 'apiEndpoint') return 'https://dashscope.aliyuncs.com/compatible-mode/v1';
         if (key === 'provider') return undefined;
         return defaultConfigs[key] !== undefined ? defaultConfigs[key] : defaultValue;
       });
@@ -564,7 +564,7 @@ describe('ConfigurationManager', () => {
 
       expect(mockConfig.update).toHaveBeenCalledWith(
         'provider',
-        'azure-openai',
+        'qwen',
         vscode.ConfigurationTarget.Global
       );
     });
@@ -584,9 +584,9 @@ describe('ConfigurationManager', () => {
   });
 
   describe('inferProviderFromEndpoint', () => {
-    it('should infer azure-openai from Azure endpoint', async () => {
+    it('should infer qwen from Qwen endpoint', async () => {
       mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
-        if (key === 'apiEndpoint') return 'https://myresource.openai.azure.com';
+        if (key === 'apiEndpoint') return 'https://dashscope.aliyuncs.com/compatible-mode/v1';
         if (key === 'provider') return undefined;
         return defaultConfigs[key] !== undefined ? defaultConfigs[key] : defaultValue;
       });
@@ -595,7 +595,7 @@ describe('ConfigurationManager', () => {
 
       expect(mockConfig.update).toHaveBeenCalledWith(
         'provider',
-        'azure-openai',
+        'qwen',
         vscode.ConfigurationTarget.Global
       );
     });
@@ -643,7 +643,7 @@ describe('ConfigurationManager', () => {
 
       expect(mockConfig.update).toHaveBeenCalledWith(
         'provider',
-        'custom',
+        'openai-compatible',
         vscode.ConfigurationTarget.Global
       );
     });
