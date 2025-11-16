@@ -1,0 +1,413 @@
+name: Publish to Marketplace
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '干运行（仅打包，不发布）'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  validate:
+    name: Validate Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract.outputs.version }}
+      is_prerelease: ${{ steps.extract.outputs.is_prerelease }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Extract version from tag
+        id: extract
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+            IS_PRERELEASE="${{ github.event.release.prerelease }}"
+          else
+            TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            IS_PRERELEASE="false"
+          fi
+          
+          echo "Tag: $TAG"
+          
+          # Validate tag format
+          if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo "错误: 无效的版本标签格式: $TAG"
+            echo "期望格式: vX.Y.Z 或 vX.Y.Z-prerelease"
+            exit 1
+          fi
+          
+          # Extract version without 'v' prefix
+          VERSION=${TAG#v}
+          
+          # Detect prerelease from tag format (contains hyphen after version)
+          if echo "$VERSION" | grep -q '-'; then
+            IS_PRERELEASE="true"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+          echo "Is prerelease: $IS_PRERELEASE"
+
+      - name: Validate package.json version
+        run: |
+          VERSION="${{ steps.extract.outputs.version }}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          
+          echo "Tag version: $VERSION"
+          echo "package.json version: $PKG_VERSION"
+          
+          if [ "$VERSION" != "$PKG_VERSION" ]; then
+            echo "错误: 版本不匹配"
+            echo "标签版本是 v$VERSION 但 package.json 中是 $PKG_VERSION"
+            exit 1
+          fi
+          
+          echo "✓ 版本验证通过"
+      
+      - name: Validate CHANGELOG.md
+        run: |
+          VERSION="${{ steps.extract.outputs.version }}"
+          
+          if ! grep -qE "^## \[?$VERSION\]?" CHANGELOG.md; then
+            echo "错误: CHANGELOG.md 不包含版本 $VERSION 的条目"
+            echo "请在 CHANGELOG.md 中添加版本更新说明"
+            exit 1
+          fi
+          
+          echo "✓ CHANGELOG 验证通过"
+
+  quality:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    needs: validate
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.1
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Run linter
+        run: pnpm run lint
+      
+      - name: Check code formatting
+        run: pnpm run format:check
+      
+      - name: Compile TypeScript
+        run: pnpm run compile
+      
+      - name: Run tests
+        run: pnpm run test
+
+  publish:
+    name: Build and Publish
+    runs-on: ubuntu-latest
+    needs: [validate, quality]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.1
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Build extension
+        run: pnpm run vscode:prepublish
+      
+      - name: Install vsce
+        run: pnpm install -g @vscode/vsce
+      
+      - name: Package extension
+        run: vsce package
+      
+      - name: Check dry run mode
+        id: mode_check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            echo "dry_run=true" >> $GITHUB_OUTPUT
+            echo "::notice::🔍 干运行模式已启用"
+            echo "::notice::将创建 VSIX 包但不会发布到插件市场"
+            echo ""
+            echo "====================================="
+            echo "        干运行模式 (DRY RUN)"
+            echo "====================================="
+            echo "✓ 将执行所有构建和打包步骤"
+            echo "✓ 将上传 VSIX 文件作为制品"
+            echo "✗ 不会发布到插件市场"
+            echo "✗ 不会创建发布评论"
+            echo "====================================="
+          else
+            echo "dry_run=false" >> $GITHUB_OUTPUT
+            echo "::notice::🚀 生产模式"
+            echo "::notice::将构建并发布到插件市场"
+            echo ""
+            echo "====================================="
+            echo "         生产模式 (PRODUCTION)"
+            echo "====================================="
+            echo "✓ 将执行所有构建和打包步骤"
+            echo "✓ 将上传 VSIX 文件作为制品"
+            echo "✓ 将发布到插件市场"
+            echo "✓ 将创建发布评论（如果是 release 事件）"
+            echo "====================================="
+          fi
+      
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-package
+          path: '*.vsix'
+          retention-days: 30
+      
+      - name: Dry run summary
+        if: steps.mode_check.outputs.dry_run == 'true'
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          VSIX_FILE="aigitcommit-${VERSION}.vsix"
+          
+          echo "::notice::✅ 干运行完成"
+          echo ""
+          echo "====================================="
+          echo "       干运行模式 - 完成"
+          echo "====================================="
+          echo "✓ VSIX 包已创建: $VSIX_FILE"
+          echo "✓ 制品已上传到 GitHub Actions"
+          echo "✓ 可以从 Actions 标签页下载 VSIX 文件"
+          echo ""
+          echo "下一步："
+          echo "1. 从 Actions 运行页面下载 VSIX 制品"
+          echo "2. 手动测试 VSIX 文件"
+          echo "3. 如果测试通过，创建正式 Release 进行发布"
+          echo "====================================="
+      
+      - name: Publish to Marketplace
+        if: steps.mode_check.outputs.dry_run != 'true'
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          IS_PRERELEASE="${{ needs.validate.outputs.is_prerelease }}"
+          
+          # Validate PAT exists
+          if [ -z "$VSCE_PAT" ]; then
+            echo "::error::VSCE_PAT secret 未设置或为空"
+            echo ""
+            echo "====================================="
+            echo "        PAT 配置错误"
+            echo "====================================="
+            echo "错误: VSCE_PAT secret 未设置"
+            echo ""
+            echo "请按照以下步骤配置 Personal Access Token:"
+            echo "1. 访问 https://marketplace.visualstudio.com/manage"
+            echo "2. 创建新的 Personal Access Token"
+            echo "3. 设置权限范围为 'Marketplace (Manage)'"
+            echo "4. 复制生成的 Token"
+            echo "5. 在 GitHub 仓库中添加 Secret:"
+            echo "   - 进入 Settings > Secrets and variables > Actions"
+            echo "   - 点击 'New repository secret'"
+            echo "   - Name: VSCE_PAT"
+            echo "   - Value: [粘贴您的 Token]"
+            echo "====================================="
+            exit 1
+          fi
+          
+          VSIX_FILE="aigitcommit-${VERSION}.vsix"
+          
+          # Verify VSIX file exists
+          if [ ! -f "$VSIX_FILE" ]; then
+            echo "::error::VSIX 文件不存在: $VSIX_FILE"
+            echo "错误: 找不到打包的 VSIX 文件"
+            exit 1
+          fi
+          
+          echo "准备发布到插件市场..."
+          echo "版本: $VERSION"
+          echo "文件: $VSIX_FILE"
+          echo "预发布: $IS_PRERELEASE"
+          echo ""
+          
+          # Publish with error handling
+          set +e  # Disable exit on error to capture output
+          
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            echo "发布预发布版本 $VERSION..."
+            OUTPUT=$(vsce publish --packagePath "./$VSIX_FILE" --pre-release 2>&1)
+            EXIT_CODE=$?
+          else
+            echo "发布稳定版本 $VERSION..."
+            OUTPUT=$(vsce publish --packagePath "./$VSIX_FILE" 2>&1)
+            EXIT_CODE=$?
+          fi
+          
+          set -e  # Re-enable exit on error
+          
+          # Check if publish was successful
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "::error::发布到插件市场失败"
+            echo ""
+            echo "====================================="
+            echo "        发布失败"
+            echo "====================================="
+            echo "版本: $VERSION"
+            echo "退出代码: $EXIT_CODE"
+            echo ""
+            echo "错误详情:"
+            echo "$OUTPUT"
+            echo ""
+            echo "====================================="
+            echo ""
+            echo "常见问题排查:"
+            echo "1. 检查 VSCE_PAT 是否有效且未过期"
+            echo "2. 确认 Token 具有 'Marketplace (Manage)' 权限"
+            echo "3. 验证发布者 ID 是否正确"
+            echo "4. 检查版本号是否已存在于插件市场"
+            echo "5. 查看上方的详细错误信息"
+            echo "====================================="
+            exit 1
+          fi
+          
+          echo ""
+          echo "====================================="
+          echo "        发布成功"
+          echo "====================================="
+          echo "✓ 成功发布到插件市场"
+          echo "版本: $VERSION"
+          echo "类型: $([ "$IS_PRERELEASE" = "true" ] && echo "预发布" || echo "稳定版本")"
+          echo ""
+          echo "发布输出:"
+          echo "$OUTPUT"
+          echo "====================================="
+      
+      - name: Post success comment to release
+        if: github.event_name == 'release' && steps.mode_check.outputs.dry_run != 'true'
+        uses: actions/github-script@v7
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          IS_PRERELEASE: ${{ needs.validate.outputs.is_prerelease }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const version = process.env.VERSION;
+            const isPrerelease = process.env.IS_PRERELEASE === 'true';
+            const marketplaceUrl = 'https://marketplace.visualstudio.com/items?itemName=SleepSheep.aigitcommit';
+            const releaseUrl = context.payload.release.html_url;
+            const timestamp = new Date().toLocaleString('zh-CN', { 
+              timeZone: 'Asia/Shanghai',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            });
+            
+            const versionType = isPrerelease ? '预发布版本 (Pre-release)' : '稳定版本 (Stable)';
+            
+            const comment = `## ✅ 发布成功
+            
+**版本:** \`${version}\`  
+**类型:** ${versionType}  
+**发布时间:** ${timestamp}  
+**插件市场:** ${marketplaceUrl}
+
+---
+
+🎉 插件已成功发布到 VS Code 插件市场！
+
+用户可以通过以下方式安装或更新：
+- 在 VS Code 中搜索 "AI Git Commit"
+- 访问插件市场页面直接安装
+- 使用命令: \`code --install-extension SleepSheep.aigitcommit\`
+`;
+            
+            await github.rest.repos.createReleaseComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: context.payload.release.id,
+              body: comment
+            });
+      
+      - name: Post failure comment to release
+        if: failure() && github.event_name == 'release'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const version = '${{ needs.validate.outputs.version }}' || '未知';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const timestamp = new Date().toLocaleString('zh-CN', { 
+              timeZone: 'Asia/Shanghai',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            });
+            
+            const comment = `## ❌ 发布失败
+            
+**版本:** \`${version}\`  
+**失败时间:** ${timestamp}  
+**工作流运行:** [查看详细日志](${runUrl})
+
+---
+
+⚠️ 插件发布到 VS Code 插件市场失败。
+
+**下一步操作：**
+1. 点击上方链接查看详细的工作流日志
+2. 检查失败步骤的错误消息
+3. 根据错误信息修复问题
+4. 修复后可以重新触发工作流
+
+**常见问题：**
+- **版本验证失败：** 确保 package.json 版本与 Release 标签匹配，并且 CHANGELOG.md 已更新
+- **质量检查失败：** 运行 \`pnpm run lint\`、\`pnpm run format:check\` 和 \`pnpm run test\` 修复问题
+- **PAT 认证失败：** 检查 VSCE_PAT secret 是否正确配置且未过期
+- **发布失败：** 验证版本号是否已存在于插件市场
+
+如需帮助，请查看 [发布文档](.github/PUBLISHING.md) 或提交 Issue。
+`;
+            
+            try {
+              await github.rest.repos.createReleaseComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: context.payload.release.id,
+                body: comment
+              });
+            } catch (error) {
+              console.error('Failed to post failure comment:', error);
+              // Don't fail the workflow if comment posting fails
+            }

@@ -2,7 +2,8 @@
 
 [![VSCode Marketplace](https://img.shields.io/badge/VSCode-Marketplace-blue.svg)](https://marketplace.visualstudio.com/items?itemName=SleepSheep.aigitcommit)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.0-orange.svg)](package.json)
+[![Version](https://img.shields.io/badge/Version-1.1.1-orange.svg)](package.json)
+[![Publish Status](https://github.com/want2sleeep/AIGitCommit/actions/workflows/publish.yml/badge.svg)](https://github.com/want2sleeep/AIGitCommit/actions/workflows/publish.yml)
 
 🚀 **使用AI自动生成高质量的Git提交信息**
 
@@ -350,7 +351,7 @@ src/
 - [约定式提交指南](examples/conventional-commits-guide.md) - Conventional Commits规范
 - [提示词模板](examples/prompt-templates.md) - 自定义提示词模板
 - [更新日志](CHANGELOG.md) - 版本更新记录
-- [打包指南](PACKAGING.md) - 扩展打包和发布说明
+- [发布指南](.github/PUBLISHING.md) - 扩展发布到插件市场的完整指南
 
 ## 🐛 故障排除
 
@@ -396,6 +397,15 @@ A: 点击"重新生成"，手动编辑内容，或调整温度参数
 - 更新相关文档
 - 确保所有测试和检查通过
 - 代码提交前会自动运行 lint 和格式化
+
+### 发布流程
+
+维护者发布新版本时，请参考 [发布指南](.github/PUBLISHING.md)：
+
+1. 更新 `package.json` 版本号
+2. 更新 `CHANGELOG.md`
+3. 创建 GitHub Release
+4. 自动发布到 VS Code 插件市场
 
 ## 📄 许可
 
