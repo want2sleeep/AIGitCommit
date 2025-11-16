@@ -308,8 +308,9 @@ jobs:
           echo "$OUTPUT"
           echo "====================================="
       
-      - name: Post success comment to release
-        if: github.event_name == 'release' && steps.mode_check.outputs.dry_run != 'true'
+      - name: Post success feedback to release
+        if: success() && github.event_name == 'release' && steps.mode_check.outputs.dry_run != 'true'
+        continue-on-error: true
         uses: actions/github-script@v7
         env:
           VERSION: ${{ needs.validate.outputs.version }}
@@ -317,10 +318,12 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const fs = require('fs');
+            
+            // 准备数据
             const version = process.env.VERSION;
             const isPrerelease = process.env.IS_PRERELEASE === 'true';
             const marketplaceUrl = 'https://marketplace.visualstudio.com/items?itemName=SleepSheep.aigitcommit';
-            const releaseUrl = context.payload.release.html_url;
             const timestamp = new Date().toLocaleString('zh-CN', { 
               timeZone: 'Asia/Shanghai',
               year: 'numeric',
@@ -330,39 +333,65 @@ jobs:
               minute: '2-digit',
               second: '2-digit'
             });
+            const versionType = isPrerelease ? '预发布版本' : '稳定版本';
             
-            const versionType = isPrerelease ? '预发布版本 (Pre-release)' : '稳定版本 (Stable)';
+            // 构建状态消息
+            const statusMessage = `
+
+---
+
+## 🚀 发布状态：成功
+
+**版本**: \`${version}\`  
+**类型**: ${versionType}  
+**发布时间**: ${timestamp}  
+**插件市场**: ${marketplaceUrl}
+
+✅ 插件已成功发布到 VS Code 插件市场
+
+**安装方式**:
+- 在 VS Code 中搜索 "AI Git Commit"
+- 访问插件市场页面直接安装
+- 使用命令: \`code --install-extension SleepSheep.aigitcommit\`
+`;
             
-            const comment = `## ✅ 发布成功
-            
-            **版本:** \`${version}\`  
-            **类型:** ${versionType}  
-            **发布时间:** ${timestamp}  
-            **插件市场:** ${marketplaceUrl}
-            
-            ---
-            
-            🎉 插件已成功发布到 VS Code 插件市场！
-            
-            用户可以通过以下方式安装或更新：
-            - 在 VS Code 中搜索 "AI Git Commit"
-            - 访问插件市场页面直接安装
-            - 使用命令: \`code --install-extension SleepSheep.aigitcommit\`
-            `;
-            
-            await github.rest.repos.createReleaseComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: context.payload.release.id,
-              body: comment
-            });
+            try {
+              // 1. 更新 Release 正文
+              const release = await github.rest.repos.getRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: context.payload.release.id
+              });
+              
+              const updatedBody = release.data.body + statusMessage;
+              
+              await github.rest.repos.updateRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: context.payload.release.id,
+                body: updatedBody
+              });
+              
+              console.log('✓ Release 正文已更新');
+              
+              // 2. 写入工作流摘要
+              fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, statusMessage);
+              console.log('✓ 工作流摘要已写入');
+              
+            } catch (error) {
+              console.error('发布反馈失败（不影响发布结果）:', error.message);
+            }
       
-      - name: Post failure comment to release
+      - name: Post failure feedback to release
         if: failure() && github.event_name == 'release'
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const fs = require('fs');
+            
+            // 准备数据
             const version = '${{ needs.validate.outputs.version }}' || '未知';
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const timestamp = new Date().toLocaleString('zh-CN', { 
@@ -375,39 +404,55 @@ jobs:
               second: '2-digit'
             });
             
-            const comment = `## ❌ 发布失败
-            
-            **版本:** \`${version}\`  
-            **失败时间:** ${timestamp}  
-            **工作流运行:** [查看详细日志](${runUrl})
-            
-            ---
-            
-            ⚠️ 插件发布到 VS Code 插件市场失败。
-            
-            **下一步操作：**
-            1. 点击上方链接查看详细的工作流日志
-            2. 检查失败步骤的错误消息
-            3. 根据错误信息修复问题
-            4. 修复后可以重新触发工作流
-            
-            **常见问题：**
-            - **版本验证失败：** 确保 package.json 版本与 Release 标签匹配，并且 CHANGELOG.md 已更新
-            - **质量检查失败：** 运行 \`pnpm run lint\`、\`pnpm run format:check\` 和 \`pnpm run test\` 修复问题
-            - **PAT 认证失败：** 检查 VSCE_PAT secret 是否正确配置且未过期
-            - **发布失败：** 验证版本号是否已存在于插件市场
-            
-            如需帮助，请查看 [发布文档](.github/PUBLISHING.md) 或提交 Issue。
-            `;
+            // 构建状态消息
+            const statusMessage = `
+
+---
+
+## ❌ 发布状态：失败
+
+**版本**: \`${version}\`  
+**失败时间**: ${timestamp}  
+**工作流运行**: [查看详细日志](${runUrl})
+
+⚠️ 插件发布到 VS Code 插件市场失败
+
+**下一步操作**:
+1. 点击上方链接查看详细的工作流日志
+2. 检查失败步骤的错误消息
+3. 根据错误信息修复问题
+4. 修复后可以重新触发工作流
+
+**常见问题**:
+- **版本验证失败**: 确保 package.json 版本与 Release 标签匹配
+- **质量检查失败**: 运行 \`pnpm run lint\` 和 \`pnpm run test\` 修复问题
+- **PAT 认证失败**: 检查 VSCE_PAT secret 是否正确配置
+- **发布失败**: 验证版本号是否已存在于插件市场
+`;
             
             try {
-              await github.rest.repos.createReleaseComment({
+              // 1. 更新 Release 正文
+              const release = await github.rest.repos.getRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: context.payload.release.id
+              });
+              
+              const updatedBody = release.data.body + statusMessage;
+              
+              await github.rest.repos.updateRelease({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 release_id: context.payload.release.id,
-                body: comment
+                body: updatedBody
               });
+              
+              console.log('✓ Release 正文已更新');
+              
+              // 2. 写入工作流摘要
+              fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, statusMessage);
+              console.log('✓ 工作流摘要已写入');
+              
             } catch (error) {
-              console.error('Failed to post failure comment:', error);
-              // Don't fail the workflow if comment posting fails
+              console.error('发布反馈失败:', error.message);
             }
