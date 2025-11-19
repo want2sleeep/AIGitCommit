@@ -418,14 +418,15 @@ src/
 └── __tests__/             # 测试文件
 ```
 
-## 📚 文档
+## 📚 完整文档
 
-- [快速开始指南](QUICK_START_GUIDE.md) - 详细的安装和配置说明
-- [配置示例](examples/README.md) - 各种AI服务的配置示例
-- [约定式提交指南](examples/conventional-commits-guide.md) - Conventional Commits规范
-- [提示词模板](examples/prompt-templates.md) - 自定义提示词模板
-- [更新日志](CHANGELOG.md) - 版本更新记录
-- [发布指南](.github/PUBLISHING.md) - 扩展发布到插件市场的完整指南
+📖 **[文档中心](docs/README.md)** - 查看所有完整文档
+
+### 快速链接
+- [🚀 快速开始](docs/guides/quick-start.md) - 5分钟上手
+- [⚙️ 配置指南](docs/configuration/README.md) - 选择AI服务
+- [🤝 贡献代码](CONTRIBUTING.md) - 参与项目开发
+- [📋 更新日志](CHANGELOG.md) - 版本历史
 
 ## 🐛 故障排除
 
@@ -443,11 +444,17 @@ A: 重启VSCode，确认插件已启用且在Git仓库中
 **Q: 生成的提交信息不满意**
 A: 点击"重新生成"，手动编辑内容，或调整温度参数
 
+### CI/CD 工作流问题
+
+如果您在贡献代码时遇到 GitHub Actions 工作流失败，请参考：
+- [工作流故障排查指南](.github/TROUBLESHOOTING.md) - 详细的诊断和解决方案
+
 ### 获取帮助
 
 1. 查看VSCode输出面板中的详细日志
 2. 参考配置示例文档
-3. 在GitHub上提交Issue
+3. 查看 [工作流故障排查指南](.github/TROUBLESHOOTING.md)（针对 CI/CD 问题）
+4. 在GitHub上提交Issue
 
 ## 🤝 贡献
 

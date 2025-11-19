@@ -88,3 +88,7 @@ gpt-3.5-turbo-16k
 - 检查网络连接
 - 确认能够访问 `api.openai.com`
 - 如果在中国大陆，可能需要使用代理
+
+---
+
+**相关文档**: [返回配置指南](README.md) | [其他服务](other-services.md) | [快速开始](../guides/quick-start.md)

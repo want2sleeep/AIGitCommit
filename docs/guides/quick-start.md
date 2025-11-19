@@ -1,8 +1,8 @@
-# 快速试用指南
+# 快速开始指南
 
 ## ✅ 插件已安装成功！
 
-插件 `AI Git Commit` v1.0.0 已经安装到你的 VSCode 中。
+插件 `AI Git Commit` 已经安装到你的 VSCode 中。
 
 ---
 
@@ -19,15 +19,7 @@
 
 ---
 
-### 步骤 2: 验证插件已安装
-
-1. 按 `Ctrl+Shift+X` 打开扩展面板
-2. 搜索 "AI Git Commit"
-3. 确认插件已启用（应该显示"已启用"）
-
----
-
-### 步骤 3: 配置 API
+### 步骤 2: 配置 API
 
 #### 方法 1: 使用配置向导（推荐）
 
@@ -63,16 +55,9 @@ API 端点: http://localhost:11434/v1
 API 密钥: (任意值或留空)
 ```
 
-**使用 vLLM (本地):**
-```
-API 端点: http://localhost:8000/v1
-模型名称: meta-llama/Llama-2-7b-chat-hf
-API 密钥: (任意值或留空)
-```
-
 ---
 
-### 步骤 4: 测试生成功能
+### 步骤 3: 测试生成功能
 
 #### 准备测试环境
 
@@ -114,7 +99,7 @@ export function testFunction() {
 
 ---
 
-### 步骤 5: 查看和编辑结果
+### 步骤 4: 查看和编辑结果
 
 生成完成后，你会看到：
 
@@ -157,24 +142,6 @@ feat(utils): 添加计算总价的函数
 fix(auth): 修正年龄验证的边界条件
 
 将年龄判断从大于改为大于等于，确保18岁用户可以访问
-```
-
-### 场景 3: 重构代码
-
-```typescript
-// 重构这个函数
-- function getUserName(user) {
--   return user.firstName + ' ' + user.lastName;
-- }
-+ const getUserName = (user: User): string => 
-+   `${user.firstName} ${user.lastName}`;
-```
-
-**预期生成**:
-```
-refactor(user): 使用箭头函数和模板字符串重构 getUserName
-
-提高代码可读性并添加类型注解
 ```
 
 ---
@@ -244,14 +211,6 @@ refactor(user): 使用箭头函数和模板字符串重构 getUserName
 2. 确认插件已启用
 3. 确认在 Git 项目中（插件只在 Git 仓库中激活）
 
-### 问题 4: 生成的提交信息不满意
-
-**解决**:
-1. 点击"重新生成"按钮
-2. 手动编辑生成的内容
-3. 调整温度参数（设置中）
-4. 尝试不同的模型
-
 ---
 
 ## 🎨 三种使用方式对比
@@ -296,13 +255,12 @@ code --uninstall-extension SleepSheep.ai-git-commit
 
 ---
 
-## 📝 反馈和建议
+## 📝 更多资源
 
-如果你在试用过程中有任何问题或建议：
-
-1. 查看 README.md 获取更多信息
-2. 查看 CHANGELOG.md 了解功能详情
-3. 查看 examples/ 目录获取配置示例
+- [📚 完整文档](../README.md) - 查看所有文档
+- [⚙️ 配置指南](../configuration/README.md) - 详细配置说明
+- [📋 约定式提交](conventional-commits.md) - 提交信息规范
+- [🤝 贡献指南](../../CONTRIBUTING.md) - 参与项目开发
 
 ---
 
@@ -311,8 +269,8 @@ code --uninstall-extension SleepSheep.ai-git-commit
 现在你已经准备好了：
 
 1. ✅ 插件已安装
-2. ⏭️ 配置 API（步骤 3）
-3. ⏭️ 测试生成功能（步骤 4）
+2. ⏭️ 配置 API（步骤 2）
+3. ⏭️ 测试生成功能（步骤 3）
 4. ⏭️ 享受 AI 帮你写提交信息！
 
 **祝你使用愉快！** 🚀
@@ -329,6 +287,6 @@ code --uninstall-extension SleepSheep.ai-git-commit
 
 ---
 
-**当前版本**: 1.0.0  
-**安装日期**: 2025-11-14  
+**当前版本**: 1.2.1  
+**安装日期**: 2025-11-19  
 **状态**: ✅ 已安装，准备试用

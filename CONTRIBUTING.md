@@ -1,4 +1,4 @@
-# 贡献指南
+) 贡献指南
 
 感谢您对 AI Git Commit 项目的关注！我们欢迎任何形式的贡献，包括但不限于：
 
@@ -489,14 +489,69 @@ AIGitCommit/
 └── README.md             # 项目文档
 ```
 
+## CI/CD 工作流
+
+### GitHub Actions 工作流
+
+本项目使用 GitHub Actions 进行持续集成和自动发布：
+
+- **CI 工作流** (`.github/workflows/ci.yml`): 在每次 push 和 PR 时运行
+  - 代码质量检查（lint、format、type-check）
+  - 运行测试套件
+  - 验证构建成功
+
+- **发布工作流** (`.github/workflows/publish.yml`): 在创建 GitHub Release 时触发
+  - 验证版本号和 CHANGELOG
+  - 运行完整的质量检查
+  - 构建并打包扩展
+  - 自动发布到 VS Code 插件市场
+
+### 工作流故障排查
+
+如果您的 PR 或提交导致工作流失败：
+
+1. **查看失败日志**
+   - 访问 [Actions 标签页](https://github.com/want2sleeep/AIGitCommit/actions)
+   - 点击失败的工作流运行
+   - 查看详细的错误信息
+
+2. **本地复现问题**
+   ```bash
+   # 运行相同的检查
+   pnpm run lint
+   pnpm run format:check
+   pnpm run type-check
+   pnpm test
+   pnpm run build
+   ```
+
+3. **常见问题**
+   - **Lint 错误**: 运行 `pnpm run lint:fix` 自动修复
+   - **格式问题**: 运行 `pnpm run format` 格式化代码
+   - **类型错误**: 检查 TypeScript 编译错误并修复
+   - **测试失败**: 确保所有测试通过
+
+4. **详细故障排查**
+   - 参考 [工作流故障排查指南](.github/TROUBLESHOOTING.md)
+   - 包含常见失败场景和解决方案
+   - 提供快速诊断清单
+
+### Pre-commit 钩子
+
+项目配置了 Husky pre-commit 钩子，会在提交前自动运行：
+- ESLint 检查并自动修复
+- Prettier 格式化
+- 这有助于在本地捕获问题，避免 CI 失败
+
 ## 获取帮助
 
 如果您在贡献过程中遇到问题：
 
 1. 查看 [README.md](README.md) 和相关文档
-2. 搜索现有的 Issues
-3. 在 GitHub Issues 中提问
-4. 联系维护者: victorhuang.hy@gmail.com
+2. 查看 [工作流故障排查指南](.github/TROUBLESHOOTING.md)（针对 CI/CD 问题）
+3. 搜索现有的 Issues
+4. 在 GitHub Issues 中提问
+5. 联系维护者: victorhuang.hy@gmail.com
 
 ## 许可证
 

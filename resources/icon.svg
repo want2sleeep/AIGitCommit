@@ -1,54 +1,50 @@
 <svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background gradient -->
+  <!-- 渐变背景 -->
   <defs>
     <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#ffed4e;stop-opacity:1" />
     </linearGradient>
   </defs>
   
-  <!-- Background circle -->
-  <circle cx="64" cy="64" r="60" fill="url(#bgGradient)"/>
+  <!-- 圆形背景 -->
+  <circle cx="64" cy="64" r="60" fill="url(#bgGradient)" />
   
-  <!-- Git branch icon -->
-  <g transform="translate(20, 35)">
-    <!-- Main branch line -->
-    <line x1="15" y1="10" x2="15" y2="50" stroke="white" stroke-width="3" stroke-linecap="round"/>
-    
-    <!-- Branch circles -->
-    <circle cx="15" cy="10" r="5" fill="white"/>
-    <circle cx="15" cy="50" r="5" fill="white"/>
-    
-    <!-- Side branch -->
-    <path d="M 15 25 Q 25 25, 35 35" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <circle cx="35" cy="35" r="5" fill="white"/>
+  <!-- Git 分支图标 -->
+  <g transform="translate(25, 35)">
+    <!-- 主分支线 -->
+    <line x1="10" y1="10" x2="10" y2="50" stroke="white" stroke-width="3" />
+    <!-- 分支线 -->
+    <line x1="10" y1="25" x2="30" y2="15" stroke="white" stroke-width="3" />
+    <line x1="30" y1="15" x2="30" y2="35" stroke="white" stroke-width="3" />
+    <!-- 节点 -->
+    <circle cx="10" cy="10" r="4" fill="white" />
+    <circle cx="10" cy="25" r="4" fill="white" />
+    <circle cx="10" cy="50" r="4" fill="white" />
+    <circle cx="30" cy="15" r="4" fill="white" />
+    <circle cx="30" cy="35" r="4" fill="white" />
   </g>
   
-  <!-- AI Sparkle icon -->
-  <g transform="translate(70, 35)">
-    <!-- Center star -->
-    <circle cx="18" cy="25" r="8" fill="url(#sparkleGradient)"/>
-    
-    <!-- Sparkle rays -->
-    <line x1="18" y1="10" x2="18" y2="15" stroke="url(#sparkleGradient)" stroke-width="3" stroke-linecap="round"/>
-    <line x1="18" y1="35" x2="18" y2="40" stroke="url(#sparkleGradient)" stroke-width="3" stroke-linecap="round"/>
-    <line x1="3" y1="25" x2="8" y2="25" stroke="url(#sparkleGradient)" stroke-width="3" stroke-linecap="round"/>
-    <line x1="28" y1="25" x2="33" y2="25" stroke="url(#sparkleGradient)" stroke-width="3" stroke-linecap="round"/>
-    
-    <!-- Diagonal rays -->
-    <line x1="8" y1="15" x2="12" y2="19" stroke="url(#sparkleGradient)" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="28" y1="15" x2="24" y2="19" stroke="url(#sparkleGradient)" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="8" y1="35" x2="12" y2="31" stroke="url(#sparkleGradient)" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="28" y1="35" x2="24" y2="31" stroke="url(#sparkleGradient)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- AI 星光图标 -->
+  <g transform="translate(75, 35)">
+    <!-- 星星 -->
+    <path d="M15 5 L18 12 L25 12 L19 17 L22 24 L15 19 L8 24 L11 17 L5 12 L12 12 Z" 
+          fill="url(#starGradient)" stroke="white" stroke-width="1" />
+    <!-- 光芒效果 -->
+    <line x1="15" y1="0" x2="15" y2="5" stroke="#ffd700" stroke-width="2" opacity="0.8" />
+    <line x1="15" y1="24" x2="15" y2="29" stroke="#ffd700" stroke-width="2" opacity="0.8" />
+    <line x1="0" y1="14.5" x2="5" y2="14.5" stroke="#ffd700" stroke-width="2" opacity="0.8" />
+    <line x1="25" y1="14.5" x2="30" y2="14.5" stroke="#ffd700" stroke-width="2" opacity="0.8" />
   </g>
   
-  <!-- Message bubble -->
-  <g transform="translate(25, 75)">
-    <rect x="0" y="0" width="78" height="28" rx="14" fill="white" opacity="0.9"/>
-    <text x="39" y="19" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#667eea" text-anchor="middle">COMMIT</text>
+  <!-- COMMIT 文字 -->
+  <g transform="translate(64, 85)">
+    <rect x="-35" y="-12" width="70" height="24" rx="12" fill="white" opacity="0.9" />
+    <text x="0" y="4" font-family="Arial, sans-serif" font-size="12" font-weight="bold" 
+          text-anchor="middle" fill="#667eea">COMMIT</text>
   </g>
 </svg>
