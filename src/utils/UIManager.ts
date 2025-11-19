@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { CommitAction } from '../types';
 
 /**
  * UI管理器类
@@ -7,70 +6,6 @@ import { CommitAction } from '../types';
  */
 export class UIManager {
   private statusBarItem: vscode.StatusBarItem | undefined;
-
-  /**
-   * 显示提交信息输入框
-   * @param initialMessage 初始提交信息
-   * @returns 用户的操作选择
-   */
-  async showCommitMessageInput(initialMessage: string): Promise<CommitAction> {
-    // 创建快速选择项
-    const items: vscode.QuickPickItem[] = [
-      {
-        label: '$(check) 接受并提交',
-        description: '使用生成的提交信息',
-        detail: initialMessage,
-      },
-      {
-        label: '$(edit) 编辑后提交',
-        description: '修改提交信息后再提交',
-      },
-      {
-        label: '$(refresh) 重新生成',
-        description: '生成新的提交信息',
-      },
-      {
-        label: '$(close) 取消',
-        description: '放弃此次操作',
-      },
-    ];
-
-    const selected = await vscode.window.showQuickPick(items, {
-      placeHolder: '选择操作',
-      title: 'AI生成的提交信息',
-    });
-
-    if (!selected) {
-      return { action: 'cancel' };
-    }
-
-    // 根据用户选择返回相应操作
-    if (selected.label.includes('接受并提交')) {
-      return { action: 'commit', message: initialMessage };
-    } else if (selected.label.includes('编辑后提交')) {
-      const editedMessage = await vscode.window.showInputBox({
-        prompt: '编辑提交信息',
-        value: initialMessage,
-        placeHolder: '输入提交信息',
-        validateInput: (value) => {
-          if (!value || value.trim().length === 0) {
-            return '提交信息不能为空';
-          }
-          return null;
-        },
-      });
-
-      if (!editedMessage) {
-        return { action: 'cancel' };
-      }
-
-      return { action: 'commit', message: editedMessage };
-    } else if (selected.label.includes('重新生成')) {
-      return { action: 'regenerate' };
-    } else {
-      return { action: 'cancel' };
-    }
-  }
 
   /**
    * 显示进度指示器

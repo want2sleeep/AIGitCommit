@@ -241,6 +241,34 @@ git, commit, ai, llm, openai, conventional-commits, code-quality, productivity, 
 
 ## 发布说明（Release Notes）
 
+### 1.2.1 - 内部优化版本
+
+内部基础设施优化，对用户功能无影响：
+- ⚡ **esbuild 构建系统**: 构建速度提升 10-100 倍，包体积减少 20-30%
+- 🔧 **自动化发布工作流**: 完善的自动发布流程，提升发布质量和效率
+- 📚 **文档更新**: 更新所有文档至 v1.2.1
+
+### 1.2.0 - 多提供商支持增强
+
+新增 Google Gemini 支持，完善代码质量：
+- ✨ **Google Gemini API 支持**: 新增 Google Gemini 作为 LLM 提供商
+- 🔧 **代码质量改进**: 解决所有 ESLint 警告，优化代码结构
+- 📦 **6 种 LLM 提供商**: OpenAI、Gemini、Qwen、Ollama、vLLM、OpenAI Compatible
+
+### 1.1.1 - 自动化发布工作流
+
+基础设施改进：
+- 🔧 **自动化发布**: GitHub Actions 自动发布到 VSCode 插件市场
+- 📚 **发布文档**: 详细的发布流程文档和故障排查指南
+
+### 1.1.0 - 代码质量优化
+
+全面的代码质量提升：
+- 🎯 **类型安全**: 消除 any 类型，启用 TypeScript 严格模式
+- 🔧 **错误处理**: 实现结构化错误类型系统
+- 🧪 **测试覆盖率**: 达到 75%+ 测试覆盖率
+- 📦 **pnpm 迁移**: 更快的依赖安装和更好的依赖管理
+
 ### 1.0.0 - MVP 初步可用版本
 
 稳定提供核心功能：

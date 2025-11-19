@@ -274,18 +274,6 @@ export interface GeminiPromptFeedback {
 }
 
 /**
- * 提交操作类型接口
- * 表示用户对生成的提交信息的操作选择
- *
- * @property action - 用户选择的操作（commit: 提交, regenerate: 重新生成, cancel: 取消）
- * @property message - 可选，当action为'commit'时包含最终的提交信息
- */
-export interface CommitAction {
-  action: 'commit' | 'regenerate' | 'cancel';
-  message?: string;
-}
-
-/**
  * 错误类型枚举
  * 用于分类和处理不同类型的错误
  *
@@ -316,11 +304,16 @@ export interface GitAPI {
   getAPI(version: number): GitAPI;
 }
 
+export interface InputBox {
+  value: string;
+}
+
 /**
  * Git仓库接口
  * 表示单个Git仓库及其操作方法
  *
  * @property rootUri - 仓库根目录URI
+ * @property inputBox - SCM输入框
  * @property state - 仓库状态，包含暂存区和工作区的变更
  * @property diff - 获取文件diff的方法
  * @property show - 显示指定引用和路径的文件内容
@@ -328,6 +321,7 @@ export interface GitAPI {
  */
 export interface GitRepository {
   rootUri: vscode.Uri;
+  inputBox: InputBox;
   state: {
     indexChanges: GitFileChange[];
     workingTreeChanges: GitFileChange[];

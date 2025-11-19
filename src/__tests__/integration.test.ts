@@ -32,6 +32,7 @@ describe('Integration Tests', () => {
     show: jest.Mock;
     diff: jest.Mock;
     commit: jest.Mock;
+    inputBox: { value: string };
   };
   let mockAxios: jest.Mocked<typeof import('axios').default>;
 
@@ -157,6 +158,9 @@ index 1234567..abcdefg 100644
 +    console.log('Goodbye');
  }`),
       commit: jest.fn().mockResolvedValue(undefined),
+      inputBox: {
+        value: '',
+      },
     };
 
     mockGitApi = {
@@ -198,12 +202,8 @@ index 1234567..abcdefg 100644
    * Test 1: Complete Commit Message Generation Flow
    */
   describe('Complete Commit Message Generation Flow', () => {
-    it('should successfully generate and commit message', async () => {
+    it('should successfully generate and set message in SCM input box', async () => {
       jest.setTimeout(10000); // Increase timeout for this test
-      const mockShowQuickPick = jest.spyOn(vscode.window, 'showQuickPick').mockResolvedValue({
-        label: '$(check) 接受并提交',
-        description: '使用生成的提交信息',
-      } as vscode.QuickPickItem);
 
       const mockWithProgress = jest
         .spyOn(vscode.window, 'withProgress')
@@ -213,9 +213,9 @@ index 1234567..abcdefg 100644
           } as vscode.CancellationToken);
         });
 
-      const mockShowInformationMessage = jest
-        .spyOn(vscode.window, 'showInformationMessage')
-        .mockResolvedValue(undefined);
+      const mockSetStatusBarMessage = jest
+        .spyOn(vscode.window, 'setStatusBarMessage')
+        .mockReturnValue({ dispose: jest.fn() } as vscode.Disposable);
 
       await commandHandler.generateCommitMessage();
 
@@ -241,40 +241,19 @@ index 1234567..abcdefg 100644
         })
       );
 
-      // Verify commit message was shown to user
-      expect(mockShowQuickPick).toHaveBeenCalled();
-
-      // Verify commit was executed
-      expect(mockRepository.commit).toHaveBeenCalledWith(expect.stringContaining('feat(test)'));
+      // Verify commit message was set in SCM input box
+      expect(mockRepository.inputBox.value).toBe(
+        'feat(test): add goodbye function and update hello message\n\n- Modified hello function to print "Hello World"\n- Added new goodbye function'
+      );
 
       // Verify success message
-      expect(mockShowInformationMessage).toHaveBeenCalledWith(expect.stringContaining('提交成功'));
+      expect(mockSetStatusBarMessage).toHaveBeenCalledWith(
+        expect.stringContaining('提交信息已生成'),
+        3000
+      );
 
-      mockShowQuickPick.mockRestore();
       mockWithProgress.mockRestore();
-      mockShowInformationMessage.mockRestore();
-    });
-
-    it('should handle user cancellation during message editing', async () => {
-      const mockShowQuickPick = jest
-        .spyOn(vscode.window, 'showQuickPick')
-        .mockResolvedValue(undefined);
-
-      const mockWithProgress = jest
-        .spyOn(vscode.window, 'withProgress')
-        .mockImplementation(async (_options, task) => {
-          return task({ report: jest.fn() }, {
-            isCancellationRequested: false,
-          } as vscode.CancellationToken);
-        });
-
-      await commandHandler.generateCommitMessage();
-
-      // Verify commit was not executed
-      expect(mockRepository.commit).not.toHaveBeenCalled();
-
-      mockShowQuickPick.mockRestore();
-      mockWithProgress.mockRestore();
+      mockSetStatusBarMessage.mockRestore();
     });
 
     it('should coordinate all modules in correct order', async () => {
@@ -283,15 +262,15 @@ index 1234567..abcdefg 100644
       const gitChangesSpy = jest.spyOn(gitService, 'getStagedChanges');
       const llmGenerateSpy = jest.spyOn(llmService, 'generateCommitMessage');
 
-      jest.spyOn(vscode.window, 'showQuickPick').mockResolvedValue({
-        label: '$(check) 接受并提交',
-        description: '使用生成的提交信息',
-      } as vscode.QuickPickItem);
       jest.spyOn(vscode.window, 'withProgress').mockImplementation(async (_options, task) => {
         return task({ report: jest.fn() }, {
           isCancellationRequested: false,
         } as vscode.CancellationToken);
       });
+
+      jest
+        .spyOn(vscode.window, 'setStatusBarMessage')
+        .mockReturnValue({ dispose: jest.fn() } as vscode.Disposable);
 
       await commandHandler.generateCommitMessage();
 
@@ -449,11 +428,6 @@ index 1234567..abcdefg 100644
       });
       (mockAxios.isAxiosError as unknown as jest.Mock) = jest.fn().mockReturnValue(true);
 
-      const mockShowQuickPick = jest.spyOn(vscode.window, 'showQuickPick').mockResolvedValue({
-        label: '$(check) 接受并提交',
-        description: '使用生成的提交信息',
-      } as vscode.QuickPickItem);
-
       const mockWithProgress = jest
         .spyOn(vscode.window, 'withProgress')
         .mockImplementation(async (_options, task) => {
@@ -462,14 +436,19 @@ index 1234567..abcdefg 100644
           } as vscode.CancellationToken);
         });
 
+      const mockSetStatusBarMessage = jest
+        .spyOn(vscode.window, 'setStatusBarMessage')
+        .mockReturnValue({ dispose: jest.fn() } as vscode.Disposable);
+
       await commandHandler.generateCommitMessage();
 
       // Verify retry occurred
       expect(mockAxios.post).toHaveBeenCalledTimes(2);
-      expect(mockRepository.commit).toHaveBeenCalled();
+      // Verify message was set in SCM input box (not committed automatically)
+      expect(mockRepository.inputBox.value).toBe('feat: test commit');
 
-      mockShowQuickPick.mockRestore();
       mockWithProgress.mockRestore();
+      mockSetStatusBarMessage.mockRestore();
     });
 
     it('should handle configuration error and show wizard', async () => {

@@ -24,9 +24,6 @@ export class CommandHandler {
    * 编排完整的生成流程
    */
   async generateCommitMessage(): Promise<void> {
-    // 设置重试回调
-    this.errorHandler.setRetryCallback(() => this.generateCommitMessage());
-
     try {
       this.errorHandler.logInfo('开始生成提交信息', 'CommandHandler');
 
@@ -36,40 +33,21 @@ export class CommandHandler {
         return;
       }
 
-      // 生成提交信息（可能需要多次重试）
-      let shouldRegenerate = true;
-      while (shouldRegenerate) {
-        const commitMessage = await this.generateMessage();
+      const commitMessage = await this.generateMessage();
 
-        if (!commitMessage) {
-          // 生成失败或用户取消
-          return;
-        }
-
-        // 显示提交信息并获取用户操作
-        const action = await this.uiManager.showCommitMessageInput(commitMessage);
-
-        if (action.action === 'commit') {
-          // 执行提交
-          await this.performCommit(action.message!);
-          shouldRegenerate = false;
-        } else if (action.action === 'regenerate') {
-          // 重新生成
-          this.errorHandler.logInfo('用户请求重新生成提交信息', 'CommandHandler');
-          shouldRegenerate = true;
-        } else {
-          // 取消操作
-          this.errorHandler.logInfo('用户取消操作', 'CommandHandler');
-          this.uiManager.showStatusBarMessage('已取消生成提交信息');
-          shouldRegenerate = false;
-        }
+      if (!commitMessage) {
+        // 生成失败或用户取消
+        return;
       }
+
+      // 将提交信息填充到SCM输入框
+      this.gitService.setCommitMessage(commitMessage);
+
+      this.errorHandler.logInfo('提交信息已填充到SCM输入框', 'CommandHandler');
+      this.uiManager.showStatusBarMessage('✅ 提交信息已生成到 Git 面板', 3000);
     } catch (error) {
       const err = isError(error) ? error : new Error(String(error));
       await this.errorHandler.handleError(err, 'generateCommitMessage');
-    } finally {
-      // 清除重试回调
-      this.errorHandler.setRetryCallback(null);
     }
   }
 
@@ -156,27 +134,6 @@ export class CommandHandler {
       const err = isError(error) ? error : new Error(String(error));
       await this.errorHandler.handleError(err, 'generateMessage');
       return null;
-    }
-  }
-
-  /**
-   * 执行Git提交
-   * @param message 提交信息
-   */
-  private async performCommit(message: string): Promise<void> {
-    try {
-      await this.showProgress('正在提交...', async () => {
-        this.errorHandler.logInfo('执行Git提交', 'CommandHandler');
-        await this.gitService.commitWithMessage(message);
-      });
-
-      this.errorHandler.logInfo('提交成功', 'CommandHandler');
-      void vscode.window.showInformationMessage('✅ 提交成功！');
-      this.uiManager.showStatusBarMessage('✅ 提交成功', 3000);
-    } catch (error) {
-      const err = isError(error) ? error : new Error(String(error));
-      await this.errorHandler.handleError(err, 'performCommit');
-      throw error;
     }
   }
 

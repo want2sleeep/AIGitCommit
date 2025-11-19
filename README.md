@@ -2,7 +2,7 @@
 
 [![VSCode Marketplace](https://img.shields.io/badge/VSCode-Marketplace-blue.svg)](https://marketplace.visualstudio.com/items?itemName=SleepSheep.aigitcommit)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.2.0-orange.svg)](package.json)
+[![Version](https://img.shields.io/badge/Version-1.2.1-orange.svg)](package.json)
 [![Publish Status](https://github.com/want2sleeep/AIGitCommit/actions/workflows/publish.yml/badge.svg)](https://github.com/want2sleeep/AIGitCommit/actions/workflows/publish.yml)
 
 🚀 **使用AI自动生成高质量的Git提交信息**
@@ -256,8 +256,11 @@ cd AIGitCommit
 # 安装依赖
 pnpm install
 
-# 编译
-pnpm run compile
+# 类型检查（不生成文件）
+pnpm run type-check
+
+# 类型检查（监听模式）
+pnpm run type-check:watch
 
 # 运行测试
 pnpm test
@@ -271,6 +274,52 @@ pnpm run lint
 # 代码格式化
 pnpm run format
 ```
+
+### 构建系统
+
+本项目使用 **esbuild** 作为生产构建工具，提供极快的构建速度和优化的包体积：
+
+#### esbuild 优势
+
+- ⚡ **极速构建**: 比 TypeScript 编译器快 10-100 倍
+- 📦 **更小体积**: 生产包体积减少约 20-30%
+- 🔄 **Watch 模式**: 开发时自动重新构建
+- 🎯 **Tree Shaking**: 自动移除未使用的代码
+- 🗜️ **代码压缩**: 生产模式自动压缩代码
+
+#### 构建命令
+
+```bash
+# 类型检查（不生成文件）
+pnpm run type-check
+
+# 类型检查（监听模式）
+pnpm run type-check:watch
+
+# 生产构建（用于发布）
+pnpm run package
+
+# 完整构建（类型检查 + 打包）
+pnpm run build
+
+# 开发构建（带 watch 模式）
+pnpm run compile-watch
+
+# 准备发布（运行完整构建和检查）
+pnpm run vscode:prepublish
+```
+
+#### 构建配置
+
+esbuild 配置位于 `esbuild.js` 文件：
+
+- **入口文件**: `src/extension.ts`
+- **输出文件**: `dist/extension.js`
+- **格式**: CommonJS (cjs)
+- **平台**: Node.js
+- **外部依赖**: vscode（由 VSCode 提供）
+- **生产模式**: 启用代码压缩，禁用 sourcemap
+- **开发模式**: 保留 sourcemap，便于调试
 
 ### 开发指南
 
@@ -297,9 +346,10 @@ pnpm run format
 
 2. **开发功能**: 编写代码并确保通过所有检查
    ```bash
+   pnpm run type-check  # 类型检查
    pnpm run lint        # 检查代码规范
    pnpm test            # 运行测试
-   pnpm run compile     # 编译 TypeScript
+   pnpm run build       # 完整构建
    ```
 
 3. **提交代码**: 使用约定式提交格式

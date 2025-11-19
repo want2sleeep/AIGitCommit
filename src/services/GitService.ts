@@ -616,4 +616,18 @@ export class GitService {
 
     return indexChanges.length > 0;
   }
+  /**
+   * 设置提交信息到SCM输入框
+   * @param message 提交信息
+   */
+  setCommitMessage(message: string): void {
+    if (!this.isGitRepository() || !this.git) {
+      return;
+    }
+
+    const repository = this.git.repositories[0];
+    if (repository) {
+      repository.inputBox.value = message;
+    }
+  }
 }

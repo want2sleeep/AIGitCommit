@@ -11,6 +11,11 @@ src/
 vsc-extension-quickstart.md
 CHANGELOG.md
 CONTRIBUTING.md
+esbuild.js
+
+# 使用 esbuild 打包后，不需要 node_modules 和 out 目录
+node_modules/
+out/
 
 # ===========================================
 # TypeScript配置
@@ -64,22 +69,9 @@ coverage-analysis.md
 # 构建产物
 # ===========================================
 *.vsix
-dist/
 build/
 
-# ===========================================
-# 开发依赖（仅保留生产依赖）
-# ===========================================
-node_modules/**/@types/**
-node_modules/**/typescript/**
-node_modules/**/eslint/**
-node_modules/**/jest/**
-node_modules/**/ts-jest/**
-node_modules/**/@typescript-eslint/**
-node_modules/**/@vscode/test-electron/**
-node_modules/**/prettier/**
-node_modules/**/husky/**
-node_modules/**/lint-staged/**
+
 
 # ===========================================
 # Git和版本控制

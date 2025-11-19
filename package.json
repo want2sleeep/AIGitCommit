@@ -2,7 +2,7 @@
   "name": "aigitcommit",
   "displayName": "AI Git Commit",
   "description": "使用AI自动生成高质量的Git提交信息",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "publisher": "SleepSheep",
   "author": {
     "name": "SleepSheep"
@@ -42,7 +42,7 @@
   "activationEvents": [
     "onStartupFinished"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
@@ -150,10 +150,13 @@
   },
   "packageManager": "pnpm@10.18.1",
   "scripts": {
-    "vscode:prepublish": "pnpm run compile",
-    "compile": "tsc -p ./ && tsc -p scripts/version/tsconfig.json",
-    "watch": "tsc -watch -p ./",
-    "pretest": "pnpm run compile && pnpm run lint",
+    "vscode:prepublish": "pnpm run package",
+    "type-check": "tsc --noEmit -p ./ && tsc --noEmit -p scripts/version/tsconfig.json",
+    "type-check:watch": "tsc --noEmit -p ./ --watch",
+    "package": "node esbuild.js --production",
+    "compile-watch": "node esbuild.js --watch",
+    "build": "pnpm run type-check && pnpm run package",
+    "pretest": "pnpm run type-check && pnpm run lint",
     "lint": "eslint src --ext ts",
     "lint:fix": "eslint src --ext ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
@@ -182,6 +185,7 @@
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
     "@vscode/test-electron": "^2.3.8",
+    "esbuild": "^0.27.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
