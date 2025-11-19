@@ -41,8 +41,8 @@ jobs:
         run: pnpm run format:check
         continue-on-error: true
       
-      - name: Compile TypeScript
-        run: pnpm run compile
+      - name: Type Check
+        run: pnpm run type-check
       
       - name: Run tests with coverage
         run: pnpm exec jest --coverage --runInBand
