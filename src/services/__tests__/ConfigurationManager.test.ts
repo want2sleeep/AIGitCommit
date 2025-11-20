@@ -406,7 +406,7 @@ describe('ConfigurationManager', () => {
         commitFormat: 'conventional',
         maxTokens: 500,
         temperature: 0.7,
-        provider: 'azure-openai',
+        provider: 'openai-compatible',
       });
     });
 
