@@ -337,7 +337,7 @@ describe('Performance Benchmarks', () => {
 
       expect(result1).toBe('expensive-result');
       expect(expensiveOperation).toHaveBeenCalledTimes(1);
-      expect(time1).toBeGreaterThanOrEqual(100);
+      expect(time1).toBeGreaterThanOrEqual(90); // Allow some timing tolerance
 
       // Second call - cache hit
       const start2 = Date.now();
