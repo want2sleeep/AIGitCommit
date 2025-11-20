@@ -392,7 +392,7 @@ describe('ConfigurationManager', () => {
     it('should return complete configuration with provider', async () => {
       mockSecrets.get.mockResolvedValue('test-api-key');
       mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
-        if (key === 'provider') return 'azure-openai';
+        if (key === 'provider') return 'openai-compatible';
         return defaultConfigs[key] !== undefined ? defaultConfigs[key] : defaultValue;
       });
 

@@ -16,7 +16,6 @@ AI Git Commit 支持多种AI服务提供商，选择最适合您需求的服务�
 
 ### 主流服务
 - [🤖 OpenAI](openai.md) - 官方GPT模型，质量最佳
-- [🔷 Azure OpenAI](azure-openai.md) - 企业级服务，数据隐私保护
 - [🌟 Qwen](other-services.md#qwen) - 阿里云通义千问，国内访问快
 
 ### 本地服务

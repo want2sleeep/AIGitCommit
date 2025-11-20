@@ -2,8 +2,7 @@
  * API提供商配置接口
  * 定义了每个LLM服务提供商的基本配置信息
  *
- * @property id - 提供商的唯一标识符（如：'openai', 'azure-openai'）
- * @property name - 提供商的显示名称
+ * @property id - 提供商的唯一标识符
  * @property defaultBaseUrl - 提供商的默认API端点URL
  * @property defaultModel - 提供商的默认模型名称
  * @property description - 提供商的描述信息

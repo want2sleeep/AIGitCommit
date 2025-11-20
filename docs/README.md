@@ -11,7 +11,6 @@
 
 ### 配置参考
 - [🤖 OpenAI 配置](configuration/openai.md) - 官方GPT模型配置
-- [🔷 Azure OpenAI](configuration/azure-openai.md) - 企业级Azure服务
 - [🦙 Ollama 本地模型](configuration/ollama.md) - 完全本地运行
 - [🌐 其他服务](configuration/other-services.md) - Qwen、vLLM等
 

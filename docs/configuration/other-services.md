@@ -2,9 +2,7 @@
 
 本文档提供了除 OpenAI 和 Ollama 之外的其他 AI 服务配置示例。
 
-## Azure OpenAI
 
-Azure OpenAI 是微软提供的企业级 AI 服务，提供数据隐私保护和合规性保障。
 
 ### 配置参数
 
@@ -26,23 +24,9 @@ https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-n
 
 ### 完整配置示例
 
-```json
-{
-  "aigitcommit.provider": "openai-compatible",
-  "aigitcommit.apiEndpoint": "https://your-resource.openai.azure.com/openai/deployments/gpt-35-turbo",
-  "aigitcommit.modelName": "gpt-35-turbo",
-  "aigitcommit.language": "zh-CN",
-  "aigitcommit.commitFormat": "conventional",
-  "aigitcommit.maxTokens": 500,
-  "aigitcommit.temperature": 0.7
-}
-```
 
 ### 注意事项
 
-1. **API 版本**：在端点 URL 中包含 API 版本
-2. **部署名称**：使用部署名称而不是模型名称
-3. **认证方式**：支持 API 密钥和 Azure AD
 
 ---
 
@@ -387,9 +371,6 @@ export HTTPS_PROXY=http://username:password@proxy.example.com:8080
 
 ## 性能对比
 
-| 服务 | 响应速度 | 成本 | 隐私保护 | 配置难度 |
-|------|----------|------|----------|----------|
-| **Azure OpenAI** | 快 | 高 | 企业级 | 中等 |
 | **Qwen** | 快 | 中 | 一般 | 简单 |
 | **vLLM** | 中等 | 免费 | 完全 | 复杂 |
 | **LocalAI** | 中等 | 免费 | 完全 | 中等 |
@@ -399,9 +380,6 @@ export HTTPS_PROXY=http://username:password@proxy.example.com:8080
 
 ## 选择建议
 
-### 企业用户
-- **推荐**：Azure OpenAI
-- **原因**：合规性、数据隐私、技术支持
 
 ### 个人开发者
 - **推荐**：Qwen 或 LM Studio

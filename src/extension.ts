@@ -180,7 +180,6 @@ function scheduleTooltipUpdate(
 function getProviderDisplayName(providerId: string): string {
   const providerNames: { [key: string]: string } = {
     openai: 'OpenAI',
-    'azure-openai': 'Azure OpenAI',
     ollama: 'Ollama',
     custom: '自定义',
   };

@@ -93,7 +93,7 @@ Ctrl+Shift+P
 - **Qwen**: 阿里云通义千问大模型服务
 - **Ollama**: 本地运行，完全保护代码隐私
 - **vLLM**: 高性能本地推理引擎
-- **OpenAI Compatible**: 任何 OpenAI 兼容的 API 服务（包括 Azure OpenAI、LocalAI 等）
+- **OpenAI Compatible**: 任何 OpenAI 兼容的 API 服务
 
 ## 📖 使用示例
 
