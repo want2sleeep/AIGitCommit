@@ -71,8 +71,11 @@ git push origin v1.2.0
 ### 发布后验证
 - [ ] GitHub Release 已创建
 - [ ] GitHub Actions 工作流已触发
+- [ ] VSIX 文件已上传到 Release 资产
+- [ ] 可以从 Release 页面下载 VSIX 文件
 - [ ] 插件已发布到 VSCode Marketplace
 - [ ] 可以在 VSCode 中搜索到新版本
+- [ ] Release 描述中包含发布状态反馈
 
 ## 🎯 v1.2.0 主要特性
 

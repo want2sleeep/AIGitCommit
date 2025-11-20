@@ -504,7 +504,9 @@ AIGitCommit/
   - 验证版本号和 CHANGELOG
   - 运行完整的质量检查
   - 构建并打包扩展
+  - 将 VSIX 文件上传为 Release 资产
   - 自动发布到 VS Code 插件市场
+  - 在 Release 中添加发布状态反馈
 
 ### 工作流故障排查
 

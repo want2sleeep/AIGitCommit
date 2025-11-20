@@ -189,6 +189,46 @@ jobs:
           path: '*.vsix'
           retention-days: 30
       
+      - name: Upload VSIX to Release
+        if: github.event_name == 'release' && steps.mode_check.outputs.dry_run != 'true'
+        continue-on-error: true
+        id: upload_release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.vsix'
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Log VSIX upload result
+        if: github.event_name == 'release' && steps.mode_check.outputs.dry_run != 'true'
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          VSIX_FILE="aigitcommit-${VERSION}.vsix"
+          
+          if [ "${{ steps.upload_release.outcome }}" = "success" ]; then
+            echo "::notice::✅ VSIX 文件已成功上传到 Release"
+            echo ""
+            echo "====================================="
+            echo "     VSIX 上传成功"
+            echo "====================================="
+            echo "✓ 文件: $VSIX_FILE"
+            echo "✓ 已附加到 GitHub Release"
+            echo "✓ 用户可以从 Release 页面直接下载"
+            echo "====================================="
+          else
+            echo "::warning::⚠ VSIX 文件上传失败，但不影响市场发布"
+            echo ""
+            echo "====================================="
+            echo "     VSIX 上传失败"
+            echo "====================================="
+            echo "⚠ 文件: $VSIX_FILE"
+            echo "⚠ 未能附加到 GitHub Release"
+            echo "✓ 用户仍可从 Actions 制品下载"
+            echo "✓ 插件市场发布不受影响"
+            echo "====================================="
+          fi
+      
       - name: Dry run summary
         if: steps.mode_check.outputs.dry_run == 'true'
         run: |
@@ -336,6 +376,9 @@ jobs:
             const versionType = isPrerelease ? '预发布版本' : '稳定版本';
             
             // 构建状态消息
+            const vsixFileName = `aigitcommit-${version}.vsix`;
+            const vsixDownloadUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/releases/download/v${version}/${vsixFileName}`;
+            
             const statusMessage = [
               '',
               '---',
@@ -353,6 +396,10 @@ jobs:
               '- 在 VS Code 中搜索 "AI Git Commit"',
               '- 访问插件市场页面直接安装',
               '- 使用命令: `code --install-extension SleepSheep.aigitcommit`',
+              '',
+              '**离线安装**:',
+              '- 下载 VSIX 文件: [' + vsixFileName + '](' + vsixDownloadUrl + ')',
+              '- 在 VS Code 中使用 "从 VSIX 安装" 选项',
               ''
             ].join('\n');
             
@@ -429,6 +476,7 @@ jobs:
               '- **质量检查失败**: 运行 `pnpm run lint` 和 `pnpm run test` 修复问题',
               '- **PAT 认证失败**: 检查 VSCE_PAT secret 是否正确配置',
               '- **发布失败**: 验证版本号是否已存在于插件市场',
+              '- **VSIX 上传失败**: 检查 GITHUB_TOKEN 权限和 Release 状态',
               ''
             ].join('\n');
             

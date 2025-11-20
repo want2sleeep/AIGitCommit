@@ -28,12 +28,17 @@ AI Git Commit 是一个强大的VSCode扩展，它利用大型语言模型（LLM
 3. 搜索 "AI Git Commit"
 4. 点击 "安装"
 
-### 从文件安装
+### 从GitHub Release安装（离线安装）
 
-1. 下载 `.vsix` 文件
-2. 在VSCode中按 `Ctrl+Shift+P`
-3. 输入 "Extensions: Install from VSIX"
-4. 选择下载的文件
+如果无法访问VSCode市场，可以从GitHub Release下载VSIX文件手动安装：
+
+1. 访问 [Releases 页面](https://github.com/want2sleeep/AIGitCommit/releases)
+2. 下载最新版本的 `aigitcommit-x.x.x.vsix` 文件
+3. 在VSCode中按 `Ctrl+Shift+P`
+4. 输入 "Extensions: Install from VSIX"
+5. 选择下载的 `.vsix` 文件
+
+**注意**: 每个Release都会自动附带对应版本的VSIX文件，方便离线安装和分发。
 
 ## 🚀 快速开始
 
