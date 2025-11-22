@@ -6,6 +6,9 @@ import {
   IErrorHandler,
 } from '../types/interfaces';
 import { ConfigurationManager } from './ConfigurationManager';
+import { ConfigurationStatusChecker } from './ConfigurationStatusChecker';
+import { ConfigurationInterceptor } from './ConfigurationInterceptor';
+import { FirstTimeUserGuide } from './FirstTimeUserGuide';
 import { GitService } from './GitService';
 import { LLMService } from './LLMService';
 import { CommandHandler } from './CommandHandler';
@@ -113,6 +116,9 @@ export const ServiceKeys = {
   ErrorHandler: 'ErrorHandler',
   UIManager: 'UIManager',
   ConfigurationManager: 'ConfigurationManager',
+  ConfigurationStatusChecker: 'ConfigurationStatusChecker',
+  ConfigurationInterceptor: 'ConfigurationInterceptor',
+  FirstTimeUserGuide: 'FirstTimeUserGuide',
   GitService: 'GitService',
   LLMService: 'LLMService',
   ProviderManager: 'ProviderManager',
@@ -138,6 +144,22 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
     ServiceKeys.ConfigurationManager,
     () => new ConfigurationManager(context)
   );
+
+  // 注册配置相关服务（依赖ConfigurationManager）
+  container.register(ServiceKeys.ConfigurationStatusChecker, () => {
+    const configManager = container.resolve<ConfigurationManager>(ServiceKeys.ConfigurationManager);
+    return new ConfigurationStatusChecker(configManager);
+  });
+
+  container.register(ServiceKeys.ConfigurationInterceptor, () => {
+    const configManager = container.resolve<ConfigurationManager>(ServiceKeys.ConfigurationManager);
+    return new ConfigurationInterceptor(configManager);
+  });
+
+  container.register(ServiceKeys.FirstTimeUserGuide, () => {
+    const configManager = container.resolve<ConfigurationManager>(ServiceKeys.ConfigurationManager);
+    return new FirstTimeUserGuide(configManager);
+  });
 
   container.register<IGitService>(ServiceKeys.GitService, () => new GitService());
 

@@ -3,6 +3,13 @@ export { ConfigurationProvider } from './ConfigurationProvider';
 export { ConfigurationValidator } from './ConfigurationValidator';
 export { ConfigurationWizard } from './ConfigurationWizard';
 export { ConfigurationMigrator } from './ConfigurationMigrator';
+export {
+  ConfigurationStatusChecker,
+  ConfigurationStatus,
+  ConfigurationItem,
+} from './ConfigurationStatusChecker';
+export { ConfigurationInterceptor } from './ConfigurationInterceptor';
+export { FirstTimeUserGuide } from './FirstTimeUserGuide';
 export { GitService } from './GitService';
 export { LLMService } from './LLMService';
 export { CommandHandler } from './CommandHandler';

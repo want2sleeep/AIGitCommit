@@ -257,10 +257,10 @@ function registerCommands(container: ServiceContainer): vscode.Disposable[] {
 
     // 注册配置面板命令
     errorHandler.logInfo(`Registering command: ${COMMANDS.CONFIGURE_SETTINGS}`, 'Extension');
-    const configCommand = vscode.commands.registerCommand(COMMANDS.CONFIGURE_SETTINGS, () => {
+    const configCommand = vscode.commands.registerCommand(COMMANDS.CONFIGURE_SETTINGS, async () => {
       errorHandler.logInfo(`Executing command: ${COMMANDS.CONFIGURE_SETTINGS}`, 'Extension');
       try {
-        configurationPanelManager.showPanel();
+        await configurationPanelManager.showPanel();
         errorHandler.logInfo(
           `Command completed: ${COMMANDS.CONFIGURE_SETTINGS} - Configuration panel opened`,
           'Extension'
@@ -344,9 +344,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       errorHandler.logError(err as Error, 'Failed to initialize status bar tooltip');
     });
 
+    // 获取配置拦截器（用于缓存失效和异步初始化）
+    const configInterceptor = serviceContainer.resolve<{
+      checkConfigurationStatus: () => Promise<unknown>;
+      invalidateCache: () => void;
+    }>(ServiceKeys.ConfigurationInterceptor);
+
+    // 异步预加载配置状态到缓存（不阻塞激活流程）
+    void (async (): Promise<void> => {
+      try {
+        await configInterceptor.checkConfigurationStatus();
+        errorHandler.logInfo('Configuration status preloaded', 'Extension');
+      } catch (error) {
+        errorHandler.logError(error as Error, 'Failed to preload configuration status');
+      }
+    })();
+
     // 监听配置变更
     const configChangeListener = configManager.onConfigurationChanged(() => {
       errorHandler.logInfo('Configuration changed', 'Extension');
+
+      // 使配置状态缓存失效
+      configInterceptor.invalidateCache();
+      errorHandler.logInfo('Configuration cache invalidated', 'Extension');
 
       void configManager.validateConfig().then((validation) => {
         if (!validation.valid) {

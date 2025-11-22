@@ -2,7 +2,7 @@
   "name": "aigitcommit",
   "displayName": "AI Git Commit",
   "description": "使用AI自动生成高质量的Git提交信息",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "publisher": "SleepSheep",
   "author": {
     "name": "SleepSheep"
@@ -127,6 +127,21 @@
           "minimum": 0,
           "maximum": 2,
           "description": "温度参数（0-2）"
+        },
+        "aigitcommit.customBaseUrls": {
+          "type": "array",
+          "default": [],
+          "description": "用户自定义的 Base URL 候选项列表，用于 OpenAI Compatible 提供商"
+        },
+        "aigitcommit.customModelNames": {
+          "type": "array",
+          "default": [],
+          "description": "用户自定义的模型名称候选项列表，用于 OpenAI Compatible 提供商"
+        },
+        "aigitcommit.autoRedirectToConfiguration": {
+          "type": "boolean",
+          "default": true,
+          "description": "当扩展未配置时，是否自动打开配置向导"
         }
       }
     },

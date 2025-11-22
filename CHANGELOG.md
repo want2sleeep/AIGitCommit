@@ -5,6 +5,134 @@ All notable changes to the "AI Git Commit" extension will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2024-11-22
+
+### ✨ 新增功能
+
+#### 首次用户配置自动重定向
+
+- ✅ **配置拦截器**: 新增 `ConfigurationInterceptor` 服务，自动检测配置状态并拦截未配置的操作
+  - 在用户首次使用时自动打开配置向导
+  - 支持通过 `autoRedirectToConfiguration` 配置项控制自动重定向行为
+  - 防止重复打开配置向导
+  - 提供友好的错误提示和手动配置选项
+
+- ✅ **配置状态检查器**: 新增 `ConfigurationStatusChecker` 服务，提供配置状态检查和缓存机制
+  - 检查 API 密钥、提供商和模型名称是否已配置
+  - 5 分钟缓存 TTL，避免频繁检查
+  - 支持强制刷新缓存
+  - 性能监控：检查耗时超过 100ms 时发出警告
+
+- ✅ **首次用户引导**: 新增 `FirstTimeUserGuide` 服务，为首次用户提供友好的引导界面
+  - 显示欢迎消息，介绍扩展功能
+  - 引导用户完成配置向导
+  - 配置完成后显示使用说明
+
+- ✅ **配置状态预加载**: 在扩展激活时异步预加载配置状态到缓存
+  - 不阻塞扩展激活流程
+  - 提升首次检查配置状态的响应速度
+  - 监听配置变更，自动使缓存失效
+
+- ✅ **新增配置项**: 添加 `autoRedirectToConfiguration` 配置项
+  - 默认值: `true`（启用自动重定向）
+  - 用户可以选择禁用自动重定向，改为手动打开配置
+
+#### OpenAI Compatible 提供商候选项功能
+
+- ✅ **Base URL 候选项**: 为 OpenAI Compatible 提供商提供 Base URL 下拉选择器
+  - **预设候选项**: OpenRouter、Together AI、Groq、Perplexity、DeepSeek
+  - **自定义候选项**: 支持用户添加自定义 Base URL
+  - **智能输入**: 选择"新增"选项时自动切换为文本输入框
+  - **自动保存**: 新输入的 Base URL 自动保存到候选项列表
+  - **去重处理**: 自动去重，避免重复添加相同的 URL
+
+- ✅ **模型名称候选项**: 为 OpenAI Compatible 提供商提供模型名称下拉选择器
+  - **预设候选项**: gpt-3.5-turbo、gpt-4、gpt-4-turbo、claude-3-opus、claude-3-sonnet、llama-3-70b
+  - **自定义候选项**: 支持用户添加自定义模型名称
+  - **智能输入**: 选择"新增"选项时自动切换为文本输入框
+  - **自动保存**: 新输入的模型名称自动保存到候选项列表
+  - **去重处理**: 自动去重，避免重复添加相同的模型名称
+
+- ✅ **动态输入控件**: 根据提供商类型动态生成输入控件
+  - OpenAI Compatible: 显示下拉选择器（包含预设和自定义候选项）
+  - 其他提供商: 显示普通文本输入框
+  - 提供商切换时自动更新输入控件类型
+  - 保留用户当前输入的值
+
+- ✅ **候选项持久化**: 自定义候选项保存到 VSCode 全局配置
+  - `customBaseUrls`: 用户自定义的 Base URL 列表
+  - `customModelNames`: 用户自定义的模型名称列表
+  - 跨工作区共享，方便用户在不同项目中使用
+
+### 🔧 改进
+
+#### 配置管理增强
+
+- ✅ **ConfigurationManager 扩展**: 添加候选项管理方法
+  - `getCustomBaseUrls()`: 获取自定义 Base URL 列表
+  - `addCustomBaseUrl(url)`: 添加自定义 Base URL
+  - `getCustomModelNames()`: 获取自定义模型名称列表
+  - `addCustomModelName(modelName)`: 添加自定义模型名称
+  - 自动去重和错误处理
+
+- ✅ **ConfigurationPanelManager 重构**: 支持动态输入控件生成
+  - `generateBaseUrlInput()`: 根据提供商类型生成 Base URL 输入控件
+  - `generateModelNameInput()`: 根据提供商类型生成模型名称输入控件
+  - 异步加载配置和候选项
+  - 提供商切换时动态更新输入控件
+
+#### 命令处理优化
+
+- ✅ **CommandHandler 重构**: 集成配置拦截器
+  - 在生成提交信息前自动检查配置状态
+  - 未配置时自动打开配置向导
+  - 移除原有的配置验证逻辑（由拦截器统一处理）
+  - 简化前置条件验证流程
+
+#### 错误处理增强
+
+- ✅ **新增错误类**: 添加配置相关的自定义错误类
+  - `ConfigurationCheckError`: 配置状态检查失败错误
+  - `WizardOpenError`: 配置向导打开失败错误
+  - 两者都标记为可恢复错误，支持重试
+
+### 🎨 用户界面改进
+
+- ✅ **配置面板样式优化**: 改进下拉选择器的样式和交互
+  - 下拉选择框最大高度限制，支持滚动
+  - "新增"选项特殊样式，使用分隔线和不同颜色
+  - 键盘导航支持，改进可访问性
+  - 主题适配，确保在深色和浅色主题下都清晰可见
+
+- ✅ **输入控件容器**: 为动态输入控件添加容器元素
+  - 便于动态替换输入控件
+  - 保持布局稳定性
+
+### 🧪 测试
+
+- ✅ **新增测试**: 为候选项功能添加测试
+  - `ConfigurationPanelManager.candidates.test.ts`: 测试候选项相关功能
+  - 测试预设候选项的正确性
+  - 测试自定义候选项的添加和去重
+  - 测试输入控件的动态生成
+
+### 📚 文档
+
+- ✅ **配置项文档**: 更新 package.json 中的配置项说明
+  - `autoRedirectToConfiguration`: 说明自动重定向功能
+  - `customBaseUrls`: 说明自定义 Base URL 候选项
+  - `customModelNames`: 说明自定义模型名称候选项
+
+### 🔄 Breaking Changes
+
+无破坏性变更。所有变更向后兼容。
+
+### 📦 依赖更新
+
+无依赖更新。
+
+---
+
 ## [1.2.1] - 2025-11-19
 
 ### 🔧 内部优化

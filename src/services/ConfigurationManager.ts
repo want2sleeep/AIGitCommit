@@ -244,4 +244,96 @@ export class ConfigurationManager {
     await this.migrator.migrateConfiguration();
     this.invalidateCache();
   }
+
+  /**
+   * 获取自定义 Base URL 候选项列表
+   * @returns 自定义 Base URL 数组
+   */
+  getCustomBaseUrls(): string[] {
+    try {
+      const config = vscode.workspace.getConfiguration('aigitcommit');
+      return config.get<string[]>('customBaseUrls', []);
+    } catch (error) {
+      console.error('Error getting custom base URLs:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 添加自定义 Base URL 候选项
+   * 自动去重，如果 URL 已存在则不重复添加
+   * @param url 要添加的 Base URL
+   * @throws {ConfigurationError} 当保存失败时
+   */
+  async addCustomBaseUrl(url: string): Promise<void> {
+    try {
+      const customUrls = this.getCustomBaseUrls();
+
+      // 去重：如果 URL 已存在，则不添加
+      if (customUrls.includes(url)) {
+        return;
+      }
+
+      // 添加新 URL 并保存
+      customUrls.push(url);
+      await vscode.workspace
+        .getConfiguration('aigitcommit')
+        .update('customBaseUrls', customUrls, vscode.ConfigurationTarget.Global);
+
+      this.invalidateCache();
+    } catch (error) {
+      // 保存失败不影响其他配置
+      console.error('Error adding custom base URL:', error);
+      throw new ConfigurationError(
+        `添加自定义 Base URL 失败: ${error instanceof Error ? error.message : String(error)}`,
+        'update'
+      );
+    }
+  }
+
+  /**
+   * 获取自定义模型名称候选项列表
+   * @returns 自定义模型名称数组
+   */
+  getCustomModelNames(): string[] {
+    try {
+      const config = vscode.workspace.getConfiguration('aigitcommit');
+      return config.get<string[]>('customModelNames', []);
+    } catch (error) {
+      console.error('Error getting custom model names:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 添加自定义模型名称候选项
+   * 自动去重，如果模型名称已存在则不重复添加
+   * @param modelName 要添加的模型名称
+   * @throws {ConfigurationError} 当保存失败时
+   */
+  async addCustomModelName(modelName: string): Promise<void> {
+    try {
+      const customModelNames = this.getCustomModelNames();
+
+      // 去重：如果模型名称已存在，则不添加
+      if (customModelNames.includes(modelName)) {
+        return;
+      }
+
+      // 添加新模型名称并保存
+      customModelNames.push(modelName);
+      await vscode.workspace
+        .getConfiguration('aigitcommit')
+        .update('customModelNames', customModelNames, vscode.ConfigurationTarget.Global);
+
+      this.invalidateCache();
+    } catch (error) {
+      // 保存失败不影响其他配置
+      console.error('Error adding custom model name:', error);
+      throw new ConfigurationError(
+        `添加自定义模型名称失败: ${error instanceof Error ? error.message : String(error)}`,
+        'update'
+      );
+    }
+  }
 }

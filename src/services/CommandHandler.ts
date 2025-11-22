@@ -4,6 +4,7 @@ import { GitService } from './GitService';
 import { LLMService } from './LLMService';
 import { UIManager } from '../utils/UIManager';
 import { ErrorHandler } from '../utils/ErrorHandler';
+import { ConfigurationInterceptor } from './ConfigurationInterceptor';
 import { isError } from '../utils/typeGuards';
 
 /**
@@ -11,19 +12,38 @@ import { isError } from '../utils/typeGuards';
  * 协调各个模块完成提交信息生成的完整流程
  */
 export class CommandHandler {
+  private readonly configInterceptor: ConfigurationInterceptor;
+
   constructor(
     private readonly configManager: ConfigurationManager,
     private readonly gitService: GitService,
     private readonly llmService: LLMService,
     private readonly uiManager: UIManager,
     private readonly errorHandler: ErrorHandler
-  ) {}
+  ) {
+    this.configInterceptor = new ConfigurationInterceptor(configManager);
+  }
 
   /**
    * 生成提交信息的主命令
    * 编排完整的生成流程
    */
   async generateCommitMessage(): Promise<void> {
+    // 使用配置拦截器检查配置状态
+    const canProceed = await this.configInterceptor.interceptOperation(async () => {
+      await this.doGenerateCommitMessage();
+    });
+
+    if (!canProceed) {
+      // 配置向导已打开或操作被拦截，不继续执行
+      return;
+    }
+  }
+
+  /**
+   * 实际执行生成提交信息的逻辑
+   */
+  private async doGenerateCommitMessage(): Promise<void> {
     try {
       this.errorHandler.logInfo('开始生成提交信息', 'CommandHandler');
 
@@ -53,7 +73,7 @@ export class CommandHandler {
 
   /**
    * 验证前置条件
-   * 检查配置和Git状态
+   * 检查Git状态（配置检查由拦截器处理）
    * @returns 前置条件是否满足
    */
   private async validatePrerequisites(): Promise<boolean> {
@@ -77,21 +97,6 @@ export class CommandHandler {
       );
       if (action === '打开源代码管理') {
         void vscode.commands.executeCommand('workbench.view.scm');
-      }
-      return false;
-    }
-
-    // 验证配置
-    const configValid = await this.configManager.isConfigured();
-    if (!configValid) {
-      const validation = await this.configManager.validateConfig();
-      const errorMessage = `配置无效:\n${validation.errors.join('\n')}`;
-
-      const action = await this.uiManager.showError(errorMessage, '配置向导', '打开设置');
-      if (action === '配置向导') {
-        await this.configManager.showConfigurationWizard();
-      } else if (action === '打开设置') {
-        void vscode.commands.executeCommand('workbench.action.openSettings', 'aigitcommit');
       }
       return false;
     }

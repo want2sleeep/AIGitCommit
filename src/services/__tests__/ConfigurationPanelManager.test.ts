@@ -17,6 +17,18 @@ describe('ConfigurationPanelManager', () => {
     // Reset singleton instance
     (ConfigurationPanelManager as any).instance = undefined;
 
+    // Default mock for getFullConfig (can be overridden in specific tests)
+    const defaultConfig = {
+      provider: 'openai',
+      apiKey: 'test-key',
+      apiEndpoint: 'https://api.openai.com/v1',
+      modelName: 'gpt-3.5-turbo',
+      language: 'zh-CN',
+      commitFormat: 'conventional',
+      maxTokens: 500,
+      temperature: 0.7,
+    };
+
     // Mock webview
     mockWebview = {
       html: '',
@@ -63,7 +75,7 @@ describe('ConfigurationPanelManager', () => {
 
     // Mock ConfigurationManager
     mockConfigManager = {
-      getFullConfig: jest.fn(),
+      getFullConfig: jest.fn().mockResolvedValue(defaultConfig),
       saveFullConfig: jest.fn(),
       getConfig: jest.fn(),
       validateConfig: jest.fn(),
@@ -76,6 +88,10 @@ describe('ConfigurationPanelManager', () => {
       setProvider: jest.fn(),
       getConfigSummary: jest.fn(),
       migrateConfiguration: jest.fn(),
+      getCustomBaseUrls: jest.fn(() => []),
+      getCustomModelNames: jest.fn(() => []),
+      addCustomBaseUrl: jest.fn(),
+      addCustomModelName: jest.fn(),
     } as any;
 
     // Mock ProviderManager
@@ -129,8 +145,22 @@ describe('ConfigurationPanelManager', () => {
   });
 
   describe('showPanel', () => {
-    it('should create a new webview panel', () => {
-      panelManager.showPanel();
+    beforeEach(() => {
+      // Mock getFullConfig for showPanel
+      mockConfigManager.getFullConfig.mockResolvedValue({
+        provider: 'openai',
+        apiKey: 'test-key',
+        apiEndpoint: 'https://api.openai.com/v1',
+        modelName: 'gpt-3.5-turbo',
+        language: 'zh-CN',
+        commitFormat: 'conventional',
+        maxTokens: 500,
+        temperature: 0.7,
+      });
+    });
+
+    it('should create a new webview panel', async () => {
+      await panelManager.showPanel();
 
       expect(vscode.window.createWebviewPanel).toHaveBeenCalledWith(
         'aigitcommitConfig',
@@ -144,8 +174,8 @@ describe('ConfigurationPanelManager', () => {
       );
     });
 
-    it('should set webview HTML content', () => {
-      panelManager.showPanel();
+    it('should set webview HTML content', async () => {
+      await panelManager.showPanel();
 
       expect(mockWebview.html).toBeTruthy();
       expect(mockWebview.html).toContain('AI Git Commit 配置');
@@ -155,19 +185,19 @@ describe('ConfigurationPanelManager', () => {
       expect(mockWebview.html).toContain('model-name');
     });
 
-    it('should register message handler', () => {
-      panelManager.showPanel();
+    it('should register message handler', async () => {
+      await panelManager.showPanel();
 
       expect(mockWebview.onDidReceiveMessage).toHaveBeenCalled();
     });
 
-    it('should register dispose handler', () => {
-      panelManager.showPanel();
+    it('should register dispose handler', async () => {
+      await panelManager.showPanel();
 
       expect(mockPanel.onDidDispose).toHaveBeenCalled();
     });
 
-    it('should load current configuration on panel creation', () => {
+    it('should load current configuration on panel creation', async () => {
       mockConfigManager.getFullConfig.mockResolvedValue({
         provider: 'openai',
         apiKey: 'test-key',
@@ -179,30 +209,30 @@ describe('ConfigurationPanelManager', () => {
         temperature: 0.7,
       });
 
-      panelManager.showPanel();
+      await panelManager.showPanel();
 
       expect(mockConfigManager.getFullConfig).toHaveBeenCalled();
     });
 
-    it('should reveal existing panel instead of creating new one', () => {
-      panelManager.showPanel();
+    it('should reveal existing panel instead of creating new one', async () => {
+      await panelManager.showPanel();
       const firstCallCount = (vscode.window.createWebviewPanel as jest.Mock).mock.calls.length;
 
-      panelManager.showPanel();
+      await panelManager.showPanel();
 
       expect(vscode.window.createWebviewPanel).toHaveBeenCalledTimes(firstCallCount);
       expect(mockPanel.reveal).toHaveBeenCalledWith(vscode.ViewColumn.One);
     });
 
-    it('should include CSP in HTML content', () => {
-      panelManager.showPanel();
+    it('should include CSP in HTML content', async () => {
+      await panelManager.showPanel();
 
       expect(mockWebview.html).toContain('Content-Security-Policy');
       expect(mockWebview.html).toContain('nonce-');
     });
 
-    it('should include all provider options in HTML', () => {
-      panelManager.showPanel();
+    it('should include all provider options in HTML', async () => {
+      await panelManager.showPanel();
 
       expect(mockWebview.html).toContain('value="openai"');
       expect(mockWebview.html).toContain('value="qwen"');
@@ -215,8 +245,8 @@ describe('ConfigurationPanelManager', () => {
   describe('handleMessage', () => {
     let messageHandler: (message: any) => Promise<void>;
 
-    beforeEach(() => {
-      panelManager.showPanel();
+    beforeEach(async () => {
+      await panelManager.showPanel();
       messageHandler = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
     });
 
@@ -621,7 +651,7 @@ describe('ConfigurationPanelManager', () => {
         temperature: 0.5,
       });
 
-      panelManager.showPanel();
+      await panelManager.showPanel();
 
       await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -639,7 +669,7 @@ describe('ConfigurationPanelManager', () => {
     it('should handle errors when loading configuration', async () => {
       mockConfigManager.getFullConfig.mockRejectedValue(new Error('Config load error'));
 
-      panelManager.showPanel();
+      await panelManager.showPanel();
 
       await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -652,8 +682,8 @@ describe('ConfigurationPanelManager', () => {
   describe('saveConfig', () => {
     let messageHandler: (message: any) => Promise<void>;
 
-    beforeEach(() => {
-      panelManager.showPanel();
+    beforeEach(async () => {
+      await panelManager.showPanel();
       messageHandler = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
     });
 
@@ -694,8 +724,8 @@ describe('ConfigurationPanelManager', () => {
   describe('validateConfig', () => {
     let messageHandler: (message: any) => Promise<void>;
 
-    beforeEach(() => {
-      panelManager.showPanel();
+    beforeEach(async () => {
+      await panelManager.showPanel();
       messageHandler = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
     });
 
@@ -835,8 +865,8 @@ describe('ConfigurationPanelManager', () => {
   });
 
   describe('panel lifecycle', () => {
-    it('should clean up panel reference on dispose', () => {
-      panelManager.showPanel();
+    it('should clean up panel reference on dispose', async () => {
+      await panelManager.showPanel();
 
       // Trigger dispose callback
       if (mockPanel._disposeCallback) {
@@ -844,13 +874,13 @@ describe('ConfigurationPanelManager', () => {
       }
 
       // Show panel again should create new panel
-      panelManager.showPanel();
+      await panelManager.showPanel();
 
       expect(vscode.window.createWebviewPanel).toHaveBeenCalledTimes(2);
     });
 
-    it('should dispose panel when dispose is called', () => {
-      panelManager.showPanel();
+    it('should dispose panel when dispose is called', async () => {
+      await panelManager.showPanel();
 
       panelManager.dispose();
 
@@ -883,8 +913,8 @@ describe('ConfigurationPanelManager', () => {
   describe('message handling edge cases', () => {
     let messageHandler: (message: any) => Promise<void>;
 
-    beforeEach(() => {
-      panelManager.showPanel();
+    beforeEach(async () => {
+      await panelManager.showPanel();
       messageHandler = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
     });
 

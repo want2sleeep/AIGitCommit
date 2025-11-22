@@ -3,6 +3,31 @@ import { ConfigurationManager } from './ConfigurationManager';
 import { ProviderManager } from './ProviderManager';
 
 /**
+ * 预设 Base URL 候选项
+ * 包含主流 OpenAI Compatible 服务提供商的 API 端点
+ */
+const PRESET_BASE_URLS = [
+  { label: 'OpenRouter', value: 'https://openrouter.ai/api/v1' },
+  { label: 'Together AI', value: 'https://api.together.xyz/v1' },
+  { label: 'Groq', value: 'https://api.groq.com/openai/v1' },
+  { label: 'Perplexity', value: 'https://api.perplexity.ai' },
+  { label: 'DeepSeek', value: 'https://api.deepseek.com/v1' },
+];
+
+/**
+ * 预设模型名称候选项
+ * 包含常用的 LLM 模型名称
+ */
+const PRESET_MODEL_NAMES = [
+  'gpt-3.5-turbo',
+  'gpt-4',
+  'gpt-4-turbo',
+  'claude-3-opus',
+  'claude-3-sonnet',
+  'llama-3-70b',
+];
+
+/**
  * Webview消息接口
  * 定义了Webview和Extension之间通信的消息格式
  *
@@ -11,7 +36,10 @@ import { ProviderManager } from './ProviderManager';
  */
 interface WebviewMessage {
   command: 'load' | 'save' | 'validate' | 'providerChanged';
-  data?: ConfigurationData | { provider: string };
+  data?:
+    | ConfigurationData
+    | { provider: string }
+    | { provider: string; currentBaseUrl: string; currentModelName: string };
 }
 
 /**
@@ -81,11 +109,91 @@ export class ConfigurationPanelManager {
   }
 
   /**
+   * 生成 Base URL 输入控件 HTML
+   * 根据提供商类型生成下拉选择框或文本输入框
+   * @param provider 提供商 ID
+   * @param currentValue 当前值
+   * @param customCandidates 自定义候选项列表
+   * @returns HTML 字符串
+   */
+  private generateBaseUrlInput(
+    provider: string,
+    currentValue: string,
+    customCandidates: string[]
+  ): string {
+    if (provider === 'openai-compatible') {
+      // 生成下拉选择框
+      const presetOptions = PRESET_BASE_URLS.map(
+        (preset) =>
+          `<option value="${preset.value}" ${currentValue === preset.value ? 'selected' : ''}>${preset.label} (${preset.value})</option>`
+      ).join('');
+
+      const customOptions = customCandidates
+        .map(
+          (url) =>
+            `<option value="${url}" ${currentValue === url ? 'selected' : ''}>${url}</option>`
+        )
+        .join('');
+
+      const addNewOption = `<option value="__add_new__" class="add-new-option">➕ 新增</option>`;
+
+      return `<select id="base-url" class="form-control" required>
+                ${presetOptions}
+                ${customOptions}
+                ${addNewOption}
+              </select>`;
+    } else {
+      // 生成文本输入框
+      return `<input type="url" id="base-url" class="form-control" value="${currentValue}" required>`;
+    }
+  }
+
+  /**
+   * 生成模型名称输入控件 HTML
+   * 根据提供商类型生成下拉选择框或文本输入框
+   * @param provider 提供商 ID
+   * @param currentValue 当前值
+   * @param customCandidates 自定义候选项列表
+   * @returns HTML 字符串
+   */
+  private generateModelNameInput(
+    provider: string,
+    currentValue: string,
+    customCandidates: string[]
+  ): string {
+    if (provider === 'openai-compatible') {
+      // 生成下拉选择框
+      const presetOptions = PRESET_MODEL_NAMES.map(
+        (model) =>
+          `<option value="${model}" ${currentValue === model ? 'selected' : ''}>${model}</option>`
+      ).join('');
+
+      const customOptions = customCandidates
+        .map(
+          (model) =>
+            `<option value="${model}" ${currentValue === model ? 'selected' : ''}>${model}</option>`
+        )
+        .join('');
+
+      const addNewOption = `<option value="__add_new__" class="add-new-option">➕ 新增</option>`;
+
+      return `<select id="model-name" class="form-control" required>
+                ${presetOptions}
+                ${customOptions}
+                ${addNewOption}
+              </select>`;
+    } else {
+      // 生成文本输入框
+      return `<input type="text" id="model-name" class="form-control" value="${currentValue}" required>`;
+    }
+  }
+
+  /**
    * 显示配置面板
    * 如果面板已存在则将其显示到前台，否则创建新的Webview面板
    * 面板支持用户配置API提供商、密钥、端点和模型等信息
    */
-  showPanel(): void {
+  async showPanel(): Promise<void> {
     // 如果面板已存在，则显示它
     if (this.panel) {
       this.panel.reveal(vscode.ViewColumn.One);
@@ -104,8 +212,8 @@ export class ConfigurationPanelManager {
       }
     );
 
-    // 设置Webview内容
-    this.panel.webview.html = this.getWebviewContent(this.panel.webview);
+    // 设置Webview内容（异步加载自定义候选项）
+    this.panel.webview.html = await this.getWebviewContent(this.panel.webview);
 
     // 处理来自Webview的消息
     this.panel.webview.onDidReceiveMessage(
@@ -168,10 +276,49 @@ export class ConfigurationPanelManager {
         if (message.data && 'provider' in message.data) {
           const providerId = (message.data as { provider: string }).provider;
           const defaultConfig = this.providerManager.getDefaultConfig(providerId);
-          void this.panel?.webview.postMessage({
-            command: 'updateDefaults',
-            data: defaultConfig,
-          });
+
+          // 如果切换到 openai-compatible，需要生成新的输入控件 HTML
+          if (providerId === 'openai-compatible') {
+            const customBaseUrls = this.configManager.getCustomBaseUrls();
+            const customModelNames = this.configManager.getCustomModelNames();
+
+            // 获取当前值（如果有的话）
+            const currentData = message.data as {
+              provider: string;
+              currentBaseUrl?: string;
+              currentModelName?: string;
+            };
+            const currentBaseUrl = currentData.currentBaseUrl || defaultConfig.baseUrl || '';
+            const currentModelName = currentData.currentModelName || defaultConfig.modelName || '';
+
+            // 生成新的输入控件 HTML
+            const baseUrlInput = this.generateBaseUrlInput(
+              providerId,
+              currentBaseUrl,
+              customBaseUrls
+            );
+            const modelNameInput = this.generateModelNameInput(
+              providerId,
+              currentModelName,
+              customModelNames
+            );
+
+            void this.panel?.webview.postMessage({
+              command: 'updateInputControls',
+              data: {
+                baseUrlHtml: baseUrlInput,
+                modelNameHtml: modelNameInput,
+                baseUrl: currentBaseUrl,
+                modelName: currentModelName,
+              },
+            });
+          } else {
+            // 切换到其他提供商，使用默认配置
+            void this.panel?.webview.postMessage({
+              command: 'updateDefaults',
+              data: defaultConfig,
+            });
+          }
         }
         break;
       }
@@ -207,6 +354,7 @@ export class ConfigurationPanelManager {
   /**
    * 保存配置
    * 验证配置有效性后，将配置保存到VSCode设置和SecretStorage
+   * 如果是 openai-compatible 提供商，还会保存自定义候选项
    * 保存结果会通过消息发送回Webview，并显示相应的成功或错误提示
    *
    * @param config - 要保存的配置数据
@@ -237,6 +385,37 @@ export class ConfigurationPanelManager {
         apiEndpoint: config.baseUrl,
         modelName: config.modelName,
       });
+
+      // 如果是 openai-compatible 提供商，保存自定义候选项
+      if (config.provider === 'openai-compatible') {
+        try {
+          // 检查 Base URL 是否为新的自定义值
+          const customBaseUrls = this.configManager.getCustomBaseUrls();
+          const isPresetBaseUrl = PRESET_BASE_URLS.some(
+            (preset) => preset.value === config.baseUrl
+          );
+          const isExistingCustomBaseUrl = customBaseUrls.includes(config.baseUrl);
+
+          if (!isPresetBaseUrl && !isExistingCustomBaseUrl && config.baseUrl.trim() !== '') {
+            await this.configManager.addCustomBaseUrl(config.baseUrl);
+          }
+
+          // 检查模型名称是否为新的自定义值
+          const customModelNames = this.configManager.getCustomModelNames();
+          const isPresetModelName = PRESET_MODEL_NAMES.includes(config.modelName);
+          const isExistingCustomModelName = customModelNames.includes(config.modelName);
+
+          if (!isPresetModelName && !isExistingCustomModelName && config.modelName.trim() !== '') {
+            await this.configManager.addCustomModelName(config.modelName);
+          }
+        } catch (error) {
+          // 自定义候选项保存失败不影响配置的其他部分
+          console.error('Error saving custom candidates:', error);
+          void vscode.window.showWarningMessage(
+            '配置已保存，但自定义候选项保存失败。下次配置时可能需要重新输入。'
+          );
+        }
+      }
 
       // 发送成功消息
       void this.panel?.webview.postMessage({
@@ -331,17 +510,34 @@ export class ConfigurationPanelManager {
    * 生成配置面板的完整HTML，包括：
    * - 提供商选择器
    * - API密钥输入框（密码类型）
-   * - Base URL输入框
-   * - 模型名称输入框
+   * - Base URL输入框（根据提供商类型动态生成）
+   * - 模型名称输入框（根据提供商类型动态生成）
    * - 保存和取消按钮
    * - 表单验证和错误显示逻辑
    *
    * @param webview - VSCode Webview实例
    * @returns 完整的HTML字符串
    */
-  private getWebviewContent(webview: vscode.Webview): string {
+  private async getWebviewContent(webview: vscode.Webview): Promise<string> {
     const nonce = this.getNonce();
     const providers = this.providerManager.getProviders();
+
+    // 获取当前配置和自定义候选项
+    const fullConfig = await this.configManager.getFullConfig();
+    const customBaseUrls = this.configManager.getCustomBaseUrls();
+    const customModelNames = this.configManager.getCustomModelNames();
+
+    // 生成输入控件 HTML
+    const baseUrlInput = this.generateBaseUrlInput(
+      fullConfig.provider,
+      fullConfig.apiEndpoint,
+      customBaseUrls
+    );
+    const modelNameInput = this.generateModelNameInput(
+      fullConfig.provider,
+      fullConfig.modelName,
+      customModelNames
+    );
 
     return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -489,6 +685,40 @@ export class ConfigurationPanelManager {
         .input-error {
             border-color: var(--vscode-inputValidation-errorBorder) !important;
         }
+
+        /* 下拉选择框样式 */
+        select {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* "新增"选项特殊样式 */
+        .add-new-option {
+            border-top: 1px solid var(--vscode-input-border);
+            margin-top: 4px;
+            padding-top: 4px;
+            font-weight: 500;
+            color: var(--vscode-textLink-foreground);
+        }
+
+        /* 输入控件容器样式 */
+        #base-url-container,
+        #model-name-container {
+            position: relative;
+        }
+
+        /* 确保下拉选择框在对话框内正确显示 */
+        select option {
+            background-color: var(--vscode-dropdown-background);
+            color: var(--vscode-dropdown-foreground);
+        }
+
+        /* 键盘导航支持 */
+        select:focus option:checked,
+        select:focus option:hover {
+            background-color: var(--vscode-list-activeSelectionBackground);
+            color: var(--vscode-list-activeSelectionForeground);
+        }
     </style>
 </head>
 <body>
@@ -514,14 +744,18 @@ export class ConfigurationPanelManager {
             
             <div class="form-group">
                 <label for="base-url" class="required">Base URL</label>
-                <input type="url" id="base-url" class="form-control" required>
+                <div id="base-url-container">
+                    ${baseUrlInput}
+                </div>
                 <small class="form-text">API端点地址</small>
                 <span class="error-text" id="baseUrl-error"></span>
             </div>
             
             <div class="form-group">
                 <label for="model-name" class="required">模型名称</label>
-                <input type="text" id="model-name" class="form-control" required>
+                <div id="model-name-container">
+                    ${modelNameInput}
+                </div>
                 <small class="form-text">使用的模型名称</small>
                 <span class="error-text" id="modelName-error"></span>
             </div>
@@ -542,10 +776,66 @@ export class ConfigurationPanelManager {
             const form = document.getElementById('config-form');
             const providerSelector = document.getElementById('provider-selector');
             const apiKeyInput = document.getElementById('api-key');
-            const baseUrlInput = document.getElementById('base-url');
-            const modelNameInput = document.getElementById('model-name');
+            const baseUrlContainer = document.getElementById('base-url-container');
+            const modelNameContainer = document.getElementById('model-name-container');
             const cancelBtn = document.getElementById('cancel-btn');
             const messageDiv = document.getElementById('validation-message');
+
+            // 获取当前输入元素的辅助函数
+            function getBaseUrlInput() {
+                return document.getElementById('base-url');
+            }
+
+            function getModelNameInput() {
+                return document.getElementById('model-name');
+            }
+
+            // 处理"新增"选项的函数
+            function handleAddNew(selectElement, container, inputType) {
+                if (selectElement.value === '__add_new__') {
+                    // 创建新的文本输入框
+                    const input = document.createElement('input');
+                    input.type = inputType;
+                    input.id = selectElement.id;
+                    input.className = 'form-control';
+                    input.value = '';
+                    input.required = true;
+
+                    // 替换下拉选择框为文本输入框
+                    container.innerHTML = '';
+                    container.appendChild(input);
+                    
+                    // 自动获得焦点
+                    input.focus();
+                } else {
+                    // 选择了预设或自定义候选项，值已自动更新
+                    // 不需要额外处理，select 元素的 value 已经是选中的值
+                }
+            }
+
+            // 为 Base URL 下拉选择框添加事件监听器
+            function attachBaseUrlListener() {
+                const baseUrlInput = getBaseUrlInput();
+                if (baseUrlInput && baseUrlInput.tagName === 'SELECT') {
+                    baseUrlInput.addEventListener('change', (e) => {
+                        handleAddNew(e.target, baseUrlContainer, 'url');
+                    });
+                }
+            }
+
+            // 为模型名称下拉选择框添加事件监听器
+            function attachModelNameListener() {
+                const modelNameInput = getModelNameInput();
+                if (modelNameInput && modelNameInput.tagName === 'SELECT') {
+                    modelNameInput.addEventListener('change', (e) => {
+                        handleAddNew(e.target, modelNameContainer, 'text');
+                    });
+                }
+            }
+
+            // 初始化事件监听器
+            attachBaseUrlListener();
+            attachModelNameListener();
 
             // 清除错误提示
             function clearErrors() {
@@ -590,22 +880,59 @@ export class ConfigurationPanelManager {
                         // 显式设置API密钥输入框可见和可编辑
                         apiKeyInput.style.display = 'block';
                         apiKeyInput.disabled = false;
-                        baseUrlInput.value = message.data.baseUrl || '';
-                        modelNameInput.value = message.data.modelName || '';
+                        
+                        // 更新 Base URL 和模型名称的值
+                        const baseUrlInput = getBaseUrlInput();
+                        const modelNameInput = getModelNameInput();
+                        if (baseUrlInput) {
+                            baseUrlInput.value = message.data.baseUrl || '';
+                        }
+                        if (modelNameInput) {
+                            modelNameInput.value = message.data.modelName || '';
+                        }
+                        
+                        // 重新附加事件监听器
+                        attachBaseUrlListener();
+                        attachModelNameListener();
                         break;
                     
                     case 'updateDefaults':
                         // 提供商变更时，只更新Base URL和模型名称
                         // 不清空或隐藏API密钥输入框
-                        if (message.data.baseUrl) {
-                            baseUrlInput.value = message.data.baseUrl;
+                        const baseUrlInputUpdate = getBaseUrlInput();
+                        const modelNameInputUpdate = getModelNameInput();
+                        
+                        if (message.data.baseUrl && baseUrlInputUpdate) {
+                            baseUrlInputUpdate.value = message.data.baseUrl;
                         }
-                        if (message.data.modelName) {
-                            modelNameInput.value = message.data.modelName;
+                        if (message.data.modelName && modelNameInputUpdate) {
+                            modelNameInputUpdate.value = message.data.modelName;
                         }
                         // 确保API密钥输入框保持可见
                         apiKeyInput.style.display = 'block';
                         apiKeyInput.disabled = false;
+                        
+                        // 重新附加事件监听器
+                        attachBaseUrlListener();
+                        attachModelNameListener();
+                        break;
+                    
+                    case 'updateInputControls':
+                        // 切换到 openai-compatible 时，更新输入控件为下拉选择框
+                        if (message.data.baseUrlHtml) {
+                            baseUrlContainer.innerHTML = message.data.baseUrlHtml;
+                        }
+                        if (message.data.modelNameHtml) {
+                            modelNameContainer.innerHTML = message.data.modelNameHtml;
+                        }
+                        
+                        // 确保API密钥输入框保持可见
+                        apiKeyInput.style.display = 'block';
+                        apiKeyInput.disabled = false;
+                        
+                        // 重新附加事件监听器
+                        attachBaseUrlListener();
+                        attachModelNameListener();
                         break;
                     
                     case 'saveResult':
@@ -634,9 +961,17 @@ export class ConfigurationPanelManager {
 
             // 提供商变更处理
             providerSelector.addEventListener('change', (e) => {
+                // 获取当前值以便在切换时保留
+                const baseUrlInput = getBaseUrlInput();
+                const modelNameInput = getModelNameInput();
+                
                 vscode.postMessage({
                     command: 'providerChanged',
-                    data: { provider: e.target.value }
+                    data: { 
+                        provider: e.target.value,
+                        currentBaseUrl: baseUrlInput ? baseUrlInput.value : '',
+                        currentModelName: modelNameInput ? modelNameInput.value : ''
+                    }
                 });
                 // 确保API密钥输入框在提供商变更时保持可见
                 apiKeyInput.style.display = 'block';
@@ -648,11 +983,14 @@ export class ConfigurationPanelManager {
                 e.preventDefault();
                 clearErrors();
                 
+                const baseUrlInput = getBaseUrlInput();
+                const modelNameInput = getModelNameInput();
+                
                 const config = {
                     provider: providerSelector.value,
                     apiKey: apiKeyInput.value,
-                    baseUrl: baseUrlInput.value,
-                    modelName: modelNameInput.value
+                    baseUrl: baseUrlInput ? baseUrlInput.value : '',
+                    modelName: modelNameInput ? modelNameInput.value : ''
                 };
                 
                 vscode.postMessage({ 

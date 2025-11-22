@@ -108,3 +108,39 @@ export class NetworkError extends BaseError {
     super(message, 'NETWORK_ERROR', true);
   }
 }
+
+/**
+ * Error thrown when configuration status check fails.
+ * This error is recoverable as users can retry the check.
+ */
+export class ConfigurationCheckError extends BaseError {
+  /**
+   * Creates a new ConfigurationCheckError instance.
+   * @param message - Human-readable error message
+   * @param cause - Optional underlying error that caused the check failure
+   */
+  constructor(
+    message: string,
+    public readonly cause?: Error
+  ) {
+    super(message, 'CONFIG_CHECK_ERROR', true);
+  }
+}
+
+/**
+ * Error thrown when configuration wizard fails to open.
+ * This error is recoverable as users can try opening it manually.
+ */
+export class WizardOpenError extends BaseError {
+  /**
+   * Creates a new WizardOpenError instance.
+   * @param message - Human-readable error message
+   * @param cause - Optional underlying error that caused the wizard to fail
+   */
+  constructor(
+    message: string,
+    public readonly cause?: Error
+  ) {
+    super(message, 'WIZARD_OPEN_ERROR', true);
+  }
+}
