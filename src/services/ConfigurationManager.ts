@@ -213,9 +213,6 @@ export class ConfigurationManager {
         isConfigured,
       };
     } catch (error) {
-      console.error('Error getting config summary:', error);
-      console.error('Error details:', error instanceof Error ? error.message : String(error));
-
       // 返回默认值而不是抛出异常
       return {
         provider: 'openai',
@@ -282,7 +279,6 @@ export class ConfigurationManager {
       this.invalidateCache();
     } catch (error) {
       // 保存失败不影响其他配置
-      console.error('Error adding custom base URL:', error);
       throw new ConfigurationError(
         `添加自定义 Base URL 失败: ${error instanceof Error ? error.message : String(error)}`,
         'update'
@@ -327,7 +323,6 @@ export class ConfigurationManager {
       this.invalidateCache();
     } catch (error) {
       // 保存失败不影响其他配置
-      console.error('Error adding custom model name:', error);
       throw new ConfigurationError(
         `添加自定义模型名称失败: ${error instanceof Error ? error.message : String(error)}`,
         'update'

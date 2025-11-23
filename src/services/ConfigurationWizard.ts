@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ExtensionConfig } from '../types';
-import { ConfigurationError, NetworkError, APIError } from '../errors';
+import { ConfigurationError } from '../errors';
 import { isValidUrl } from '../utils/validation';
 import { ConfigurationProvider } from './ConfigurationProvider';
 
@@ -300,7 +300,7 @@ export class ConfigurationWizard {
     }
 
     if (err.code) {
-      return this.handleNetworkError(err.code, err.message || '未知错误', error);
+      return this.handleNetworkError(err.code, err.message || '未知错误');
     }
 
     const errorMessage = err.message || '未知错误';
@@ -321,9 +321,7 @@ export class ConfigurationWizard {
     const apiErrorMessage = response.data?.error?.message || '未知错误';
     const userMessage = this.getAPIErrorMessage(status, apiErrorMessage);
 
-    const apiError = new APIError(`API连接测试失败: ${apiErrorMessage}`, status, response.data);
     void vscode.window.showErrorMessage(userMessage);
-    console.error('API Error:', apiError);
     return false;
   }
 
@@ -349,10 +347,9 @@ export class ConfigurationWizard {
    * 处理网络错误
    * @param code 错误代码
    * @param message 错误消息
-   * @param originalError 原始错误
    * @returns 测试是否成功（总是false）
    */
-  private handleNetworkError(code: string, message: string, originalError: unknown): boolean {
+  private handleNetworkError(code: string, message: string): boolean {
     const networkErrorMap: Record<string, { message: string; userMessage: string }> = {
       ECONNREFUSED: {
         message: '连接被拒绝：无法连接到API端点',
@@ -370,17 +367,11 @@ export class ConfigurationWizard {
 
     const errorInfo = networkErrorMap[code];
     if (errorInfo) {
-      const networkError = new NetworkError(
-        errorInfo.message,
-        originalError instanceof Error ? originalError : undefined
-      );
       void vscode.window.showErrorMessage(errorInfo.userMessage);
-      console.error('Network Error:', networkError);
       return false;
     }
 
     void vscode.window.showErrorMessage(`❌ 连接测试失败: ${message}`);
-    console.error('Connection test error:', originalError);
     return false;
   }
 }

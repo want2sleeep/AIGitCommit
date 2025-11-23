@@ -24,7 +24,6 @@ async function isCommandRegistered(commandId: string): Promise<boolean> {
     const commands = await vscode.commands.getCommands(true);
     return commands.includes(commandId);
   } catch (error) {
-    console.error(`Failed to check command registration: ${commandId}`, error);
     return false;
   }
 }
@@ -164,8 +163,8 @@ function scheduleTooltipUpdate(
 
   // 设置新的定时器（100ms防抖）
   tooltipUpdateTimer = setTimeout(() => {
-    updateStatusBarTooltip(configManager, statusBarItem).catch((err) => {
-      console.error('Failed to update tooltip:', err);
+    updateStatusBarTooltip(configManager, statusBarItem).catch(() => {
+      // Tooltip update failed, ignore silently
     });
   }, 100);
 }

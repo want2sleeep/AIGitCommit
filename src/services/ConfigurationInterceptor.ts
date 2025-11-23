@@ -55,11 +55,11 @@ export class ConfigurationInterceptor {
         if (autoRedirect) {
           await this.openConfigurationWizard();
         } else {
-          this.showManualConfigurationOption();
+          await this.showManualConfigurationOption();
         }
       } catch (wizardError) {
         // 向导也打不开，显示错误并提供手动选项
-        this.showManualConfigurationOption();
+        await this.showManualConfigurationOption();
       }
 
       return false;
@@ -124,14 +124,14 @@ export class ConfigurationInterceptor {
   /**
    * 显示手动配置选项
    */
-  private showManualConfigurationOption(): void {
-    void vscode.window
-      .showErrorMessage('无法自动打开配置向导。请手动运行配置命令。', '打开配置')
-      .then((selection) => {
-        if (selection === '打开配置') {
-          void vscode.commands.executeCommand('aigitcommit.configureSettings');
-        }
-      });
+  private async showManualConfigurationOption(): Promise<void> {
+    const selection = await vscode.window.showErrorMessage(
+      '无法自动打开配置向导。请手动运行配置命令。',
+      '打开配置'
+    );
+    if (selection === '打开配置') {
+      await vscode.commands.executeCommand('aigitcommit.configureSettings');
+    }
   }
 
   /**

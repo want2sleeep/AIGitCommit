@@ -410,7 +410,6 @@ export class ConfigurationPanelManager {
           }
         } catch (error) {
           // 自定义候选项保存失败不影响配置的其他部分
-          console.error('Error saving custom candidates:', error);
           void vscode.window.showWarningMessage(
             '配置已保存，但自定义候选项保存失败。下次配置时可能需要重新输入。'
           );
