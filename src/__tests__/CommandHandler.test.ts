@@ -42,12 +42,24 @@ describe('CommandHandler', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // Mock vscode.workspace.getConfiguration for ConfigurationInterceptor
+    (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+      get: jest.fn((key: string, defaultValue?: unknown) => {
+        if (key === 'autoRedirectToConfiguration') {
+          return true;
+        }
+        return defaultValue;
+      }),
+    });
+
     // Create mocked services
     mockConfigManager = {
       isConfigured: jest.fn(),
       validateConfig: jest.fn(),
       getConfig: jest.fn(),
       showConfigurationWizard: jest.fn(),
+      getApiKey: jest.fn().mockResolvedValue('test-api-key'),
+      getProvider: jest.fn().mockReturnValue('openai'),
     } as unknown as jest.Mocked<ConfigurationManager>;
 
     mockGitService = {
@@ -88,11 +100,14 @@ describe('CommandHandler', () => {
   describe('generateCommitMessage - Complete Flow', () => {
     it('should complete full commit message generation and set message in SCM input box', async () => {
       // Setup mocks for successful flow
+      // Ensure configuration is valid
+      mockConfigManager.getApiKey = jest.fn().mockResolvedValue('test-api-key');
+      mockConfigManager.getProvider = jest.fn().mockReturnValue('openai');
+      mockConfigManager.getConfig.mockResolvedValue(mockConfig);
+
       mockGitService.isGitRepository.mockReturnValue(true);
       mockGitService.hasStagedChanges.mockReturnValue(true);
-      mockConfigManager.isConfigured.mockResolvedValue(true);
       mockGitService.getStagedChanges.mockResolvedValue(mockChanges);
-      mockConfigManager.getConfig.mockResolvedValue(mockConfig);
       mockLLMService.generateCommitMessage.mockResolvedValue('feat: add test feature');
 
       // Mock UI interactions
@@ -106,7 +121,6 @@ describe('CommandHandler', () => {
       // Verify flow
       expect(mockGitService.isGitRepository).toHaveBeenCalled();
       expect(mockGitService.hasStagedChanges).toHaveBeenCalled();
-      expect(mockConfigManager.isConfigured).toHaveBeenCalled();
       expect(mockGitService.getStagedChanges).toHaveBeenCalled();
       expect(mockLLMService.generateCommitMessage).toHaveBeenCalledWith(mockChanges, mockConfig);
       expect(mockGitService.setCommitMessage).toHaveBeenCalledWith('feat: add test feature');
@@ -119,6 +133,11 @@ describe('CommandHandler', () => {
 
   describe('Prerequisite Validation', () => {
     it('should fail when not a git repository', async () => {
+      // Ensure configuration is valid so we reach Git validation
+      mockConfigManager.getApiKey = jest.fn().mockResolvedValue('test-api-key');
+      mockConfigManager.getProvider = jest.fn().mockReturnValue('openai');
+      mockConfigManager.getConfig.mockResolvedValue(mockConfig);
+
       mockGitService.isGitRepository.mockReturnValue(false);
       mockUIManager.showError.mockResolvedValue('打开源代码管理');
 
@@ -139,6 +158,11 @@ describe('CommandHandler', () => {
     });
 
     it('should fail when no staged changes', async () => {
+      // Ensure configuration is valid so we reach Git validation
+      mockConfigManager.getApiKey = jest.fn().mockResolvedValue('test-api-key');
+      mockConfigManager.getProvider = jest.fn().mockReturnValue('openai');
+      mockConfigManager.getConfig.mockResolvedValue(mockConfig);
+
       mockGitService.isGitRepository.mockReturnValue(true);
       mockGitService.hasStagedChanges.mockReturnValue(false);
       mockUIManager.showError.mockResolvedValue(undefined);
@@ -149,53 +173,37 @@ describe('CommandHandler', () => {
         '暂存区没有变更。请先使用 git add 暂存要提交的文件。',
         '打开源代码管理'
       );
-      expect(mockConfigManager.isConfigured).not.toHaveBeenCalled();
+      expect(mockGitService.getStagedChanges).not.toHaveBeenCalled();
     });
 
     it('should fail when configuration is invalid', async () => {
       mockGitService.isGitRepository.mockReturnValue(true);
       mockGitService.hasStagedChanges.mockReturnValue(true);
-      mockConfigManager.isConfigured.mockResolvedValue(false);
-      mockConfigManager.validateConfig.mockResolvedValue({
-        valid: false,
-        errors: ['API密钥未配置', '模型名称无效'],
-      });
-      mockUIManager.showError.mockResolvedValue('配置向导');
+      // Mock configuration as not configured (empty API key)
+      mockConfigManager.getApiKey = jest.fn().mockResolvedValue('');
+      mockConfigManager.showConfigurationWizard.mockResolvedValue(false);
 
       await commandHandler.generateCommitMessage();
 
-      expect(mockConfigManager.validateConfig).toHaveBeenCalled();
-      expect(mockUIManager.showError).toHaveBeenCalledWith(
-        expect.stringContaining('配置无效'),
-        '配置向导',
-        '打开设置'
-      );
+      // Configuration interceptor should open wizard
       expect(mockConfigManager.showConfigurationWizard).toHaveBeenCalled();
+      // Should not proceed to get staged changes
       expect(mockGitService.getStagedChanges).not.toHaveBeenCalled();
     });
 
-    it('should open settings when user selects that option', async () => {
+    it('should open configuration wizard when not configured', async () => {
       mockGitService.isGitRepository.mockReturnValue(true);
       mockGitService.hasStagedChanges.mockReturnValue(true);
-      mockConfigManager.isConfigured.mockResolvedValue(false);
-      mockConfigManager.validateConfig.mockResolvedValue({
-        valid: false,
-        errors: ['配置错误'],
-      });
-      mockUIManager.showError.mockResolvedValue('打开设置');
-
-      const executeCommandSpy = jest
-        .spyOn(vscode.commands, 'executeCommand')
-        .mockResolvedValue(undefined);
+      // Mock configuration as not configured
+      mockConfigManager.getApiKey = jest.fn().mockResolvedValue('');
+      mockConfigManager.showConfigurationWizard.mockResolvedValue(true);
 
       await commandHandler.generateCommitMessage();
 
-      expect(executeCommandSpy).toHaveBeenCalledWith(
-        'workbench.action.openSettings',
-        'aigitcommit'
-      );
-
-      executeCommandSpy.mockRestore();
+      // Configuration interceptor should open wizard
+      expect(mockConfigManager.showConfigurationWizard).toHaveBeenCalled();
+      // Should not proceed to get staged changes
+      expect(mockGitService.getStagedChanges).not.toHaveBeenCalled();
     });
   });
 

@@ -49,10 +49,7 @@ export class ConfigurationInterceptor {
       await operation();
       return true;
     } catch (error) {
-      // 错误处理：记录日志但不中断操作
-      console.error('配置拦截器错误:', error);
-
-      // 尝试打开配置向导作为回退
+      // 错误处理：尝试打开配置向导作为回退
       try {
         const autoRedirect = this.isAutoRedirectEnabled();
         if (autoRedirect) {
@@ -101,7 +98,6 @@ export class ConfigurationInterceptor {
   async openConfigurationWizard(): Promise<void> {
     // 防止重复打开向导
     if (this.isWizardOpen) {
-      console.log('配置向导已经打开，跳过重复打开');
       return;
     }
 
@@ -116,7 +112,6 @@ export class ConfigurationInterceptor {
         this.statusChecker.invalidateCache();
       }
     } catch (error) {
-      console.error('打开配置向导失败:', error);
       throw new WizardOpenError(
         `无法打开配置向导: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error : undefined

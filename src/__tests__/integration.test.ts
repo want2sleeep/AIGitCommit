@@ -258,7 +258,6 @@ index 1234567..abcdefg 100644
 
     it('should coordinate all modules in correct order', async () => {
       const configSpy = jest.spyOn(configManager, 'getConfig');
-      const validateSpy = jest.spyOn(configManager, 'validateConfig');
       const gitChangesSpy = jest.spyOn(gitService, 'getStagedChanges');
       const llmGenerateSpy = jest.spyOn(llmService, 'generateCommitMessage');
 
@@ -276,12 +275,10 @@ index 1234567..abcdefg 100644
 
       // Verify module call order
       expect(configSpy).toHaveBeenCalled();
-      expect(validateSpy).toHaveBeenCalled();
       expect(gitChangesSpy).toHaveBeenCalled();
       expect(llmGenerateSpy).toHaveBeenCalled();
 
       configSpy.mockRestore();
-      validateSpy.mockRestore();
       gitChangesSpy.mockRestore();
       llmGenerateSpy.mockRestore();
     });
@@ -452,11 +449,8 @@ index 1234567..abcdefg 100644
     });
 
     it('should handle configuration error and show wizard', async () => {
+      // Mock configuration as not configured (empty API key)
       (mockSecrets as { get: jest.Mock }).get.mockResolvedValue('');
-
-      const mockShowErrorMessage = jest
-        .spyOn(vscode.window, 'showErrorMessage')
-        .mockResolvedValue('配置向导' as never);
 
       const mockShowInformationMessage = jest
         .spyOn(vscode.window, 'showInformationMessage')
@@ -464,10 +458,9 @@ index 1234567..abcdefg 100644
 
       await commandHandler.generateCommitMessage();
 
-      expect(mockShowErrorMessage).toHaveBeenCalled();
+      // Configuration interceptor should open wizard
       expect(mockShowInformationMessage).toHaveBeenCalled();
 
-      mockShowErrorMessage.mockRestore();
       mockShowInformationMessage.mockRestore();
     });
 

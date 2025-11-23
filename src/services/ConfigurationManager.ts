@@ -254,7 +254,6 @@ export class ConfigurationManager {
       const config = vscode.workspace.getConfiguration('aigitcommit');
       return config.get<string[]>('customBaseUrls', []);
     } catch (error) {
-      console.error('Error getting custom base URLs:', error);
       return [];
     }
   }
@@ -300,7 +299,6 @@ export class ConfigurationManager {
       const config = vscode.workspace.getConfiguration('aigitcommit');
       return config.get<string[]>('customModelNames', []);
     } catch (error) {
-      console.error('Error getting custom model names:', error);
       return [];
     }
   }

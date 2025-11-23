@@ -5,11 +5,11 @@ export const workspace = {
 };
 
 export const window = {
-  showInputBox: jest.fn(),
-  showInformationMessage: jest.fn(),
-  showErrorMessage: jest.fn(),
-  showWarningMessage: jest.fn(),
-  showQuickPick: jest.fn(),
+  showInputBox: jest.fn().mockResolvedValue(undefined),
+  showInformationMessage: jest.fn().mockResolvedValue(undefined),
+  showErrorMessage: jest.fn().mockResolvedValue(undefined),
+  showWarningMessage: jest.fn().mockResolvedValue(undefined),
+  showQuickPick: jest.fn().mockResolvedValue(undefined),
   withProgress: jest.fn(),
   createOutputChannel: jest.fn(),
   createStatusBarItem: jest.fn(),
