@@ -623,16 +623,19 @@ describe('ConfigurationPanelManager', () => {
 
         await messageHandler({
           command: 'providerChanged',
-          data: { provider: 'openai-compatible' },
+          data: { provider: 'openai-compatible', currentBaseUrl: '', currentModelName: '' },
         });
 
         expect(mockProviderManager.getDefaultConfig).toHaveBeenCalledWith('openai-compatible');
+        // For openai-compatible, should send updateInputControls instead of updateDefaults
         expect(mockWebview.postMessage).toHaveBeenCalledWith({
-          command: 'updateDefaults',
-          data: {
+          command: 'updateInputControls',
+          data: expect.objectContaining({
             baseUrl: '',
             modelName: '',
-          },
+            baseUrlHtml: expect.any(String),
+            modelNameHtml: expect.any(String),
+          }),
         });
       });
     });
@@ -669,13 +672,8 @@ describe('ConfigurationPanelManager', () => {
     it('should handle errors when loading configuration', async () => {
       mockConfigManager.getFullConfig.mockRejectedValue(new Error('Config load error'));
 
-      await panelManager.showPanel();
-
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
-        expect.stringContaining('加载配置失败')
-      );
+      // showPanel will throw if config loading fails
+      await expect(panelManager.showPanel()).rejects.toThrow('Config load error');
     });
   });
 
@@ -1003,8 +1001,8 @@ describe('ConfigurationPanelManager', () => {
   describe('URL validation', () => {
     let messageHandler: (message: any) => Promise<void>;
 
-    beforeEach(() => {
-      panelManager.showPanel();
+    beforeEach(async () => {
+      await panelManager.showPanel();
       messageHandler = (mockWebview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
     });
 
