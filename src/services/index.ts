@@ -16,4 +16,11 @@ export { CommandHandler } from './CommandHandler';
 export { ProviderManager } from './ProviderManager';
 export type { ProviderConfig } from './ProviderManager';
 export { ConfigurationPanelManager } from './ConfigurationPanelManager';
+export {
+  CustomCandidatesManager,
+  SaveOptions,
+  SaveResult,
+  RemoveResult,
+  ValidationResult,
+} from './CustomCandidatesManager';
 export { ServiceContainer, ServiceKeys, configureServices } from './ServiceContainer';

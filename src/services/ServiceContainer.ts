@@ -14,6 +14,7 @@ import { LLMService } from './LLMService';
 import { CommandHandler } from './CommandHandler';
 import { ProviderManager } from './ProviderManager';
 import { ConfigurationPanelManager } from './ConfigurationPanelManager';
+import { CustomCandidatesManager } from './CustomCandidatesManager';
 import { UIManager } from '../utils/UIManager';
 import { ErrorHandler } from '../utils/ErrorHandler';
 
@@ -122,6 +123,7 @@ export const ServiceKeys = {
   GitService: 'GitService',
   LLMService: 'LLMService',
   ProviderManager: 'ProviderManager',
+  CustomCandidatesManager: 'CustomCandidatesManager',
   ConfigurationPanelManager: 'ConfigurationPanelManager',
   CommandHandler: 'CommandHandler',
 } as const;
@@ -167,11 +169,26 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
 
   container.register(ServiceKeys.ProviderManager, () => new ProviderManager());
 
-  // 注册配置面板管理器（依赖ConfigurationManager和ProviderManager）
+  // 注册自定义候选项管理器（依赖ConfigurationManager和ErrorHandler）
+  container.register(ServiceKeys.CustomCandidatesManager, () => {
+    const configManager = container.resolve<ConfigurationManager>(ServiceKeys.ConfigurationManager);
+    const errorHandler = container.resolve<ErrorHandler>(ServiceKeys.ErrorHandler);
+    return new CustomCandidatesManager(configManager, errorHandler);
+  });
+
+  // 注册配置面板管理器（依赖ConfigurationManager、ProviderManager和CustomCandidatesManager）
   container.register(ServiceKeys.ConfigurationPanelManager, () => {
     const configManager = container.resolve<ConfigurationManager>(ServiceKeys.ConfigurationManager);
     const providerManager = container.resolve<ProviderManager>(ServiceKeys.ProviderManager);
-    return ConfigurationPanelManager.getInstance(context, configManager, providerManager);
+    const candidatesManager = container.resolve<CustomCandidatesManager>(
+      ServiceKeys.CustomCandidatesManager
+    );
+    return ConfigurationPanelManager.getInstance(
+      context,
+      configManager,
+      providerManager,
+      candidatesManager
+    );
   });
 
   // 注册命令处理器（依赖多个服务）

@@ -329,4 +329,60 @@ export class ConfigurationManager {
       );
     }
   }
+
+  /**
+   * 删除自定义 Base URL
+   * @param url 要删除的 Base URL
+   * @throws {ConfigurationError} 当删除失败时
+   */
+  async removeCustomBaseUrl(url: string): Promise<void> {
+    try {
+      const customUrls = this.getCustomBaseUrls();
+      const filteredUrls = customUrls.filter((u) => u !== url);
+
+      // 如果列表没有变化，说明 URL 不存在
+      if (filteredUrls.length === customUrls.length) {
+        return;
+      }
+
+      await vscode.workspace
+        .getConfiguration('aigitcommit')
+        .update('customBaseUrls', filteredUrls, vscode.ConfigurationTarget.Global);
+
+      this.invalidateCache();
+    } catch (error) {
+      throw new ConfigurationError(
+        `删除自定义 Base URL 失败: ${error instanceof Error ? error.message : String(error)}`,
+        'update'
+      );
+    }
+  }
+
+  /**
+   * 删除自定义模型名称
+   * @param modelName 要删除的模型名称
+   * @throws {ConfigurationError} 当删除失败时
+   */
+  async removeCustomModelName(modelName: string): Promise<void> {
+    try {
+      const customModelNames = this.getCustomModelNames();
+      const filteredNames = customModelNames.filter((name) => name !== modelName);
+
+      // 如果列表没有变化，说明模型名称不存在
+      if (filteredNames.length === customModelNames.length) {
+        return;
+      }
+
+      await vscode.workspace
+        .getConfiguration('aigitcommit')
+        .update('customModelNames', filteredNames, vscode.ConfigurationTarget.Global);
+
+      this.invalidateCache();
+    } catch (error) {
+      throw new ConfigurationError(
+        `删除自定义模型名称失败: ${error instanceof Error ? error.message : String(error)}`,
+        'update'
+      );
+    }
+  }
 }

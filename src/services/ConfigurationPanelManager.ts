@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ConfigurationManager } from './ConfigurationManager';
 import { ProviderManager } from './ProviderManager';
+import { CustomCandidatesManager } from './CustomCandidatesManager';
 
 /**
  * 预设 Base URL 候选项
@@ -81,7 +82,8 @@ export class ConfigurationPanelManager {
   private constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly configManager: ConfigurationManager,
-    private readonly providerManager: ProviderManager
+    private readonly providerManager: ProviderManager,
+    private readonly candidatesManager: CustomCandidatesManager
   ) {}
 
   /**
@@ -91,18 +93,21 @@ export class ConfigurationPanelManager {
    * @param context - VSCode扩展上下文
    * @param configManager - 配置管理器实例
    * @param providerManager - 提供商管理器实例
+   * @param candidatesManager - 自定义候选项管理器实例
    * @returns ConfigurationPanelManager的单例实例
    */
   static getInstance(
     context: vscode.ExtensionContext,
     configManager: ConfigurationManager,
-    providerManager: ProviderManager
+    providerManager: ProviderManager,
+    candidatesManager: CustomCandidatesManager
   ): ConfigurationPanelManager {
     if (!ConfigurationPanelManager.instance) {
       ConfigurationPanelManager.instance = new ConfigurationPanelManager(
         context,
         configManager,
-        providerManager
+        providerManager,
+        candidatesManager
       );
     }
     return ConfigurationPanelManager.instance;
@@ -388,31 +393,34 @@ export class ConfigurationPanelManager {
 
       // 如果是 openai-compatible 提供商，保存自定义候选项
       if (config.provider === 'openai-compatible') {
-        try {
-          // 检查 Base URL 是否为新的自定义值
-          const customBaseUrls = this.configManager.getCustomBaseUrls();
-          const isPresetBaseUrl = PRESET_BASE_URLS.some(
-            (preset) => preset.value === config.baseUrl
-          );
-          const isExistingCustomBaseUrl = customBaseUrls.includes(config.baseUrl);
+        // 检查 Base URL 是否为新的自定义值
+        const customBaseUrls = this.configManager.getCustomBaseUrls();
+        const isPresetBaseUrl = PRESET_BASE_URLS.some((preset) => preset.value === config.baseUrl);
+        const isExistingCustomBaseUrl = customBaseUrls.includes(config.baseUrl);
 
-          if (!isPresetBaseUrl && !isExistingCustomBaseUrl && config.baseUrl.trim() !== '') {
-            await this.configManager.addCustomBaseUrl(config.baseUrl);
+        if (!isPresetBaseUrl && !isExistingCustomBaseUrl && config.baseUrl.trim() !== '') {
+          const baseUrlResult = await this.candidatesManager.saveCustomBaseUrl(config.baseUrl);
+          if (!baseUrlResult.success && baseUrlResult.error) {
+            void vscode.window.showWarningMessage(
+              `配置已保存，但自定义 Base URL 保存失败: ${baseUrlResult.error}`
+            );
           }
+        }
 
-          // 检查模型名称是否为新的自定义值
-          const customModelNames = this.configManager.getCustomModelNames();
-          const isPresetModelName = PRESET_MODEL_NAMES.includes(config.modelName);
-          const isExistingCustomModelName = customModelNames.includes(config.modelName);
+        // 检查模型名称是否为新的自定义值
+        const customModelNames = this.configManager.getCustomModelNames();
+        const isPresetModelName = PRESET_MODEL_NAMES.includes(config.modelName);
+        const isExistingCustomModelName = customModelNames.includes(config.modelName);
 
-          if (!isPresetModelName && !isExistingCustomModelName && config.modelName.trim() !== '') {
-            await this.configManager.addCustomModelName(config.modelName);
-          }
-        } catch (error) {
-          // 自定义候选项保存失败不影响配置的其他部分
-          void vscode.window.showWarningMessage(
-            '配置已保存，但自定义候选项保存失败。下次配置时可能需要重新输入。'
+        if (!isPresetModelName && !isExistingCustomModelName && config.modelName.trim() !== '') {
+          const modelNameResult = await this.candidatesManager.saveCustomModelName(
+            config.modelName
           );
+          if (!modelNameResult.success && modelNameResult.error) {
+            void vscode.window.showWarningMessage(
+              `配置已保存，但自定义模型名称保存失败: ${modelNameResult.error}`
+            );
+          }
         }
       }
 

@@ -144,3 +144,51 @@ export class WizardOpenError extends BaseError {
     super(message, 'WIZARD_OPEN_ERROR', true);
   }
 }
+
+/**
+ * 候选项保存错误
+ * 当自定义候选项（Base URL 或模型名称）保存失败时抛出
+ */
+export class CandidateSaveError extends ConfigurationError {
+  /**
+   * Creates a new CandidateSaveError instance.
+   * @param message - Human-readable error message
+   * @param candidateType - 候选项类型（baseUrl 或 modelName）
+   * @param candidateValue - 尝试保存的候选项值
+   * @param retries - 重试次数
+   * @param originalError - 原始错误对象
+   */
+  constructor(
+    message: string,
+    public readonly candidateType: 'baseUrl' | 'modelName',
+    public readonly candidateValue: string,
+    public readonly retries: number,
+    public readonly originalError?: Error
+  ) {
+    super(message, 'candidate_save');
+    this.name = 'CandidateSaveError';
+  }
+}
+
+/**
+ * 候选项验证错误
+ * 当自定义候选项验证失败时抛出
+ */
+export class CandidateValidationError extends ConfigurationError {
+  /**
+   * Creates a new CandidateValidationError instance.
+   * @param message - Human-readable error message
+   * @param candidateType - 候选项类型（baseUrl 或 modelName）
+   * @param candidateValue - 验证失败的候选项值
+   * @param validationRule - 验证规则名称
+   */
+  constructor(
+    message: string,
+    public readonly candidateType: 'baseUrl' | 'modelName',
+    public readonly candidateValue: string,
+    public readonly validationRule: string
+  ) {
+    super(message, 'candidate_validation');
+    this.name = 'CandidateValidationError';
+  }
+}

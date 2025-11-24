@@ -2,12 +2,14 @@ import * as vscode from 'vscode';
 import { ConfigurationPanelManager } from '../ConfigurationPanelManager';
 import { ConfigurationManager } from '../ConfigurationManager';
 import { ProviderManager } from '../ProviderManager';
+import { CustomCandidatesManager } from '../CustomCandidatesManager';
 
 describe('ConfigurationPanelManager', () => {
   let panelManager: ConfigurationPanelManager;
   let mockContext: any;
   let mockConfigManager: jest.Mocked<ConfigurationManager>;
   let mockProviderManager: jest.Mocked<ProviderManager>;
+  let mockCandidatesManager: jest.Mocked<CustomCandidatesManager>;
   let mockPanel: any;
   let mockWebview: any;
 
@@ -137,10 +139,21 @@ describe('ConfigurationPanelManager', () => {
       getDefaultConfig: jest.fn(),
     } as any;
 
+    // Mock CustomCandidatesManager
+    mockCandidatesManager = {
+      saveCustomBaseUrl: jest.fn().mockResolvedValue({ success: true, retries: 0, added: true }),
+      saveCustomModelName: jest.fn().mockResolvedValue({ success: true, retries: 0, added: true }),
+      removeCustomBaseUrl: jest.fn().mockResolvedValue({ success: true, removed: true }),
+      removeCustomModelName: jest.fn().mockResolvedValue({ success: true, removed: true }),
+      validateBaseUrl: jest.fn().mockReturnValue({ valid: true }),
+      validateModelName: jest.fn().mockReturnValue({ valid: true }),
+    } as any;
+
     panelManager = ConfigurationPanelManager.getInstance(
       mockContext,
       mockConfigManager,
-      mockProviderManager
+      mockProviderManager,
+      mockCandidatesManager
     );
   });
 
@@ -896,12 +909,14 @@ describe('ConfigurationPanelManager', () => {
       const instance1 = ConfigurationPanelManager.getInstance(
         mockContext,
         mockConfigManager,
-        mockProviderManager
+        mockProviderManager,
+        mockCandidatesManager
       );
       const instance2 = ConfigurationPanelManager.getInstance(
         mockContext,
         mockConfigManager,
-        mockProviderManager
+        mockProviderManager,
+        mockCandidatesManager
       );
 
       expect(instance1).toBe(instance2);

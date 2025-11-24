@@ -5,6 +5,34 @@ All notable changes to the "AI Git Commit" extension will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2024-11-24
+
+### 🐛 修复
+
+#### 自定义候选项保存失败问题
+
+- ✅ **CustomCandidatesManager**: 新增自定义候选项管理器服务
+  - 实现带重试机制的保存操作（最多 3 次重试，递增延迟）
+  - 添加输入验证（URL 格式、长度、危险字符检查）
+  - 实现列表大小限制（最多 50 个候选项）
+  - 提供详细的错误日志记录
+  - 支持删除自定义候选项
+
+- ✅ **ConfigurationManager 增强**: 添加删除方法
+  - `removeCustomBaseUrl()`: 删除自定义 Base URL
+  - `removeCustomModelName()`: 删除自定义模型名称
+
+- ✅ **ConfigurationPanelManager 集成**: 使用 CustomCandidatesManager 处理候选项
+  - 候选项保存失败不影响主配置
+  - 显示详细的错误消息
+  - 异步保存，不阻塞 UI
+
+- ✅ **自定义错误类**: 添加候选项相关错误类型
+  - `CandidateSaveError`: 候选项保存错误
+  - `CandidateValidationError`: 候选项验证错误
+
+- ✅ **ServiceContainer 更新**: 注册 CustomCandidatesManager 服务
+
 ## [1.3.0] - 2024-11-22
 
 ### ✨ 新增功能
