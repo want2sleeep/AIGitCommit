@@ -18,6 +18,8 @@ describe('CustomCandidatesManager', () => {
       addCustomModelName: jest.fn().mockResolvedValue(undefined),
       getCustomBaseUrls: jest.fn().mockReturnValue([]),
       getCustomModelNames: jest.fn().mockReturnValue([]),
+      removeCustomBaseUrl: jest.fn().mockResolvedValue(undefined),
+      removeCustomModelName: jest.fn().mockResolvedValue(undefined),
     } as any;
 
     mockErrorHandler = {
@@ -213,6 +215,157 @@ describe('CustomCandidatesManager', () => {
       await manager.saveCustomBaseUrl('https://api.example.com');
 
       expect(mockErrorHandler.logInfo).toHaveBeenCalled();
+    });
+  });
+
+  describe('边界情况和错误处理', () => {
+    it('应当处理空字符串 URL', async () => {
+      const result = await manager.saveCustomBaseUrl('');
+
+      expect(result.success).toBe(false);
+      expect(result.added).toBe(false);
+      expect(result.error).toContain('不能为空');
+    });
+
+    it('应当处理纯空格 URL', async () => {
+      const result = await manager.saveCustomBaseUrl('   ');
+
+      expect(result.success).toBe(false);
+      expect(result.added).toBe(false);
+      expect(result.error).toContain('不能为空');
+    });
+
+    it('应当处理包含危险字符的 URL', async () => {
+      const dangerousUrls = [
+        'https://example.com/<script>',
+        'https://example.com/"test"',
+        "https://example.com/'test'",
+        'https://example.com/`test`',
+      ];
+
+      for (const url of dangerousUrls) {
+        const result = await manager.saveCustomBaseUrl(url);
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('不允许的字符');
+      }
+    });
+
+    it('应当处理非 HTTP/HTTPS 协议', async () => {
+      const invalidUrls = ['ftp://example.com', 'file:///path/to/file', 'javascript:alert(1)'];
+
+      for (const url of invalidUrls) {
+        const result = await manager.saveCustomBaseUrl(url);
+        expect(result.success).toBe(false);
+      }
+    });
+
+    it('应当处理模型名称中的危险字符', async () => {
+      const dangerousNames = [
+        'model<script>',
+        'model"test"',
+        "model'test'",
+        'model;rm -rf',
+        'model&test',
+        'model|test',
+      ];
+
+      for (const name of dangerousNames) {
+        const result = await manager.saveCustomModelName(name);
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('不允许的字符');
+      }
+    });
+
+    it('应当处理超长模型名称', async () => {
+      const longName = 'a'.repeat(101);
+      const result = await manager.saveCustomModelName(longName);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('长度不能超过');
+    });
+
+    it('应当在跳过验证时保存无效 URL', async () => {
+      mockConfigManager.getCustomBaseUrls.mockReturnValue([]);
+      mockConfigManager.addCustomBaseUrl.mockResolvedValue(undefined);
+
+      const result = await manager.saveCustomBaseUrl('invalid-url', { skipValidation: true });
+
+      expect(result.success).toBe(true);
+      expect(result.added).toBe(true);
+      expect(mockConfigManager.addCustomBaseUrl).toHaveBeenCalled();
+    });
+
+    it('应当使用自定义重试配置', async () => {
+      mockConfigManager.getCustomBaseUrls.mockReturnValue([]);
+      mockConfigManager.addCustomBaseUrl
+        .mockRejectedValueOnce(new Error('错误1'))
+        .mockRejectedValueOnce(new Error('错误2'))
+        .mockResolvedValueOnce(undefined);
+
+      const result = await manager.saveCustomBaseUrl('https://example.com', {
+        maxRetries: 2,
+        retryDelays: [10, 20],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.retries).toBe(2);
+      expect(mockConfigManager.addCustomBaseUrl).toHaveBeenCalledTimes(3);
+    });
+
+    it('应当在所有重试失败后返回错误', async () => {
+      mockConfigManager.getCustomBaseUrls.mockReturnValue([]);
+      mockConfigManager.addCustomBaseUrl.mockRejectedValue(new Error('持续失败'));
+
+      const result = await manager.saveCustomBaseUrl('https://example.com', {
+        maxRetries: 2,
+        retryDelays: [10, 20],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('持续失败');
+      expect(mockConfigManager.addCustomBaseUrl).toHaveBeenCalledTimes(3); // 初始 + 2 次重试
+    });
+  });
+
+  describe('删除功能测试', () => {
+    it('应当成功删除存在的 Base URL', async () => {
+      mockConfigManager.removeCustomBaseUrl.mockResolvedValue(undefined);
+
+      const result = await manager.removeCustomBaseUrl('https://example.com');
+
+      expect(result.success).toBe(true);
+      expect(result.removed).toBe(true);
+      expect(mockConfigManager.removeCustomBaseUrl).toHaveBeenCalledWith('https://example.com');
+    });
+
+    it('应当成功删除存在的模型名称', async () => {
+      mockConfigManager.removeCustomModelName.mockResolvedValue(undefined);
+
+      const result = await manager.removeCustomModelName('gpt-4');
+
+      expect(result.success).toBe(true);
+      expect(result.removed).toBe(true);
+      expect(mockConfigManager.removeCustomModelName).toHaveBeenCalledWith('gpt-4');
+    });
+
+    it('应当处理删除 Base URL 时的错误', async () => {
+      mockConfigManager.removeCustomBaseUrl.mockRejectedValue(new Error('删除失败'));
+
+      const result = await manager.removeCustomBaseUrl('https://example.com');
+
+      expect(result.success).toBe(false);
+      expect(result.removed).toBe(false);
+      expect(result.error).toContain('删除失败');
+    });
+
+    it('应当处理删除模型名称时的错误', async () => {
+      mockConfigManager.removeCustomModelName.mockRejectedValue(new Error('删除失败'));
+
+      const result = await manager.removeCustomModelName('gpt-4');
+
+      expect(result.success).toBe(false);
+      expect(result.removed).toBe(false);
+      expect(result.error).toContain('删除失败');
     });
   });
 });

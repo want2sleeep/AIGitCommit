@@ -1092,4 +1092,112 @@ describe('ConfigurationPanelManager', () => {
       });
     });
   });
+
+  describe('handleRemoveCandidate', () => {
+    let messageHandler: (message: any) => Promise<void>;
+
+    beforeEach(async () => {
+      mockConfigManager.getFullConfig.mockResolvedValue({
+        provider: 'openai-compatible',
+        apiKey: 'test-key',
+        apiEndpoint: 'https://api.example.com',
+        modelName: 'gpt-3.5-turbo',
+        language: 'zh-CN',
+        commitFormat: 'conventional',
+        maxTokens: 500,
+        temperature: 0.7,
+      });
+
+      mockConfigManager.getCustomBaseUrls.mockReturnValue([
+        'https://custom1.com',
+        'https://custom2.com',
+      ]);
+      mockConfigManager.getCustomModelNames.mockReturnValue(['model1', 'model2']);
+
+      await panelManager.showPanel();
+      messageHandler = mockWebview.onDidReceiveMessage.mock.calls[0][0];
+    });
+
+    it('应当成功删除自定义 Base URL', async () => {
+      mockCandidatesManager.removeCustomBaseUrl.mockResolvedValue({
+        success: true,
+        removed: true,
+      });
+
+      await messageHandler({
+        command: 'removeCandidate',
+        data: { type: 'baseUrl', value: 'https://custom1.com' },
+      });
+
+      expect(mockCandidatesManager.removeCustomBaseUrl).toHaveBeenCalledWith('https://custom1.com');
+      expect(mockWebview.postMessage).toHaveBeenCalledWith({
+        command: 'candidateRemoved',
+        data: expect.objectContaining({
+          type: 'baseUrl',
+          value: 'https://custom1.com',
+        }),
+      });
+    });
+
+    it('应当成功删除自定义模型名称', async () => {
+      mockCandidatesManager.removeCustomModelName.mockResolvedValue({
+        success: true,
+        removed: true,
+      });
+
+      await messageHandler({
+        command: 'removeCandidate',
+        data: { type: 'modelName', value: 'model1' },
+      });
+
+      expect(mockCandidatesManager.removeCustomModelName).toHaveBeenCalledWith('model1');
+      expect(mockWebview.postMessage).toHaveBeenCalledWith({
+        command: 'candidateRemoved',
+        data: expect.objectContaining({
+          type: 'modelName',
+          value: 'model1',
+        }),
+      });
+    });
+
+    it('应当处理删除失败的情况', async () => {
+      mockCandidatesManager.removeCustomBaseUrl.mockResolvedValue({
+        success: false,
+        error: '删除失败',
+        removed: false,
+      });
+
+      await messageHandler({
+        command: 'removeCandidate',
+        data: { type: 'baseUrl', value: 'https://custom1.com' },
+      });
+
+      expect(mockWebview.postMessage).toHaveBeenCalledWith({
+        command: 'candidateRemoveFailed',
+        data: expect.objectContaining({
+          type: 'baseUrl',
+          value: 'https://custom1.com',
+          error: '删除失败',
+        }),
+      });
+    });
+
+    it('应当处理删除时的异常', async () => {
+      mockCandidatesManager.removeCustomBaseUrl.mockRejectedValue(new Error('网络错误'));
+
+      await messageHandler({
+        command: 'removeCandidate',
+        data: { type: 'baseUrl', value: 'https://custom1.com' },
+      });
+
+      expect(mockWebview.postMessage).toHaveBeenCalledWith({
+        command: 'candidateRemoveFailed',
+        data: expect.objectContaining({
+          type: 'baseUrl',
+          value: 'https://custom1.com',
+          error: '网络错误',
+        }),
+      });
+    });
+  });
 });

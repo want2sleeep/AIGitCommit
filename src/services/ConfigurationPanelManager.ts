@@ -36,11 +36,12 @@ const PRESET_MODEL_NAMES = [
  * @property data - 可选的消息数据，根据命令类型不同而不同
  */
 interface WebviewMessage {
-  command: 'load' | 'save' | 'validate' | 'providerChanged';
+  command: 'load' | 'save' | 'validate' | 'providerChanged' | 'removeCandidate';
   data?:
     | ConfigurationData
     | { provider: string }
-    | { provider: string; currentBaseUrl: string; currentModelName: string };
+    | { provider: string; currentBaseUrl: string; currentModelName: string }
+    | { type: 'baseUrl' | 'modelName'; value: string };
 }
 
 /**
@@ -327,6 +328,15 @@ export class ConfigurationPanelManager {
         }
         break;
       }
+
+      case 'removeCandidate': {
+        if (message.data && 'type' in message.data && 'value' in message.data) {
+          await this.handleRemoveCandidate(
+            message.data as { type: 'baseUrl' | 'modelName'; value: string }
+          );
+        }
+        break;
+      }
     }
   }
 
@@ -445,6 +455,69 @@ export class ConfigurationPanelManager {
         },
       });
       void vscode.window.showErrorMessage(errorMessage);
+    }
+  }
+
+  /**
+   * 处理删除候选项请求
+   * @param data 删除请求数据
+   */
+  private async handleRemoveCandidate(data: {
+    type: 'baseUrl' | 'modelName';
+    value: string;
+  }): Promise<void> {
+    try {
+      let result;
+
+      if (data.type === 'baseUrl') {
+        result = await this.candidatesManager.removeCustomBaseUrl(data.value);
+      } else {
+        result = await this.candidatesManager.removeCustomModelName(data.value);
+      }
+
+      if (result.success) {
+        // 删除成功，更新 Webview
+        const customBaseUrls = this.configManager.getCustomBaseUrls();
+        const customModelNames = this.configManager.getCustomModelNames();
+
+        void this.panel?.webview.postMessage({
+          command: 'candidateRemoved',
+          data: {
+            type: data.type,
+            value: data.value,
+            customBaseUrls,
+            customModelNames,
+          },
+        });
+
+        void vscode.window.showInformationMessage(
+          `已删除自定义${data.type === 'baseUrl' ? 'Base URL' : '模型名称'}: ${data.value}`
+        );
+      } else {
+        // 删除失败
+        void this.panel?.webview.postMessage({
+          command: 'candidateRemoveFailed',
+          data: {
+            type: data.type,
+            value: data.value,
+            error: result.error,
+          },
+        });
+
+        void vscode.window.showErrorMessage(`删除失败: ${result.error || '未知错误'}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      void this.panel?.webview.postMessage({
+        command: 'candidateRemoveFailed',
+        data: {
+          type: data.type,
+          value: data.value,
+          error: errorMessage,
+        },
+      });
+
+      void vscode.window.showErrorMessage(`删除候选项时发生错误: ${errorMessage}`);
     }
   }
 
