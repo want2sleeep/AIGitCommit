@@ -22,7 +22,7 @@ describe('属性 19: ESLint 零错误', () => {
     } catch (error) {
       // 如果 ESLint 返回非零退出码，测试失败
       const err = error as { stdout?: string; stderr?: string; status?: number };
-      fail(
+      throw new Error(
         `ESLint 检查失败:\n退出码: ${err.status}\n输出: ${err.stdout || ''}\n错误: ${err.stderr || ''}`
       );
     }

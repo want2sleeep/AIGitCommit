@@ -8,6 +8,7 @@ import {
   GeminiRequest,
   GeminiResponse,
 } from '../types';
+import { ILargeDiffHandler } from '../types/interfaces';
 import { APIError, NetworkError } from '../errors';
 import { API_CONSTANTS, GIT_CONSTANTS } from '../constants';
 import { sleep } from '../utils/retry';
@@ -19,6 +20,15 @@ import { normalizeUrl, buildUrl } from '../utils/common';
  * 负责调用OpenAI兼容API和Gemini API生成提交信息
  */
 export class LLMService {
+  private largeDiffHandler: ILargeDiffHandler | null = null;
+
+  /**
+   * 设置大型 Diff 处理器
+   * @param handler 大型 Diff 处理器实例
+   */
+  setLargeDiffHandler(handler: ILargeDiffHandler): void {
+    this.largeDiffHandler = handler;
+  }
   /**
    * 检测是否为Gemini提供商
    * @param config 插件配置
@@ -110,6 +120,13 @@ export class LLMService {
    * @returns 生成的提交信息
    */
   async generateCommitMessage(changes: GitChange[], config: ExtensionConfig): Promise<string> {
+    // 检查是否需要使用大型 diff 处理
+    if (this.largeDiffHandler && this.largeDiffHandler.needsLargeDiffHandling(changes)) {
+      const commitMessage = await this.largeDiffHandler.handle(changes, config);
+      return this.parseCommitMessage(commitMessage);
+    }
+
+    // 使用标准处理流程
     const prompt = this.buildPrompt(changes, config);
     const commitMessage = await this.callAPI(prompt, config);
     return this.parseCommitMessage(commitMessage);

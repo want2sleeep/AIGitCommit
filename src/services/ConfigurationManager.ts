@@ -328,4 +328,51 @@ export class ConfigurationManager {
       );
     }
   }
+
+  /**
+   * 获取大型 Diff 处理配置
+   * @returns 大型 Diff 处理配置对象
+   */
+  getLargeDiffConfig(): {
+    enableMapReduce: boolean;
+    customTokenLimit: number | undefined;
+    safetyMarginPercent: number;
+    maxConcurrentRequests: number;
+  } {
+    const config = vscode.workspace.getConfiguration(CONFIG_CONSTANTS.SECTION);
+
+    const enableMapReduce = config.get<boolean>('enableMapReduce', true);
+    const customTokenLimit = config.get<number>('customTokenLimit', 0);
+    const safetyMarginPercent = config.get<number>('safetyMarginPercent', 85);
+    const maxConcurrentRequests = config.get<number>('maxConcurrentRequests', 5);
+
+    return {
+      enableMapReduce,
+      customTokenLimit: customTokenLimit > 0 ? customTokenLimit : undefined,
+      safetyMarginPercent: Math.max(50, Math.min(100, safetyMarginPercent)),
+      maxConcurrentRequests: Math.max(1, Math.min(10, maxConcurrentRequests)),
+    };
+  }
+
+  /**
+   * 更新大型 Diff 处理配置
+   * @param key 配置键
+   * @param value 配置值
+   * @throws {ConfigurationError} 当配置更新失败时
+   */
+  async updateLargeDiffConfig(
+    key: 'enableMapReduce' | 'customTokenLimit' | 'safetyMarginPercent' | 'maxConcurrentRequests',
+    value: boolean | number
+  ): Promise<void> {
+    try {
+      const config = vscode.workspace.getConfiguration(CONFIG_CONSTANTS.SECTION);
+      await config.update(key, value, vscode.ConfigurationTarget.Global);
+      this.invalidateCache();
+    } catch (error) {
+      throw new ConfigurationError(
+        `更新大型 Diff 配置失败: ${error instanceof Error ? error.message : String(error)}`,
+        'update'
+      );
+    }
+  }
 }

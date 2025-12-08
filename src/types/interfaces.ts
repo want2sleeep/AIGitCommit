@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { GitChange, ExtensionConfig, ValidationResult, FullConfig, ConfigSummary } from './index';
+import { DiffSplitLevel } from '../constants';
 
 /**
  * Git服务接口
@@ -236,4 +237,265 @@ export interface IErrorHandler {
    * 清理资源
    */
   dispose(): void;
+}
+
+// ============================================================================
+// 大型 Diff 处理相关接口
+// ============================================================================
+
+/**
+ * 大型 Diff 处理配置接口
+ * 定义了处理超出 LLM 上下文窗口限制的大型提交时的配置参数
+ */
+export interface LargeDiffConfig {
+  /** 是否启用 Map-Reduce 处理 */
+  enableMapReduce: boolean;
+  /** 自定义 token 限制（覆盖自动检测） */
+  customTokenLimit?: number;
+  /** 安全边界百分比（0-100） */
+  safetyMarginPercent: number;
+  /** 最大并发 API 请求数 */
+  maxConcurrentRequests: number;
+}
+
+/**
+ * Chunk 上下文信息接口
+ * 包含拆分后的 diff 块的上下文信息，用于保持语义连贯性
+ */
+export interface ChunkContext {
+  /** 文件头部信息（diff --git a/... b/...） */
+  fileHeader: string;
+  /** 函数名（如果可识别） */
+  functionName?: string;
+  /** 前一个块的摘要（用于后续块的上下文） */
+  previousSummary?: string;
+  /** 相关文件列表（用于逻辑分组） */
+  relatedFiles?: string[];
+}
+
+/**
+ * Diff 块数据结构接口
+ * 表示拆分后的单个 diff 片段
+ */
+export interface DiffChunk {
+  /** 块内容 */
+  content: string;
+  /** 文件路径 */
+  filePath: string;
+  /** 当前块索引（从 0 开始） */
+  chunkIndex: number;
+  /** 总块数 */
+  totalChunks: number;
+  /** 拆分级别 */
+  splitLevel: DiffSplitLevel;
+  /** 上下文信息 */
+  context: ChunkContext;
+}
+
+/**
+ * 块摘要接口
+ * 表示单个 chunk 处理后的结果
+ */
+export interface ChunkSummary {
+  /** 文件路径 */
+  filePath: string;
+  /** 摘要内容 */
+  summary: string;
+  /** 块索引 */
+  chunkIndex: number;
+  /** 是否处理成功 */
+  success: boolean;
+  /** 错误信息（如果失败） */
+  error?: string;
+}
+
+/**
+ * 处理配置接口
+ * 定义了 chunk 处理器的运行时配置
+ */
+export interface ProcessConfig {
+  /** 最大并发数 */
+  concurrency: number;
+  /** 最大重试次数 */
+  maxRetries: number;
+  /** 初始重试延迟（毫秒） */
+  initialRetryDelay: number;
+}
+
+/**
+ * Token 估算器接口
+ * 定义了 token 数量估算和限制判断的标准接口
+ */
+export interface ITokenEstimator {
+  /**
+   * 估算文本的 token 数量
+   * @param text 待估算的文本
+   * @returns 估算的 token 数量
+   */
+  estimate(text: string): number;
+
+  /**
+   * 获取当前模型的有效 token 限制
+   * @returns 有效限制（已应用安全边界）
+   */
+  getEffectiveLimit(): number;
+
+  /**
+   * 判断文本是否需要拆分
+   * @param text 待检查的文本
+   * @returns 是否需要拆分
+   */
+  needsSplit(text: string): boolean;
+
+  /**
+   * 获取模型的原始 token 限制
+   * @param modelName 模型名称
+   * @returns 原始限制
+   */
+  getModelLimit(modelName: string): number;
+}
+
+/**
+ * Diff 拆分器接口
+ * 定义了将大型 diff 递归拆分为可处理 chunks 的标准接口
+ */
+export interface IDiffSplitter {
+  /**
+   * 拆分 diff 内容
+   * @param diff 原始 diff 内容
+   * @param maxTokens 最大 token 数
+   * @returns 拆分后的 chunks
+   */
+  split(diff: string, maxTokens: number): DiffChunk[];
+
+  /**
+   * 按文件边界拆分
+   * @param diff 原始 diff
+   * @returns 按文件拆分的 chunks
+   */
+  splitByFiles(diff: string): DiffChunk[];
+
+  /**
+   * 按 Hunk 边界拆分单个文件的 diff
+   * @param fileDiff 单文件 diff
+   * @param maxTokens 最大 token 数
+   * @returns 按 Hunk 拆分的 chunks
+   */
+  splitByHunks(fileDiff: string, maxTokens: number): DiffChunk[];
+
+  /**
+   * 按行拆分单个 Hunk
+   * @param hunk 单个 Hunk 内容
+   * @param maxTokens 最大 token 数
+   * @returns 按行拆分的 chunks
+   */
+  splitByLines(hunk: string, maxTokens: number): DiffChunk[];
+}
+
+/**
+ * Chunk 摘要生成器接口
+ * 定义了为单个 chunk 生成摘要的标准接口
+ */
+export interface IChunkSummaryGenerator {
+  /**
+   * 为 chunk 生成摘要
+   * @param prompt 包含上下文的提示词
+   * @returns 生成的摘要
+   */
+  generateSummary(prompt: string): Promise<string>;
+}
+
+/**
+ * 块处理器接口
+ * 定义了并发处理多个 chunks 的标准接口（Map 阶段）
+ */
+export interface IChunkProcessor {
+  /**
+   * 并发处理多个 chunks
+   * @param chunks 待处理的 chunks
+   * @param config 处理配置
+   * @returns 处理结果（摘要列表）
+   */
+  processChunks(chunks: DiffChunk[], config: ProcessConfig): Promise<ChunkSummary[]>;
+
+  /**
+   * 处理单个 chunk
+   * @param chunk 待处理的 chunk
+   * @param config 处理配置
+   * @returns 处理结果
+   */
+  processChunk(chunk: DiffChunk, config: ProcessConfig): Promise<ChunkSummary>;
+}
+
+/**
+ * 摘要合并器接口
+ * 定义了将多个摘要合并为最终提交信息的标准接口（Reduce 阶段）
+ */
+export interface ISummaryMerger {
+  /**
+   * 合并摘要为最终提交信息
+   * @param summaries 摘要列表
+   * @param config 扩展配置
+   * @returns 最终提交信息
+   */
+  merge(summaries: ChunkSummary[], config: ExtensionConfig): Promise<string>;
+
+  /**
+   * 递归合并（当摘要总量超限时）
+   * @param summaries 摘要列表
+   * @param config 扩展配置
+   * @returns 合并后的摘要
+   */
+  recursiveMerge(summaries: ChunkSummary[], config: ExtensionConfig): Promise<string>;
+}
+
+/**
+ * 大型 Diff 处理器接口
+ * 整体协调器，协调各组件完成大型 diff 的处理
+ */
+export interface ILargeDiffHandler {
+  /**
+   * 处理大型 diff
+   * @param changes Git 变更列表
+   * @param config 扩展配置
+   * @returns 生成的提交信息
+   */
+  handle(changes: GitChange[], config: ExtensionConfig): Promise<string>;
+
+  /**
+   * 检查是否需要使用大型 diff 处理
+   * @param changes Git 变更列表
+   * @returns 是否需要
+   */
+  needsLargeDiffHandling(changes: GitChange[]): boolean;
+}
+
+/**
+ * 进度管理器接口
+ * 定义了显示处理进度的标准接口
+ */
+export interface IProgressManager {
+  /**
+   * 开始进度跟踪
+   * @param totalChunks 总块数
+   */
+  start(totalChunks: number): void;
+
+  /**
+   * 更新进度
+   * @param completedChunks 已完成块数
+   */
+  update(completedChunks: number): void;
+
+  /**
+   * 完成进度跟踪
+   * @param processingTime 处理时间（毫秒）
+   */
+  complete(processingTime: number): void;
+
+  /**
+   * 报告错误
+   * @param error 错误信息
+   */
+  reportError(error: string): void;
 }

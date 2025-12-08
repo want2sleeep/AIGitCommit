@@ -203,12 +203,19 @@ index 1234567..abcdefg 100644
 
   /**
    * Test 1: Complete Commit Message Generation Flow
+   *
+   * 注意：这些测试涉及 CommandHandler 的完整流程，包括 ConfigurationInterceptor、
+   * GitService、LLMService 等多个服务的协调。由于 CommandHandler 内部使用了
+   * ConfigurationInterceptor 来检查配置状态，而当前的模拟设置不完整，导致测试超时。
+   *
+   * 要修复这些测试，需要：
+   * 1. 模拟 ConfigurationInterceptor 的 interceptOperation 方法
+   * 2. 确保所有异步操作都被正确模拟
+   * 3. 可能需要重构 CommandHandler 以支持更好的依赖注入
    */
   describe('Complete Commit Message Generation Flow', () => {
-    // TODO: 这些测试需要进一步调试异步流程，暂时跳过
+    // 跳过：需要完整模拟 ConfigurationInterceptor 和其他内部依赖
     it.skip('should successfully generate and set message in SCM input box', async () => {
-      // 此测试涉及复杂的异步流程，需要进一步调试
-
       const mockWithProgress = jest
         .spyOn(vscode.window, 'withProgress')
         .mockImplementation(async (_options, task) => {
@@ -260,7 +267,7 @@ index 1234567..abcdefg 100644
       mockSetStatusBarMessage.mockRestore();
     });
 
-    // TODO: 这个测试需要进一步调试异步流程，暂时跳过
+    // 跳过：需要完整模拟 ConfigurationInterceptor 和其他内部依赖
     it.skip('should coordinate all modules in correct order', async () => {
       const configSpy = jest.spyOn(configManager, 'getConfig');
       const gitChangesSpy = jest.spyOn(gitService, 'getStagedChanges');
@@ -395,7 +402,7 @@ index 1234567..abcdefg 100644
    * Test 3: Error Recovery Flow
    */
   describe('Error Recovery Flow', () => {
-    // TODO: 这个测试需要进一步调试重试逻辑，暂时跳过
+    // 跳过：需要完整模拟 ConfigurationInterceptor 和重试逻辑
     it.skip('should recover from API rate limit error with retry', async () => {
       let callCount = 0;
       mockAxios.post = jest.fn().mockImplementation(() => {

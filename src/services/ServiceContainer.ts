@@ -4,6 +4,12 @@ import {
   ILLMService,
   IConfigurationManager,
   IErrorHandler,
+  ITokenEstimator,
+  IDiffSplitter,
+  IChunkProcessor,
+  ISummaryMerger,
+  ILargeDiffHandler,
+  IProgressManager,
 } from '../types/interfaces';
 import { ConfigurationManager } from './ConfigurationManager';
 import { ConfigurationStatusChecker } from './ConfigurationStatusChecker';
@@ -25,6 +31,12 @@ import { TemplateManager } from './TemplateManager';
 import { HistoryManager } from './HistoryManager';
 import { ConfigPresetManager } from './ConfigPresetManager';
 import { WelcomePageManager } from './WelcomePageManager';
+import { TokenEstimator } from './TokenEstimator';
+import { DiffSplitter } from './DiffSplitter';
+import { ChunkProcessor } from './ChunkProcessor';
+import { SummaryMerger } from './SummaryMerger';
+import { LargeDiffHandler } from './LargeDiffHandler';
+import { ProgressManager } from './ProgressManager';
 
 /**
  * 服务容器类
@@ -138,6 +150,13 @@ export const ServiceKeys = {
   ConfigurationPanelManager: 'ConfigurationPanelManager',
   CommitMessagePreviewManager: 'CommitMessagePreviewManager',
   CommandHandler: 'CommandHandler',
+  // 大型 Diff 处理相关服务
+  TokenEstimator: 'TokenEstimator',
+  DiffSplitter: 'DiffSplitter',
+  ChunkProcessor: 'ChunkProcessor',
+  SummaryMerger: 'SummaryMerger',
+  LargeDiffHandler: 'LargeDiffHandler',
+  ProgressManager: 'ProgressManager',
 } as const;
 
 /**
@@ -183,7 +202,64 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
 
   container.register<IGitService>(ServiceKeys.GitService, () => new GitService());
 
-  container.register<ILLMService>(ServiceKeys.LLMService, () => new LLMService());
+  // 注册大型 Diff 处理相关服务
+  const defaultLargeDiffConfig = {
+    enableMapReduce: true,
+    customTokenLimit: undefined,
+    safetyMarginPercent: 85,
+    maxConcurrentRequests: 5,
+  };
+
+  container.register<ITokenEstimator>(ServiceKeys.TokenEstimator, () => {
+    // 使用默认模型名称，实际使用时会通过配置获取
+    return new TokenEstimator('gpt-4', defaultLargeDiffConfig);
+  });
+
+  container.register<IDiffSplitter>(ServiceKeys.DiffSplitter, () => {
+    const tokenEstimator = container.resolve<ITokenEstimator>(ServiceKeys.TokenEstimator);
+    return new DiffSplitter(tokenEstimator);
+  });
+
+  container.register<IProgressManager>(ServiceKeys.ProgressManager, () => new ProgressManager());
+
+  // 创建摘要生成器（占位符实现，实际使用时会被替换）
+  const createSummaryGenerator = (): { generateSummary: (prompt: string) => Promise<string> } => ({
+    generateSummary: (prompt: string): Promise<string> => {
+      // 占位符实现，实际使用时会通过 LLMService 生成
+      return Promise.resolve(`摘要: ${prompt.substring(0, 100)}...`);
+    },
+  });
+
+  container.register<IChunkProcessor>(ServiceKeys.ChunkProcessor, () => {
+    return new ChunkProcessor(createSummaryGenerator());
+  });
+
+  container.register<ISummaryMerger>(ServiceKeys.SummaryMerger, () => {
+    const tokenEstimator = container.resolve<ITokenEstimator>(ServiceKeys.TokenEstimator);
+    return new SummaryMerger(tokenEstimator, createSummaryGenerator());
+  });
+
+  container.register<ILargeDiffHandler>(ServiceKeys.LargeDiffHandler, () => {
+    const tokenEstimator = container.resolve<ITokenEstimator>(ServiceKeys.TokenEstimator);
+    const diffSplitter = container.resolve<IDiffSplitter>(ServiceKeys.DiffSplitter);
+    const chunkProcessor = container.resolve<IChunkProcessor>(ServiceKeys.ChunkProcessor);
+    const summaryMerger = container.resolve<ISummaryMerger>(ServiceKeys.SummaryMerger);
+    return new LargeDiffHandler(
+      tokenEstimator,
+      diffSplitter,
+      chunkProcessor,
+      summaryMerger,
+      createSummaryGenerator()
+    );
+  });
+
+  container.register<ILLMService>(ServiceKeys.LLMService, () => {
+    const llmService = new LLMService();
+    // 设置大型 Diff 处理器
+    const largeDiffHandler = container.resolve<ILargeDiffHandler>(ServiceKeys.LargeDiffHandler);
+    llmService.setLargeDiffHandler(largeDiffHandler);
+    return llmService;
+  });
 
   container.register(ServiceKeys.ProviderManager, () => new ProviderManager());
 

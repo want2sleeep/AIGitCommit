@@ -5,6 +5,69 @@ All notable changes to the "AI Git Commit" extension will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-12-08
+
+### ✨ 新增功能
+
+#### 大型 Diff 处理 (Map-Reduce 模式)
+
+- ✅ **TokenEstimator**: Token 数量估算器
+  - 基于字符和单词的混合估算算法
+  - 支持模型上下文窗口自动检测
+  - 可配置安全边界百分比
+
+- ✅ **DiffSplitter**: 智能 Diff 拆分器
+  - 三级递归拆分策略（文件 → Hunk → 行）
+  - 保持语义完整性的拆分边界
+  - 上下文信息传递机制
+
+- ✅ **ChunkProcessor**: 并发块处理器
+  - 可配置的并发数控制
+  - 指数退避重试机制
+  - 进度跟踪和错误收集
+
+- ✅ **SummaryMerger**: 摘要合并器
+  - 多摘要智能合并
+  - 递归合并支持（当摘要总量超限时）
+  - 保持提交信息格式一致性
+
+- ✅ **LargeDiffHandler**: 大型 Diff 处理协调器
+  - 自动检测是否需要 Map-Reduce 处理
+  - 协调各组件完成处理流程
+  - 与现有 LLMService 无缝集成
+
+- ✅ **ProgressManager**: 进度管理器
+  - VSCode 进度条集成
+  - 实时处理状态显示
+  - 处理时间统计
+
+#### 新增配置项
+
+- `aigitcommit.enableMapReduce`: 启用 Map-Reduce 模式（默认: true）
+- `aigitcommit.customTokenLimit`: 自定义 Token 限制（0 表示自动检测）
+- `aigitcommit.safetyMarginPercent`: 安全边界百分比（默认: 85%）
+- `aigitcommit.maxConcurrentRequests`: 最大并发请求数（默认: 5）
+
+### 🔧 改进
+
+- ✅ **LLMService 集成**: 自动检测并使用大型 Diff 处理
+- ✅ **ServiceContainer 更新**: 注册所有新服务
+- ✅ **接口定义**: 新增完整的类型定义和接口
+
+### 🧪 测试
+
+- ✅ 新增 Property-based 测试覆盖所有新服务
+- ✅ 测试 Token 估算准确性
+- ✅ 测试拆分策略正确性
+- ✅ 测试并发处理和错误恢复
+
+### 📚 文档
+
+- ✅ 更新配置项文档
+- ✅ 添加大型 Diff 处理功能说明
+
+---
+
 ## [1.3.1] - 2024-11-24
 
 ### 🐛 修复
