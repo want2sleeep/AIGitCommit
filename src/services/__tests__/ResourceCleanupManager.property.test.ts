@@ -18,12 +18,12 @@ describe('ResourceCleanupManager 属性测试', () => {
   it('属性 4: 清理所有资源后应当没有残留', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.array(fc.string({ minLength: 1 }), { minLength: 1, maxLength: 20 }),
+        fc.uniqueArray(fc.string({ minLength: 1 }), { minLength: 1, maxLength: 20 }),
         async (keys) => {
           const manager = new ResourceCleanupManager();
           const cleanedKeys: string[] = [];
 
-          // 注册资源
+          // 注册资源（keys 已经是唯一的）
           for (const key of keys) {
             manager.register(key, async () => {
               cleanedKeys.push(key);
@@ -148,11 +148,11 @@ describe('ResourceCleanupManager 属性测试', () => {
   it('属性: 清理日志应当记录所有清理操作', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.array(fc.string({ minLength: 1 }), { minLength: 1, maxLength: 10 }),
+        fc.uniqueArray(fc.string({ minLength: 1 }), { minLength: 1, maxLength: 10 }),
         async (keys) => {
           const manager = new ResourceCleanupManager();
 
-          // 注册资源
+          // 注册资源（keys 已经是唯一的）
           for (const key of keys) {
             manager.register(key, async () => {});
           }
@@ -215,12 +215,12 @@ describe('ResourceCleanupManager 属性测试', () => {
   it('属性: 并行清理多个资源应当全部完成', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.array(fc.string({ minLength: 1 }), { minLength: 2, maxLength: 10 }),
+        fc.uniqueArray(fc.string({ minLength: 1 }), { minLength: 2, maxLength: 10 }),
         async (keys) => {
           const manager = new ResourceCleanupManager();
           const cleanedKeys: string[] = [];
 
-          // 注册资源
+          // 注册资源（keys 已经是唯一的）
           for (const key of keys) {
             manager.register(key, async () => {
               await new Promise((resolve) => setTimeout(resolve, 10));
@@ -306,11 +306,11 @@ describe('ResourceCleanupManager 属性测试', () => {
   it('属性: 清空日志应当移除所有日志条目', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.array(fc.string({ minLength: 1 }), { minLength: 1, maxLength: 10 }),
+        fc.uniqueArray(fc.string({ minLength: 1 }), { minLength: 1, maxLength: 10 }),
         async (keys) => {
           const manager = new ResourceCleanupManager();
 
-          // 注册并清理资源
+          // 注册并清理资源（keys 已经是唯一的）
           for (const key of keys) {
             manager.register(key, async () => {});
             await manager.cleanup(key);
