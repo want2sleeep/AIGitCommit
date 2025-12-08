@@ -46,20 +46,128 @@ export class DiffSplitter implements IDiffSplitter {
     // 首先按文件拆分
     const fileChunks = this.splitByFiles(diff);
 
-    // 对每个文件 chunk 检查是否需要进一步拆分
+    // 应用贪心合并策略，减少碎片化
+    const mergedChunks = this.mergeSmallChunks(fileChunks, maxTokens);
+
+    // 对每个合并后的 chunk 检查是否需要进一步拆分
     const result: DiffChunk[] = [];
-    for (const chunk of fileChunks) {
-      if (this.tokenEstimator.estimate(chunk.content) <= maxTokens) {
+    for (const chunk of mergedChunks) {
+      const chunkTokens = this.tokenEstimator.estimate(chunk.content);
+
+      // 调试日志（已禁用）
+      // console.log('Processing chunk:', { filePath: chunk.filePath, tokens: chunkTokens, maxTokens });
+
+      // 如果 chunk 在限制内，直接使用
+      if (chunkTokens <= maxTokens) {
         result.push(chunk);
       } else {
-        // 需要按 Hunk 进一步拆分
-        const hunkChunks = this.splitByHunks(chunk.content, maxTokens);
-        result.push(...hunkChunks);
+        // 如果是合并的 chunk（包含多个文件），不能进一步拆分
+        // 因为 splitByHunks 无法正确处理多文件 diff
+        const isMergedChunk =
+          chunk.filePath.includes(',') || chunk.filePath.includes('Multiple files');
+
+        if (isMergedChunk) {
+          // 合并的 chunk 超过限制，保留原样（这种情况很少见）
+          result.push(chunk);
+        } else {
+          // 单文件 chunk 超过限制，按 Hunk 进一步拆分
+          const hunkChunks = this.splitByHunks(chunk.content, maxTokens);
+          result.push(...hunkChunks);
+        }
       }
     }
 
     // 更新所有 chunk 的索引信息
     return this.updateChunkIndices(result);
+  }
+
+  /**
+   * 贪心合并小的 chunks
+   * 遍历 chunks，如果当前合并块加上下一个 chunk 不超过 maxTokens，则合并
+   *
+   * @param chunks 待合并的 chunks
+   * @param maxTokens 最大 token 数
+   * @returns 合并后的 chunks
+   */
+  private mergeSmallChunks(chunks: DiffChunk[], maxTokens: number): DiffChunk[] {
+    // 边界情况：空列表或单个 chunk
+    if (chunks.length <= 1) {
+      return chunks;
+    }
+
+    const mergedChunks: DiffChunk[] = [];
+    let currentMergedChunk = chunks[0]!;
+    const mergedFiles: string[] = [currentMergedChunk.filePath];
+
+    for (let i = 1; i < chunks.length; i++) {
+      const nextChunk = chunks[i]!;
+
+      // 计算合并后的 token 数
+      const combinedContent = currentMergedChunk.content + '\n' + nextChunk.content;
+      const combinedTokens = this.tokenEstimator.estimate(combinedContent);
+
+      // 如果合并后不超过限制，则合并
+      if (combinedTokens <= maxTokens) {
+        // 合并内容
+        currentMergedChunk = {
+          ...currentMergedChunk,
+          content: combinedContent,
+          filePath: this.formatMergedFilePath([...mergedFiles, nextChunk.filePath]),
+          context: {
+            fileHeader: '', // 多文件合并后，文件头部设为空
+          },
+        };
+        mergedFiles.push(nextChunk.filePath);
+      } else {
+        // 不能合并，保存当前合并块
+        mergedChunks.push(currentMergedChunk);
+        currentMergedChunk = nextChunk;
+        mergedFiles.length = 0;
+        mergedFiles.push(nextChunk.filePath);
+      }
+    }
+
+    // 保存最后一个合并块
+    // 如果最后一个块合并了多个文件，确保 filePath 正确
+    if (mergedFiles.length > 1) {
+      currentMergedChunk = {
+        ...currentMergedChunk,
+        filePath: this.formatMergedFilePath(mergedFiles),
+        context: {
+          fileHeader: '',
+        },
+      };
+    }
+    mergedChunks.push(currentMergedChunk);
+
+    // 注意：索引将在 split 方法的最后统一更新
+    return mergedChunks;
+  }
+
+  /**
+   * 格式化合并后的文件路径
+   * 如果文件数 <= 3，用逗号拼接；否则简化为 "Multiple files (...)"
+   *
+   * @param filePaths 文件路径列表
+   * @returns 格式化后的文件路径字符串
+   */
+  private formatMergedFilePath(filePaths: string[]): string {
+    if (filePaths.length === 1) {
+      return filePaths[0]!;
+    }
+
+    // 如果文件数 <= 3，直接拼接
+    if (filePaths.length <= 3) {
+      const joined = filePaths.join(', ');
+      // 检查长度，如果过长则简化
+      if (joined.length <= 100) {
+        return joined;
+      }
+    }
+
+    // 文件数 > 3 或路径过长，简化显示
+    const firstTwo = filePaths.slice(0, 2).join(', ');
+    return `Multiple files (${firstTwo}, ...)`;
   }
 
   /**

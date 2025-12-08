@@ -5,6 +5,34 @@ All notable changes to the "AI Git Commit" extension will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2025-12-09
+
+### 🔧 优化改进
+
+#### DiffSplitter 性能优化
+
+- ✅ **贪心合并策略**: 新增 `mergeSmallChunks()` 方法
+  - 智能合并小的 diff chunks，减少碎片化
+  - 在不超过 token 限制的前提下合并相邻文件
+  - 提升处理效率，减少 API 调用次数
+
+- ✅ **文件路径格式化**: 新增 `formatMergedFilePath()` 方法
+  - 优化合并后的文件路径显示
+  - 文件数 ≤ 3 时显示完整路径
+  - 文件数 > 3 时简化为 "Multiple files (...)"
+
+- ✅ **拆分逻辑优化**: 改进 `split()` 方法
+  - 应用贪心合并策略后再进行进一步拆分
+  - 正确处理合并后的多文件 chunks
+  - 避免对合并 chunks 进行不必要的 Hunk 拆分
+
+### 🧪 测试增强
+
+- ✅ **属性测试**: 新增完整的属性测试套件
+  - 使用 fast-check 进行基于属性的测试
+  - 覆盖各种边界情况和随机输入
+  - 确保拆分和合并逻辑的正确性
+
 ## [1.4.0] - 2025-12-08
 
 ### ✨ 新增功能

@@ -2,7 +2,7 @@
 
 [![VSCode Marketplace](https://img.shields.io/badge/VSCode-Marketplace-blue.svg)](https://marketplace.visualstudio.com/items?itemName=SleepSheep.aigitcommit)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.4.0-orange.svg)](package.json)
+[![Version](https://img.shields.io/badge/Version-1.4.1-orange.svg)](package.json)
 [![Publish Status](https://github.com/want2sleeep/AIGitCommit/actions/workflows/publish.yml/badge.svg?event=release)](https://github.com/want2sleeep/AIGitCommit/actions/workflows/publish.yml)
 
 🚀 **使用AI自动生成高质量的Git提交信息**
