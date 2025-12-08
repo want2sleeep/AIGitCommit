@@ -9,11 +9,13 @@ describe('Constants: Command Identifiers', () => {
     it('should contain all expected command identifiers', () => {
       expect(COMMANDS).toHaveProperty('GENERATE_MESSAGE');
       expect(COMMANDS).toHaveProperty('CONFIGURE_SETTINGS');
+      expect(COMMANDS).toHaveProperty('TEST_CONNECTION');
     });
 
     it('should have correct command identifier values', () => {
       expect(COMMANDS.GENERATE_MESSAGE).toBe('aigitcommit.generateMessage');
       expect(COMMANDS.CONFIGURE_SETTINGS).toBe('aigitcommit.configureSettings');
+      expect(COMMANDS.TEST_CONNECTION).toBe('aigitcommit.testConnection');
     });
 
     it('should have command identifiers with correct format (extensionId.commandName)', () => {
@@ -95,18 +97,25 @@ describe('Constants: Command Identifiers', () => {
 
       // CONFIGURE_SETTINGS -> configureSettings
       expect(COMMANDS.CONFIGURE_SETTINGS).toContain('configureSettings');
+
+      // TEST_CONNECTION -> testConnection
+      expect(COMMANDS.TEST_CONNECTION).toContain('testConnection');
     });
 
-    it('should have exactly 2 command identifiers', () => {
+    it('should have exactly 3 command identifiers', () => {
       const commandCount = Object.keys(COMMANDS).length;
-      expect(commandCount).toBe(2);
+      expect(commandCount).toBe(3);
     });
   });
 
   describe('Integration with package.json', () => {
     it('should match command identifiers expected in package.json', () => {
       // These are the commands that should be registered in package.json
-      const expectedCommands = ['aigitcommit.generateMessage', 'aigitcommit.configureSettings'];
+      const expectedCommands = [
+        'aigitcommit.generateMessage',
+        'aigitcommit.configureSettings',
+        'aigitcommit.testConnection',
+      ];
 
       const actualCommands = Object.values(COMMANDS);
 

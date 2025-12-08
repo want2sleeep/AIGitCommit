@@ -1,10 +1,112 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../ErrorHandler';
 import { ErrorType } from '../../types';
+import { Ii18nService } from '../../services/i18nService';
+
+// 创建 mock i18n 服务，返回中文消息
+const createMockI18nService = (): Ii18nService => {
+  const translations: Record<string, string> = {
+    // 配置错误
+    'error.config.apiKeyMissing.title': '❌ API密钥未配置',
+    'error.config.apiKeyMissing.reason': '原因：未找到有效的API密钥配置',
+    'error.config.apiKeyMissing.solutions': '解决方案：\n1. 打开设置配置API密钥\n2. 运行配置向导',
+    'error.config.endpointInvalid.title': '❌ API端点配置无效',
+    'error.config.endpointInvalid.reason': '原因：API端点URL格式不正确',
+    'error.config.endpointInvalid.solutions':
+      '解决方案：\n1. 检查API端点URL格式\n2. 确保URL以http://或https://开头',
+    'error.config.modelMissing.title': '❌ 模型未配置',
+    'error.config.modelMissing.reason': '原因：未指定要使用的model模型',
+    'error.config.modelMissing.solutions':
+      '解决方案：\n1. 在设置中配置模型名称\n2. 运行配置向导选择模型',
+    'error.config.general.title': '❌ 配置错误',
+    'error.config.general.reason': '原因：配置验证失败',
+    'error.config.general.solutions': '解决方案：\n1. 检查配置项是否完整\n2. 运行配置向导重新配置',
+    // Git 错误
+    'error.git.notRepository.title': '❌ 非Git仓库',
+    'error.git.notRepository.reason': '原因：当前目录不是Git仓库',
+    'error.git.notRepository.solutions':
+      '解决方案：\n1. 运行 git init 初始化仓库\n2. 打开一个Git仓库目录',
+    'error.git.noChanges.title': '❌ 暂存区为空',
+    'error.git.noChanges.reason': '原因：没有已暂存的更改',
+    'error.git.noChanges.solutions':
+      '解决方案：\n1. 使用 git add 添加文件到暂存区\n2. 在源代码管理中暂存更改',
+    'error.git.notFound.title': '❌ 未找到Git',
+    'error.git.notFound.reason': '原因：系统中未安装Git',
+    'error.git.notFound.solutions':
+      '解决方案：\n1. 从 git-scm.com 下载安装Git\n2. 确保Git已添加到系统PATH',
+    'error.git.general.title': '❌ Git错误',
+    'error.git.general.reason': '原因：Git操作失败',
+    'error.git.general.solutions': '解决方案：\n1. 检查Git仓库状态\n2. 查看日志获取详细信息',
+    // API 错误
+    'error.api.401.title': '❌ 401 认证失败',
+    'error.api.401.reason': '原因：API密钥无效或已过期',
+    'error.api.401.solutions': '解决方案：\n1. 检查API密钥是否正确\n2. 重新生成API密钥',
+    'error.api.403.title': '❌ 403 访问被拒绝',
+    'error.api.403.reason': '原因：没有访问该资源的权限',
+    'error.api.403.solutions': '解决方案：\n1. 检查API密钥权限\n2. 确认账户状态正常',
+    'error.api.404.title': '❌ 404 资源不存在',
+    'error.api.404.reason': '原因：请求的API端点或模型不存在',
+    'error.api.404.solutions': '解决方案：\n1. 检查API端点URL\n2. 确认模型名称正确',
+    'error.api.429.title': '❌ 429 频率超限',
+    'error.api.429.reason': '原因：API请求频率超过限制',
+    'error.api.429.solutions': '解决方案：\n1. 等待一段时间后重试\n2. 检查API配额使用情况',
+    'error.api.5xx.title': '❌ 5xx 服务器错误',
+    'error.api.5xx.reason': '原因：API服务器内部错误',
+    'error.api.5xx.solutions': '解决方案：\n1. 稍后重试\n2. 检查API服务状态',
+    'error.api.general.title': '❌ API调用失败',
+    'error.api.general.reason': '原因：API请求失败',
+    'error.api.general.solutions': '解决方案：\n1. 检查网络连接\n2. 查看日志获取详细信息',
+    // 网络错误
+    'error.network.timeout.title': '❌ 请求超时',
+    'error.network.timeout.reason': '原因：网络请求超时',
+    'error.network.timeout.solutions': '解决方案：\n1. 检查网络连接\n2. 稍后重试',
+    'error.network.refused.title': '❌ 连接被拒绝',
+    'error.network.refused.reason': '原因：无法连接到服务器 (ECONNREFUSED)',
+    'error.network.refused.solutions':
+      '解决方案：\n1. 检查服务器地址是否正确\n2. 确认服务器正在运行',
+    'error.network.notFound.title': '❌ 域名解析失败',
+    'error.network.notFound.reason': '原因：无法解析域名 (ENOTFOUND)',
+    'error.network.notFound.solutions': '解决方案：\n1. 检查API端点URL\n2. 检查网络连接',
+    'error.network.general.title': '❌ 网络连接失败',
+    'error.network.general.reason': '原因：网络连接出现问题',
+    'error.network.general.solutions': '解决方案：\n1. 检查网络连接\n2. 检查防火墙设置',
+    // 未知错误
+    'error.unknown.title': '❌ 未知错误',
+    'error.unknown.reason': '原因：发生了未预期的错误',
+    'error.unknown.solutions': '解决方案：\n1. 查看日志获取详细信息\n2. 重试操作',
+    // 操作按钮
+    'error.action.openSettings': '打开设置',
+    'error.action.configWizard': '配置向导',
+    'error.action.openScm': '打开源代码管理',
+    'error.action.viewLogs': '查看日志',
+    'error.action.retry': '重试',
+  };
+
+  return {
+    t: (key: string, params?: Record<string, string | number>): string => {
+      let result = translations[key] || key;
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          result = result.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+        });
+        // 如果有 message 参数，追加到结果中
+        if (params['message'] && !result.includes(String(params['message']))) {
+          result += `\n详情：${params['message']}`;
+        }
+      }
+      return result;
+    },
+    getCurrentLanguage: () => 'zh-CN',
+    setLanguage: jest.fn(),
+    getSupportedLanguages: () => ['zh-CN', 'en-US'],
+    loadLanguageResources: jest.fn().mockResolvedValue(undefined),
+  };
+};
 
 describe('ErrorHandler', () => {
   let errorHandler: ErrorHandler;
   let mockOutputChannel: any;
+  let mockI18nService: Ii18nService;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -18,7 +120,9 @@ describe('ErrorHandler', () => {
 
     (vscode.window.createOutputChannel as jest.Mock).mockReturnValue(mockOutputChannel);
 
-    errorHandler = new ErrorHandler();
+    // 创建带有 i18n 服务的 ErrorHandler
+    mockI18nService = createMockI18nService();
+    errorHandler = new ErrorHandler(mockI18nService);
   });
 
   afterEach(() => {

@@ -41,7 +41,11 @@ describe('Extension: Command Registration Logic', () => {
 
     it('should have commands that match package.json definitions', () => {
       // These commands should be defined in package.json
-      const expectedCommands = ['aigitcommit.generateMessage', 'aigitcommit.configureSettings'];
+      const expectedCommands = [
+        'aigitcommit.generateMessage',
+        'aigitcommit.configureSettings',
+        'aigitcommit.testConnection',
+      ];
 
       const actualCommands = Object.values(COMMANDS);
 
@@ -84,7 +88,7 @@ describe('Extension: Command Registration Logic', () => {
     });
 
     it('should provide all expected commands for verification', () => {
-      const expectedCommandCount = 2; // GENERATE_MESSAGE and CONFIGURE_SETTINGS
+      const expectedCommandCount = 3; // GENERATE_MESSAGE, CONFIGURE_SETTINGS, and TEST_CONNECTION
       const actualCommandCount = Object.keys(COMMANDS).length;
 
       expect(actualCommandCount).toBe(expectedCommandCount);

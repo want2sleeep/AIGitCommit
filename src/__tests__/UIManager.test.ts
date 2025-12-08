@@ -245,9 +245,14 @@ describe('UIManager', () => {
       const title = '正在处理...';
       const reportedMessages: string[] = [];
 
+      // 模拟一个需要时间的任务，以便产生剩余时间估算
       const mockTask = jest.fn().mockImplementation(async (progress) => {
+        // 模拟一些延迟，让 ProgressTracker 能够计算剩余时间
+        await new Promise((resolve) => setTimeout(resolve, 10));
         progress.report({ message: '步骤1', increment: 25 });
+        await new Promise((resolve) => setTimeout(resolve, 10));
         progress.report({ message: '步骤2', increment: 25 });
+        await new Promise((resolve) => setTimeout(resolve, 10));
         progress.report({ message: '步骤3', increment: 25 });
         return 'done';
       });
@@ -270,8 +275,10 @@ describe('UIManager', () => {
         showEstimatedTime: true,
       });
 
-      // 验证至少有一条消息包含剩余时间信息
-      const hasTimeEstimate = reportedMessages.some((msg) => msg.includes('剩余'));
+      // 验证至少有一条消息包含剩余时间信息（"剩余" 或 "约"）
+      const hasTimeEstimate = reportedMessages.some(
+        (msg) => msg.includes('剩余') || msg.includes('约')
+      );
       expect(hasTimeEstimate).toBe(true);
 
       mockWithProgress.mockRestore();
