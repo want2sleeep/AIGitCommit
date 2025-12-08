@@ -1,7 +1,14 @@
 // Mock implementation of vscode module for testing
 export const workspace = {
-  getConfiguration: jest.fn(),
-  onDidChangeConfiguration: jest.fn(),
+  getConfiguration: jest.fn(() => ({
+    get: jest.fn(),
+    has: jest.fn(() => false),
+    inspect: jest.fn(),
+    update: jest.fn(),
+  })),
+  onDidChangeConfiguration: jest.fn(() => ({ dispose: jest.fn() })),
+  onDidChangeWorkspaceFolders: jest.fn(() => ({ dispose: jest.fn() })),
+  workspaceFolders: [],
 };
 
 export const window = {
@@ -11,8 +18,31 @@ export const window = {
   showWarningMessage: jest.fn().mockResolvedValue(undefined),
   showQuickPick: jest.fn().mockResolvedValue(undefined),
   withProgress: jest.fn(),
-  createOutputChannel: jest.fn(),
-  createStatusBarItem: jest.fn(),
+  createOutputChannel: jest.fn(() => ({
+    appendLine: jest.fn(),
+    append: jest.fn(),
+    clear: jest.fn(),
+    show: jest.fn(),
+    hide: jest.fn(),
+    dispose: jest.fn(),
+  })),
+  createStatusBarItem: jest.fn(() => ({
+    text: '',
+    tooltip: '',
+    show: jest.fn(),
+    hide: jest.fn(),
+    dispose: jest.fn(),
+  })),
+  createWebviewPanel: jest.fn(() => ({
+    webview: {
+      html: '',
+      postMessage: jest.fn(),
+      onDidReceiveMessage: jest.fn(() => ({ dispose: jest.fn() })),
+    },
+    reveal: jest.fn(),
+    dispose: jest.fn(),
+    onDidDispose: jest.fn(() => ({ dispose: jest.fn() })),
+  })),
   setStatusBarMessage: jest.fn(),
 };
 
@@ -45,6 +75,12 @@ export enum ViewColumn {
   Seven = 7,
   Eight = 8,
   Nine = 9,
+}
+
+export enum ExtensionMode {
+  Production = 1,
+  Development = 2,
+  Test = 3,
 }
 
 export const commands = {
@@ -102,6 +138,15 @@ export const extensions = {
   getExtension: jest.fn(),
 };
 
+export const env = {
+  clipboard: {
+    writeText: jest.fn().mockResolvedValue(undefined),
+    readText: jest.fn().mockResolvedValue(''),
+  },
+  openExternal: jest.fn().mockResolvedValue(true),
+  asExternalUri: jest.fn((uri: Uri) => Promise.resolve(uri)),
+};
+
 export class EventEmitter<T> {
   private listeners: Array<(e: T) => void> = [];
 
@@ -125,5 +170,32 @@ export class EventEmitter<T> {
 
   dispose(): void {
     this.listeners = [];
+  }
+}
+
+export class MarkdownString {
+  value: string;
+  isTrusted?: boolean;
+  supportThemeIcons?: boolean;
+  supportHtml?: boolean;
+  baseUri?: Uri;
+
+  constructor(value?: string) {
+    this.value = value || '';
+  }
+
+  appendText(value: string): MarkdownString {
+    this.value += value;
+    return this;
+  }
+
+  appendMarkdown(value: string): MarkdownString {
+    this.value += value;
+    return this;
+  }
+
+  appendCodeblock(value: string, language?: string): MarkdownString {
+    this.value += `\`\`\`${language || ''}\n${value}\n\`\`\``;
+    return this;
   }
 }

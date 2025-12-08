@@ -24,3 +24,31 @@ export {
   ValidationResult,
 } from './CustomCandidatesManager';
 export { ServiceContainer, ServiceKeys, configureServices } from './ServiceContainer';
+export { CacheManager, ICacheManager } from './CacheManager';
+export { RequestQueueManager, IRequestQueueManager } from './RequestQueueManager';
+export { ResourceCleanupManager, IResourceCleanupManager } from './ResourceCleanupManager';
+export { i18nService, Ii18nService } from './i18nService';
+export {
+  PerformanceMonitor,
+  IPerformanceMonitor,
+  PerformanceStatistics,
+} from './PerformanceMonitor';
+export { LogManager, ILogManager, LogLevel, LogFilter, LogStatistics } from './LogManager';
+export {
+  HealthCheckService,
+  IHealthCheckService,
+  HealthCheckResult,
+  HealthCheckItem,
+  SystemStatus,
+} from './HealthCheckService';
+export { TemplateManager, ITemplateManager, Template } from './TemplateManager';
+export {
+  HistoryManager,
+  IHistoryManager,
+  HistoryEntry,
+  HistoryFilter,
+  HistoryStatistics,
+} from './HistoryManager';
+export { ConfigPresetManager, IConfigPresetManager, ConfigPreset } from './ConfigPresetManager';
+export { SensitiveDataSanitizer } from './SensitiveDataSanitizer';
+export { CommitMessagePreviewManager } from './CommitMessagePreviewManager';

@@ -4,6 +4,7 @@ import { ConfigurationError } from '../errors';
 import { CONFIG_CONSTANTS } from '../constants';
 import { maskString } from '../utils/validation';
 import { Cache } from '../utils/cache';
+import { getConfigArray, addToConfigArray, removeFromConfigArray } from '../utils/configUtils';
 import { ConfigurationProvider } from './ConfigurationProvider';
 import { ConfigurationValidator } from './ConfigurationValidator';
 import { ConfigurationWizard } from './ConfigurationWizard';
@@ -212,7 +213,7 @@ export class ConfigurationManager {
         modelName: config.modelName || '',
         isConfigured,
       };
-    } catch (error) {
+    } catch {
       // 返回默认值而不是抛出异常
       return {
         provider: 'openai',
@@ -247,12 +248,7 @@ export class ConfigurationManager {
    * @returns 自定义 Base URL 数组
    */
   getCustomBaseUrls(): string[] {
-    try {
-      const config = vscode.workspace.getConfiguration('aigitcommit');
-      return config.get<string[]>('customBaseUrls', []);
-    } catch (error) {
-      return [];
-    }
+    return getConfigArray<string>('customBaseUrls');
   }
 
   /**
@@ -263,22 +259,9 @@ export class ConfigurationManager {
    */
   async addCustomBaseUrl(url: string): Promise<void> {
     try {
-      const customUrls = this.getCustomBaseUrls();
-
-      // 去重：如果 URL 已存在，则不添加
-      if (customUrls.includes(url)) {
-        return;
-      }
-
-      // 添加新 URL 并保存
-      customUrls.push(url);
-      await vscode.workspace
-        .getConfiguration('aigitcommit')
-        .update('customBaseUrls', customUrls, vscode.ConfigurationTarget.Global);
-
+      await addToConfigArray('customBaseUrls', url, vscode.ConfigurationTarget.Global);
       this.invalidateCache();
     } catch (error) {
-      // 保存失败不影响其他配置
       throw new ConfigurationError(
         `添加自定义 Base URL 失败: ${error instanceof Error ? error.message : String(error)}`,
         'update'
@@ -291,12 +274,7 @@ export class ConfigurationManager {
    * @returns 自定义模型名称数组
    */
   getCustomModelNames(): string[] {
-    try {
-      const config = vscode.workspace.getConfiguration('aigitcommit');
-      return config.get<string[]>('customModelNames', []);
-    } catch (error) {
-      return [];
-    }
+    return getConfigArray<string>('customModelNames');
   }
 
   /**
@@ -307,22 +285,9 @@ export class ConfigurationManager {
    */
   async addCustomModelName(modelName: string): Promise<void> {
     try {
-      const customModelNames = this.getCustomModelNames();
-
-      // 去重：如果模型名称已存在，则不添加
-      if (customModelNames.includes(modelName)) {
-        return;
-      }
-
-      // 添加新模型名称并保存
-      customModelNames.push(modelName);
-      await vscode.workspace
-        .getConfiguration('aigitcommit')
-        .update('customModelNames', customModelNames, vscode.ConfigurationTarget.Global);
-
+      await addToConfigArray('customModelNames', modelName, vscode.ConfigurationTarget.Global);
       this.invalidateCache();
     } catch (error) {
-      // 保存失败不影响其他配置
       throw new ConfigurationError(
         `添加自定义模型名称失败: ${error instanceof Error ? error.message : String(error)}`,
         'update'
@@ -337,18 +302,7 @@ export class ConfigurationManager {
    */
   async removeCustomBaseUrl(url: string): Promise<void> {
     try {
-      const customUrls = this.getCustomBaseUrls();
-      const filteredUrls = customUrls.filter((u) => u !== url);
-
-      // 如果列表没有变化，说明 URL 不存在
-      if (filteredUrls.length === customUrls.length) {
-        return;
-      }
-
-      await vscode.workspace
-        .getConfiguration('aigitcommit')
-        .update('customBaseUrls', filteredUrls, vscode.ConfigurationTarget.Global);
-
+      await removeFromConfigArray('customBaseUrls', url, vscode.ConfigurationTarget.Global);
       this.invalidateCache();
     } catch (error) {
       throw new ConfigurationError(
@@ -365,18 +319,7 @@ export class ConfigurationManager {
    */
   async removeCustomModelName(modelName: string): Promise<void> {
     try {
-      const customModelNames = this.getCustomModelNames();
-      const filteredNames = customModelNames.filter((name) => name !== modelName);
-
-      // 如果列表没有变化，说明模型名称不存在
-      if (filteredNames.length === customModelNames.length) {
-        return;
-      }
-
-      await vscode.workspace
-        .getConfiguration('aigitcommit')
-        .update('customModelNames', filteredNames, vscode.ConfigurationTarget.Global);
-
+      await removeFromConfigArray('customModelNames', modelName, vscode.ConfigurationTarget.Global);
       this.invalidateCache();
     } catch (error) {
       throw new ConfigurationError(

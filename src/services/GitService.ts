@@ -158,7 +158,7 @@ export class GitService {
           if (gitChange) {
             changes.push(gitChange);
           }
-        } catch (error) {
+        } catch {
           // 记录单个文件处理失败，但继续处理其他文件
           // 添加一个占位符，表明该文件处理失败
           changes.push({
@@ -230,7 +230,7 @@ export class GitService {
             deletions: 0,
           };
         }
-      } catch (error) {
+      } catch {
         // 文件可能已被删除，继续处理
       }
 
@@ -270,7 +270,7 @@ export class GitService {
   private async getDiff(uri: vscode.Uri, repository: GitRepository): Promise<string> {
     try {
       return await this.getDiffForModifiedFile(uri, repository);
-    } catch (error) {
+    } catch {
       return await this.getDiffForSpecialFile(uri, repository);
     }
   }

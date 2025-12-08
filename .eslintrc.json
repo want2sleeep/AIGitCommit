@@ -21,19 +21,26 @@
         "format": ["camelCase", "PascalCase"]
       }
     ],
-    "@typescript-eslint/semi": "warn",
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/explicit-function-return-type": "warn",
     "@typescript-eslint/no-unused-vars": "error",
     "@typescript-eslint/no-floating-promises": "error",
     "@typescript-eslint/await-thenable": "error",
+    "@typescript-eslint/only-throw-error": "error",
     "curly": "warn",
     "eqeqeq": "warn",
     "no-throw-literal": "warn",
     "semi": "off",
-    "complexity": ["warn", 10],
-    "max-lines-per-function": ["warn", 50],
-    "max-depth": ["warn", 3],
+    "complexity": ["warn", 15],
+    "max-lines-per-function": [
+      "warn",
+      {
+        "max": 500,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
+    ],
+    "max-depth": ["warn", 4],
     "prettier/prettier": "error"
   },
   "ignorePatterns": ["out", "dist", "**/*.d.ts", "**/__tests__/**"]

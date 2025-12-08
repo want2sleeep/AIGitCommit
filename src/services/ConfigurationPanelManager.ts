@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { ConfigurationManager } from './ConfigurationManager';
 import { ProviderManager } from './ProviderManager';
 import { CustomCandidatesManager } from './CustomCandidatesManager';
+import { getStringProperty } from '../utils';
 
 /**
  * 预设 Base URL 候选项
@@ -268,64 +269,12 @@ export class ConfigurationPanelManager {
       }
 
       case 'validate': {
-        if (message.data && 'provider' in message.data && 'apiKey' in message.data) {
-          const validationResult = this.validateConfig(message.data);
-          void this.panel?.webview.postMessage({
-            command: 'validationResult',
-            data: validationResult,
-          });
-        }
+        this.handleValidateMessage(message);
         break;
       }
 
       case 'providerChanged': {
-        if (message.data && 'provider' in message.data) {
-          const providerId = (message.data as { provider: string }).provider;
-          const defaultConfig = this.providerManager.getDefaultConfig(providerId);
-
-          // 如果切换到 openai-compatible，需要生成新的输入控件 HTML
-          if (providerId === 'openai-compatible') {
-            const customBaseUrls = this.configManager.getCustomBaseUrls();
-            const customModelNames = this.configManager.getCustomModelNames();
-
-            // 获取当前值（如果有的话）
-            const currentData = message.data as {
-              provider: string;
-              currentBaseUrl?: string;
-              currentModelName?: string;
-            };
-            const currentBaseUrl = currentData.currentBaseUrl || defaultConfig.baseUrl || '';
-            const currentModelName = currentData.currentModelName || defaultConfig.modelName || '';
-
-            // 生成新的输入控件 HTML
-            const baseUrlInput = this.generateBaseUrlInput(
-              providerId,
-              currentBaseUrl,
-              customBaseUrls
-            );
-            const modelNameInput = this.generateModelNameInput(
-              providerId,
-              currentModelName,
-              customModelNames
-            );
-
-            void this.panel?.webview.postMessage({
-              command: 'updateInputControls',
-              data: {
-                baseUrlHtml: baseUrlInput,
-                modelNameHtml: modelNameInput,
-                baseUrl: currentBaseUrl,
-                modelName: currentModelName,
-              },
-            });
-          } else {
-            // 切换到其他提供商，使用默认配置
-            void this.panel?.webview.postMessage({
-              command: 'updateDefaults',
-              data: defaultConfig,
-            });
-          }
-        }
+        this.handleProviderChanged(message);
         break;
       }
 
@@ -338,6 +287,86 @@ export class ConfigurationPanelManager {
         break;
       }
     }
+  }
+
+  /**
+   * 处理验证消息
+   */
+  private handleValidateMessage(message: WebviewMessage): void {
+    if (message.data && 'provider' in message.data && 'apiKey' in message.data) {
+      const validationResult = this.validateConfig(message.data);
+      void this.panel?.webview.postMessage({
+        command: 'validationResult',
+        data: validationResult,
+      });
+    }
+  }
+
+  /**
+   * 处理提供商切换消息
+   */
+  private handleProviderChanged(message: WebviewMessage): void {
+    if (!message.data || !('provider' in message.data)) {
+      return;
+    }
+
+    const providerId = (message.data as { provider: string }).provider;
+    const defaultConfig = this.providerManager.getDefaultConfig(providerId);
+
+    if (providerId === 'openai-compatible') {
+      this.handleOpenAICompatibleProvider(message, defaultConfig);
+    } else {
+      this.handleStandardProvider(defaultConfig);
+    }
+  }
+
+  /**
+   * 处理 OpenAI 兼容提供商
+   */
+  private handleOpenAICompatibleProvider(
+    message: WebviewMessage,
+    defaultConfig: { baseUrl: string; modelName: string }
+  ): void {
+    const customBaseUrls = this.configManager.getCustomBaseUrls();
+    const customModelNames = this.configManager.getCustomModelNames();
+
+    // 安全地提取当前数据
+    const currentData = message.data as Record<string, unknown>;
+    const currentBaseUrl =
+      getStringProperty(currentData, 'currentBaseUrl') || defaultConfig.baseUrl;
+    const currentModelName =
+      getStringProperty(currentData, 'currentModelName') || defaultConfig.modelName;
+
+    const baseUrlInput = this.generateBaseUrlInput(
+      'openai-compatible',
+      currentBaseUrl,
+      customBaseUrls
+    );
+    const modelNameInput = this.generateModelNameInput(
+      'openai-compatible',
+      currentModelName,
+      customModelNames
+    );
+
+    void this.panel?.webview.postMessage({
+      command: 'updateInputControls',
+      data: {
+        baseUrlHtml: baseUrlInput,
+        modelNameHtml: modelNameInput,
+        baseUrl: currentBaseUrl,
+        modelName: currentModelName,
+      },
+    });
+  }
+
+  /**
+   * 处理标准提供商
+   */
+  private handleStandardProvider(defaultConfig: { baseUrl: string; modelName: string }): void {
+    void this.panel?.webview.postMessage({
+      command: 'updateDefaults',
+      data: defaultConfig,
+    });
   }
 
   /**

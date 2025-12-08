@@ -62,3 +62,96 @@ export function isInRange(value: number, min: number, max: number): boolean {
 export function isOneOf<T>(value: T, allowedValues: readonly T[]): boolean {
   return allowedValues.includes(value);
 }
+
+/**
+ * 安全地从对象中获取字符串属性
+ * @param obj 对象
+ * @param key 属性键
+ * @param defaultValue 默认值
+ * @returns 字符串值或默认值
+ */
+export function getStringProperty(
+  obj: Record<string, unknown>,
+  key: string,
+  defaultValue: string = ''
+): string {
+  const value = obj[key];
+  return typeof value === 'string' ? value : defaultValue;
+}
+
+/**
+ * 安全地从对象中获取数字属性
+ * @param obj 对象
+ * @param key 属性键
+ * @param defaultValue 默认值
+ * @returns 数字值或默认值
+ */
+export function getNumberProperty(
+  obj: Record<string, unknown>,
+  key: string,
+  defaultValue: number = 0
+): number {
+  const value = obj[key];
+  return typeof value === 'number' ? value : defaultValue;
+}
+
+/**
+ * 安全地从对象中获取布尔属性
+ * @param obj 对象
+ * @param key 属性键
+ * @param defaultValue 默认值
+ * @returns 布尔值或默认值
+ */
+export function getBooleanProperty(
+  obj: Record<string, unknown>,
+  key: string,
+  defaultValue: boolean = false
+): boolean {
+  const value = obj[key];
+  return typeof value === 'boolean' ? value : defaultValue;
+}
+
+/**
+ * 合并两个配置对象，第二个对象的属性会覆盖第一个对象的属性
+ * @param base 基础配置对象
+ * @param override 覆盖配置对象
+ * @returns 合并后的配置对象
+ */
+export function mergeConfig<T extends Record<string, unknown>>(base: T, override: Partial<T>): T {
+  return { ...base, ...override };
+}
+
+/**
+ * 深度合并两个对象
+ * @param target 目标对象
+ * @param source 源对象
+ * @returns 合并后的对象
+ */
+export function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
+  const result = { ...target };
+
+  for (const key in source) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
+      const sourceValue = source[key];
+      const targetValue = result[key];
+
+      if (
+        sourceValue &&
+        typeof sourceValue === 'object' &&
+        !Array.isArray(sourceValue) &&
+        targetValue &&
+        typeof targetValue === 'object' &&
+        !Array.isArray(targetValue)
+      ) {
+        result[key] = deepMerge(
+          targetValue as Record<string, unknown>,
+          sourceValue as Record<string, unknown>
+        ) as T[Extract<keyof T, string>];
+      } else if (sourceValue !== undefined) {
+        result[key] = sourceValue as T[Extract<keyof T, string>];
+      }
+    }
+  }
+
+  return result;
+}

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorType } from '../types';
+import { Ii18nService } from '../services/i18nService';
 
 /**
  * 错误处理器类
@@ -8,9 +9,19 @@ import { ErrorType } from '../types';
 export class ErrorHandler {
   private outputChannel: vscode.OutputChannel;
   private retryCallback: (() => Promise<void>) | null = null;
+  private i18n: Ii18nService | null = null;
 
-  constructor() {
+  constructor(i18n?: Ii18nService) {
     this.outputChannel = vscode.window.createOutputChannel('AI Git Commit');
+    this.i18n = i18n || null;
+  }
+
+  /**
+   * 设置 i18n 服务
+   * @param i18n i18n 服务实例
+   */
+  public setI18nService(i18n: Ii18nService): void {
+    this.i18n = i18n;
   }
 
   /**
@@ -162,39 +173,34 @@ export class ErrorHandler {
     const message = error.message.toLowerCase();
 
     if (message.includes('api key')) {
-      return (
-        '❌ API密钥未配置或无效\n\n' +
-        '解决方案：\n' +
-        '1. 点击"配置向导"按钮，按照提示输入API密钥\n' +
-        '2. 或点击"打开设置"，在设置中配置 aigitcommit.apiKey\n' +
-        '3. 确保API密钥有效且具有访问权限'
+      return this.formatErrorMessage(
+        'error.config.apiKeyMissing.title',
+        'error.config.apiKeyMissing.reason',
+        'error.config.apiKeyMissing.solutions'
       );
     }
 
     if (message.includes('endpoint')) {
-      return (
-        '❌ API端点配置无效\n\n' +
-        '解决方案：\n' +
-        '1. 点击"打开设置"，检查 aigitcommit.apiEndpoint 配置\n' +
-        '2. 确保URL格式正确（如：https://api.openai.com/v1）\n' +
-        '3. 如使用本地服务，确保服务已启动且可访问'
+      return this.formatErrorMessage(
+        'error.config.endpointInvalid.title',
+        'error.config.endpointInvalid.reason',
+        'error.config.endpointInvalid.solutions'
       );
     }
 
     if (message.includes('model')) {
-      return (
-        '❌ 模型名称未配置\n\n' +
-        '解决方案：\n' +
-        '1. 点击"配置向导"设置模型名称\n' +
-        '2. 或在设置中配置 aigitcommit.modelName\n' +
-        '3. 常用模型：gpt-4, gpt-3.5-turbo, claude-3-opus 等'
+      return this.formatErrorMessage(
+        'error.config.modelMissing.title',
+        'error.config.modelMissing.reason',
+        'error.config.modelMissing.solutions'
       );
     }
 
-    return (
-      `❌ 配置错误\n\n${error.message}\n\n` +
-      '解决方案：\n' +
-      '点击"配置向导"完成初始配置，或点击"打开设置"手动配置'
+    return this.formatErrorMessage(
+      'error.config.general.title',
+      'error.config.general.reason',
+      'error.config.general.solutions',
+      { message: error.message }
     );
   }
 
@@ -205,55 +211,45 @@ export class ErrorHandler {
     const message = error.message.toLowerCase();
 
     if (message.includes('not a git repository')) {
-      return (
-        '❌ 当前工作区不是Git仓库\n\n' +
-        '解决方案：\n' +
-        '1. 在终端运行 git init 初始化Git仓库\n' +
-        '2. 或打开一个已存在的Git仓库\n' +
-        '3. 确保在正确的工作区目录中'
+      return this.formatErrorMessage(
+        'error.git.notRepository.title',
+        'error.git.notRepository.reason',
+        'error.git.notRepository.solutions'
       );
     }
 
     if (message.includes('no staged changes') || message.includes('nothing to commit')) {
-      return (
-        '❌ 暂存区没有变更\n\n' +
-        '解决方案：\n' +
-        '1. 点击"打开源代码管理"查看变更的文件\n' +
-        '2. 使用 git add 命令或在源代码管理视图中暂存文件\n' +
-        '3. 暂存后再次运行此命令生成提交信息'
+      return this.formatErrorMessage(
+        'error.git.noChanges.title',
+        'error.git.noChanges.reason',
+        'error.git.noChanges.solutions'
       );
     }
 
     if (message.includes('git not found')) {
-      return (
-        '❌ 未找到Git\n\n' +
-        '解决方案：\n' +
-        '1. 从 https://git-scm.com 下载并安装Git\n' +
-        '2. 确保Git已添加到系统PATH环境变量\n' +
-        '3. 重启VSCode使环境变量生效'
+      return this.formatErrorMessage(
+        'error.git.notFound.title',
+        'error.git.notFound.reason',
+        'error.git.notFound.solutions'
       );
     }
 
-    return (
-      `❌ Git错误\n\n${error.message}\n\n` +
-      '解决方案：\n' +
-      '点击"打开源代码管理"检查Git状态，或查看日志了解详细错误信息'
+    return this.formatErrorMessage(
+      'error.git.general.title',
+      'error.git.general.reason',
+      'error.git.general.solutions',
+      { message: error.message }
     );
   }
 
-  // API错误消息映射表
-  private readonly apiErrorMessages: Record<string, string> = {
-    '401':
-      '❌ API认证失败（401 Unauthorized）\n\n解决方案：\n1. 检查API密钥是否正确配置\n2. 确认API密钥未过期或被撤销\n3. 点击"打开设置"重新配置API密钥\n4. 点击"重试"在修正配置后重新尝试',
-    '403':
-      '❌ API访问被拒绝（403 Forbidden）\n\n解决方案：\n1. 检查API密钥是否具有所需权限\n2. 确认账户余额充足（如适用）\n3. 验证API端点是否正确\n4. 点击"查看日志"了解详细错误信息',
-    '429':
-      '❌ API请求频率超限（429 Rate Limit）\n\n解决方案：\n1. 等待几分钟后点击"重试"\n2. 检查是否有其他应用在使用同一API密钥\n3. 考虑升级API服务计划以获得更高限额\n4. 点击"查看日志"查看具体限流信息',
-    '404':
-      '❌ API端点或模型不存在（404 Not Found）\n\n解决方案：\n1. 检查API端点URL是否正确\n2. 验证模型名称是否正确（如：gpt-4, gpt-3.5-turbo）\n3. 确认所选模型在您的API服务中可用\n4. 点击"打开设置"修正配置',
-    '5xx':
-      '❌ API服务器错误（5xx Server Error）\n\n解决方案：\n1. 这是服务端问题，通常是暂时性的\n2. 等待几分钟后点击"重试"\n3. 检查API服务状态页面\n4. 如持续出现，点击"查看日志"并联系服务提供商',
-  };
+  // API错误类型检测映射
+  private readonly apiErrorPatterns: Array<{ keywords: string[]; type: string }> = [
+    { keywords: ['401', 'unauthorized'], type: '401' },
+    { keywords: ['403', 'forbidden'], type: '403' },
+    { keywords: ['429', 'rate limit'], type: '429' },
+    { keywords: ['404'], type: '404' },
+    { keywords: ['500', '502', '503'], type: '5xx' },
+  ];
 
   /**
    * 获取API错误消息
@@ -265,22 +261,55 @@ export class ErrorHandler {
 
     // 检查特定的错误类型
     const errorType = this.detectAPIErrorType(message);
-    if (errorType && this.apiErrorMessages[errorType]) {
-      return this.apiErrorMessages[errorType];
+
+    if (errorType === '401') {
+      return this.formatErrorMessage(
+        'error.api.401.title',
+        'error.api.401.reason',
+        'error.api.401.solutions'
+      );
+    }
+
+    if (errorType === '403') {
+      return this.formatErrorMessage(
+        'error.api.403.title',
+        'error.api.403.reason',
+        'error.api.403.solutions'
+      );
+    }
+
+    if (errorType === '404') {
+      return this.formatErrorMessage(
+        'error.api.404.title',
+        'error.api.404.reason',
+        'error.api.404.solutions'
+      );
+    }
+
+    if (errorType === '429') {
+      return this.formatErrorMessage(
+        'error.api.429.title',
+        'error.api.429.reason',
+        'error.api.429.solutions'
+      );
+    }
+
+    if (errorType === '5xx') {
+      return this.formatErrorMessage(
+        'error.api.5xx.title',
+        'error.api.5xx.reason',
+        'error.api.5xx.solutions'
+      );
     }
 
     // 默认错误消息
-    return this.buildDefaultAPIErrorMessage(error.message);
+    return this.formatErrorMessage(
+      'error.api.general.title',
+      'error.api.general.reason',
+      'error.api.general.solutions',
+      { message: error.message }
+    );
   }
-
-  // API错误类型检测映射
-  private readonly apiErrorPatterns: Array<{ keywords: string[]; type: string }> = [
-    { keywords: ['401', 'unauthorized'], type: '401' },
-    { keywords: ['403', 'forbidden'], type: '403' },
-    { keywords: ['429', 'rate limit'], type: '429' },
-    { keywords: ['404'], type: '404' },
-    { keywords: ['500', '502', '503'], type: '5xx' },
-  ];
 
   /**
    * 检测API错误类型
@@ -297,66 +326,40 @@ export class ErrorHandler {
   }
 
   /**
-   * 构建默认API错误消息
-   * @param originalMessage 原始错误消息
-   * @returns 格式化的错误消息
-   */
-  private buildDefaultAPIErrorMessage(originalMessage: string): string {
-    return (
-      `❌ API调用失败\n\n${originalMessage}\n\n` +
-      '解决方案：\n' +
-      '1. 点击"重试"重新尝试\n' +
-      '2. 点击"查看日志"了解详细错误信息\n' +
-      '3. 检查API配置是否正确'
-    );
-  }
-
-  /**
    * 获取网络错误消息
    */
   private getNetworkErrorMessage(error: Error): string {
     const message = error.message.toLowerCase();
 
     if (message.includes('timeout')) {
-      return (
-        '❌ 网络请求超时\n\n' +
-        '解决方案：\n' +
-        '1. 检查网络连接是否正常\n' +
-        '2. 如使用VPN或代理，确保配置正确\n' +
-        '3. 点击"重试"重新尝试\n' +
-        '4. 考虑在设置中增加超时时间限制'
+      return this.formatErrorMessage(
+        'error.network.timeout.title',
+        'error.network.timeout.reason',
+        'error.network.timeout.solutions'
       );
     }
 
     if (message.includes('econnrefused')) {
-      return (
-        '❌ 连接被拒绝（ECONNREFUSED）\n\n' +
-        '解决方案：\n' +
-        '1. 检查API端点URL是否正确\n' +
-        '2. 如使用本地服务，确保服务已启动\n' +
-        '3. 验证端口号是否正确\n' +
-        '4. 检查防火墙设置是否阻止了连接'
+      return this.formatErrorMessage(
+        'error.network.refused.title',
+        'error.network.refused.reason',
+        'error.network.refused.solutions'
       );
     }
 
     if (message.includes('enotfound')) {
-      return (
-        '❌ 无法解析域名（ENOTFOUND）\n\n' +
-        '解决方案：\n' +
-        '1. 检查网络连接是否正常\n' +
-        '2. 验证API端点域名是否正确\n' +
-        '3. 尝试使用其他DNS服务器\n' +
-        '4. 检查是否需要配置代理'
+      return this.formatErrorMessage(
+        'error.network.notFound.title',
+        'error.network.notFound.reason',
+        'error.network.notFound.solutions'
       );
     }
 
-    return (
-      '❌ 网络连接失败\n\n' +
-      '解决方案：\n' +
-      '1. 检查网络连接是否正常\n' +
-      '2. 验证API端点配置是否正确\n' +
-      '3. 点击"重试"重新尝试\n' +
-      '4. 点击"查看日志"了解详细错误信息'
+    return this.formatErrorMessage(
+      'error.network.general.title',
+      'error.network.general.reason',
+      'error.network.general.solutions',
+      { message: error.message }
     );
   }
 
@@ -364,13 +367,39 @@ export class ErrorHandler {
    * 获取未知错误消息
    */
   private getUnknownErrorMessage(error: Error): string {
-    return (
-      `❌ 发生未知错误\n\n${error.message}\n\n` +
-      '解决方案：\n' +
-      '1. 点击"查看日志"了解详细错误信息\n' +
-      '2. 尝试重启VSCode\n' +
-      '3. 如问题持续，请在GitHub上报告此问题'
+    return this.formatErrorMessage(
+      'error.unknown.title',
+      'error.unknown.reason',
+      'error.unknown.solutions',
+      { message: error.message }
     );
+  }
+
+  /**
+   * 格式化错误消息
+   * @param titleKey 标题翻译键
+   * @param reasonKey 原因翻译键
+   * @param solutionsKey 解决方案翻译键
+   * @param params 参数对象
+   * @returns 格式化的错误消息
+   */
+  private formatErrorMessage(
+    titleKey: string,
+    reasonKey: string,
+    solutionsKey: string,
+    params?: Record<string, string | number>
+  ): string {
+    if (!this.i18n) {
+      // 如果 i18n 未初始化，返回基本错误消息
+      const errorMessage = params?.['message'] || 'Unknown error';
+      return `Error: ${errorMessage}`;
+    }
+
+    const title = this.i18n.t(titleKey, params);
+    const reason = this.i18n.t(reasonKey, params);
+    const solutions = this.i18n.t(solutionsKey, params);
+
+    return `${title}\n\n${reason}\n\n${solutions}`;
   }
 
   /**
@@ -397,19 +426,36 @@ export class ErrorHandler {
    * @returns 操作按钮数组
    */
   private getErrorActions(errorType: ErrorType): string[] {
+    if (!this.i18n) {
+      // 如果 i18n 未初始化，返回英文按钮
+      switch (errorType) {
+        case ErrorType.ConfigurationError:
+          return ['Open Settings', 'Configuration Wizard'];
+        case ErrorType.GitError:
+          return ['Open Source Control'];
+        case ErrorType.APIError:
+        case ErrorType.NetworkError:
+          return ['Retry', 'View Logs'];
+        case ErrorType.UnknownError:
+          return ['View Logs'];
+        default:
+          return [];
+      }
+    }
+
     switch (errorType) {
       case ErrorType.ConfigurationError:
-        return ['打开设置', '配置向导'];
+        return [this.i18n.t('error.action.openSettings'), this.i18n.t('error.action.configWizard')];
 
       case ErrorType.GitError:
-        return ['打开源代码管理'];
+        return [this.i18n.t('error.action.openScm')];
 
       case ErrorType.APIError:
       case ErrorType.NetworkError:
-        return ['重试', '查看日志'];
+        return [this.i18n.t('error.action.retry'), this.i18n.t('error.action.viewLogs')];
 
       case ErrorType.UnknownError:
-        return ['查看日志'];
+        return [this.i18n.t('error.action.viewLogs')];
 
       default:
         return [];
@@ -421,31 +467,28 @@ export class ErrorHandler {
    * @param action 操作名称
    */
   private handleErrorAction(action: string): void {
-    switch (action) {
-      case '打开设置':
-        void vscode.commands.executeCommand('workbench.action.openSettings', 'aigitcommit');
-        break;
+    // 获取本地化的操作名称
+    const openSettings = this.i18n?.t('error.action.openSettings') || 'Open Settings';
+    const configWizard = this.i18n?.t('error.action.configWizard') || 'Configuration Wizard';
+    const openScm = this.i18n?.t('error.action.openScm') || 'Open Source Control';
+    const viewLogs = this.i18n?.t('error.action.viewLogs') || 'View Logs';
+    const retry = this.i18n?.t('error.action.retry') || 'Retry';
 
-      case '配置向导':
-        void vscode.commands.executeCommand('aigitcommit.configureSettings');
-        break;
-
-      case '打开源代码管理':
-        void vscode.commands.executeCommand('workbench.view.scm');
-        break;
-
-      case '查看日志':
-        this.outputChannel.show();
-        break;
-
-      case '重试':
-        if (this.retryCallback) {
-          this.logInfo('用户请求重试操作', 'ErrorHandler');
-          void this.retryCallback().catch((error: Error) => {
-            this.logError(error, '重试操作失败');
-          });
-        }
-        break;
+    if (action === openSettings) {
+      void vscode.commands.executeCommand('workbench.action.openSettings', 'aigitcommit');
+    } else if (action === configWizard) {
+      void vscode.commands.executeCommand('aigitcommit.configureSettings');
+    } else if (action === openScm) {
+      void vscode.commands.executeCommand('workbench.view.scm');
+    } else if (action === viewLogs) {
+      this.outputChannel.show();
+    } else if (action === retry) {
+      if (this.retryCallback) {
+        this.logInfo('用户请求重试操作', 'ErrorHandler');
+        void this.retryCallback().catch((error: Error) => {
+          this.logError(error, '重试操作失败');
+        });
+      }
     }
   }
 

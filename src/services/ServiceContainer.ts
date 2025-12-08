@@ -17,6 +17,14 @@ import { ConfigurationPanelManager } from './ConfigurationPanelManager';
 import { CustomCandidatesManager } from './CustomCandidatesManager';
 import { UIManager } from '../utils/UIManager';
 import { ErrorHandler } from '../utils/ErrorHandler';
+import { CacheManager } from './CacheManager';
+import { RequestQueueManager } from './RequestQueueManager';
+import { ResourceCleanupManager } from './ResourceCleanupManager';
+import { CommitMessagePreviewManager } from './CommitMessagePreviewManager';
+import { TemplateManager } from './TemplateManager';
+import { HistoryManager } from './HistoryManager';
+import { ConfigPresetManager } from './ConfigPresetManager';
+import { WelcomePageManager } from './WelcomePageManager';
 
 /**
  * 服务容器类
@@ -116,6 +124,9 @@ export class ServiceContainer {
 export const ServiceKeys = {
   ErrorHandler: 'ErrorHandler',
   UIManager: 'UIManager',
+  CacheManager: 'CacheManager',
+  RequestQueueManager: 'RequestQueueManager',
+  ResourceCleanupManager: 'ResourceCleanupManager',
   ConfigurationManager: 'ConfigurationManager',
   ConfigurationStatusChecker: 'ConfigurationStatusChecker',
   ConfigurationInterceptor: 'ConfigurationInterceptor',
@@ -125,6 +136,7 @@ export const ServiceKeys = {
   ProviderManager: 'ProviderManager',
   CustomCandidatesManager: 'CustomCandidatesManager',
   ConfigurationPanelManager: 'ConfigurationPanelManager',
+  CommitMessagePreviewManager: 'CommitMessagePreviewManager',
   CommandHandler: 'CommandHandler',
 } as const;
 
@@ -141,6 +153,12 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
   container.register<IErrorHandler>(ServiceKeys.ErrorHandler, () => new ErrorHandler());
 
   container.register(ServiceKeys.UIManager, () => new UIManager());
+
+  container.register(ServiceKeys.CacheManager, () => new CacheManager());
+
+  container.register(ServiceKeys.RequestQueueManager, () => new RequestQueueManager());
+
+  container.register(ServiceKeys.ResourceCleanupManager, () => new ResourceCleanupManager());
 
   container.register<IConfigurationManager>(
     ServiceKeys.ConfigurationManager,
@@ -191,6 +209,11 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
     );
   });
 
+  // 注册提交信息预览管理器
+  container.register(ServiceKeys.CommitMessagePreviewManager, () => {
+    return new CommitMessagePreviewManager(context);
+  });
+
   // 注册命令处理器（依赖多个服务）
   container.register(ServiceKeys.CommandHandler, () => {
     const configManager = container.resolve<ConfigurationManager>(ServiceKeys.ConfigurationManager);
@@ -198,8 +221,39 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
     const llmService = container.resolve<LLMService>(ServiceKeys.LLMService);
     const uiManager = container.resolve<UIManager>(ServiceKeys.UIManager);
     const errorHandler = container.resolve<ErrorHandler>(ServiceKeys.ErrorHandler);
+    const previewManager = container.resolve<CommitMessagePreviewManager>(
+      ServiceKeys.CommitMessagePreviewManager
+    );
 
-    return new CommandHandler(configManager, gitService, llmService, uiManager, errorHandler);
+    return new CommandHandler(
+      configManager,
+      gitService,
+      llmService,
+      uiManager,
+      errorHandler,
+      previewManager
+    );
+  });
+
+  // 注册模板管理器
+  container.register('templateManager', () => {
+    return new TemplateManager(context);
+  });
+
+  // 注册历史记录管理器
+  container.register('historyManager', () => {
+    return new HistoryManager(context);
+  });
+
+  // 注册配置预设管理器
+  container.register('configPresetManager', () => {
+    const configManager = container.resolve<ConfigurationManager>(ServiceKeys.ConfigurationManager);
+    return new ConfigPresetManager(context, configManager);
+  });
+
+  // 注册欢迎页面管理器
+  container.register('welcomePageManager', () => {
+    return new WelcomePageManager(context, container);
   });
 
   return container;

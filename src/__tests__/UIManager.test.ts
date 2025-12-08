@@ -211,6 +211,162 @@ describe('UIManager', () => {
     });
   });
 
+  describe('showEnhancedProgress', () => {
+    it('should execute task with enhanced progress and cancellation support', async () => {
+      const title = '正在生成提交信息...';
+      const taskResult = 'commit message';
+      const mockTask = jest.fn().mockResolvedValue(taskResult);
+
+      const mockWithProgress = jest
+        .spyOn(vscode.window, 'withProgress')
+        .mockImplementation(async (options, task) => {
+          expect(options.location).toBe(vscode.ProgressLocation.Notification);
+          expect(options.title).toBe(title);
+          expect(options.cancellable).toBe(true);
+
+          const mockProgress = { report: jest.fn() } as vscode.Progress<{
+            message?: string;
+            increment?: number;
+          }>;
+          const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+          return task(mockProgress, mockToken);
+        });
+
+      const result = await uiManager.showEnhancedProgress(title, mockTask);
+
+      expect(result).toBe(taskResult);
+      expect(mockTask).toHaveBeenCalled();
+      expect(mockWithProgress).toHaveBeenCalled();
+
+      mockWithProgress.mockRestore();
+    });
+
+    it('should show estimated time remaining in progress message', async () => {
+      const title = '正在处理...';
+      const reportedMessages: string[] = [];
+
+      const mockTask = jest.fn().mockImplementation(async (progress) => {
+        progress.report({ message: '步骤1', increment: 25 });
+        progress.report({ message: '步骤2', increment: 25 });
+        progress.report({ message: '步骤3', increment: 25 });
+        return 'done';
+      });
+
+      const mockWithProgress = jest
+        .spyOn(vscode.window, 'withProgress')
+        .mockImplementation(async (_options, task) => {
+          const mockProgress = {
+            report: jest.fn((value) => {
+              if (value.message) {
+                reportedMessages.push(value.message);
+              }
+            }),
+          } as unknown as vscode.Progress<{ message?: string; increment?: number }>;
+          const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+          return task(mockProgress, mockToken);
+        });
+
+      await uiManager.showEnhancedProgress(title, mockTask, {
+        showEstimatedTime: true,
+      });
+
+      // 验证至少有一条消息包含剩余时间信息
+      const hasTimeEstimate = reportedMessages.some((msg) => msg.includes('剩余'));
+      expect(hasTimeEstimate).toBe(true);
+
+      mockWithProgress.mockRestore();
+    });
+
+    it('should support cancellation when cancellable is true', async () => {
+      const title = '可取消的任务';
+      let tokenPassed: vscode.CancellationToken | undefined;
+
+      const mockTask = jest.fn().mockImplementation(async (_progress, token) => {
+        tokenPassed = token;
+        return 'result';
+      });
+
+      const mockWithProgress = jest
+        .spyOn(vscode.window, 'withProgress')
+        .mockImplementation(async (options, task) => {
+          expect(options.cancellable).toBe(true);
+          const mockProgress = { report: jest.fn() } as vscode.Progress<{
+            message?: string;
+            increment?: number;
+          }>;
+          const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+          return task(mockProgress, mockToken);
+        });
+
+      await uiManager.showEnhancedProgress(title, mockTask, {
+        cancellable: true,
+      });
+
+      expect(tokenPassed).toBeDefined();
+      expect(mockWithProgress).toHaveBeenCalled();
+
+      mockWithProgress.mockRestore();
+    });
+
+    it('should not show estimated time when showEstimatedTime is false', async () => {
+      const title = '正在处理...';
+      const reportedMessages: string[] = [];
+
+      const mockTask = jest.fn().mockImplementation(async (progress) => {
+        progress.report({ message: '步骤1', increment: 50 });
+        return 'done';
+      });
+
+      const mockWithProgress = jest
+        .spyOn(vscode.window, 'withProgress')
+        .mockImplementation(async (_options, task) => {
+          const mockProgress = {
+            report: jest.fn((value) => {
+              if (value.message) {
+                reportedMessages.push(value.message);
+              }
+            }),
+          } as unknown as vscode.Progress<{ message?: string; increment?: number }>;
+          const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+          return task(mockProgress, mockToken);
+        });
+
+      await uiManager.showEnhancedProgress(title, mockTask, {
+        showEstimatedTime: false,
+      });
+
+      // 验证消息不包含剩余时间信息
+      const hasTimeEstimate = reportedMessages.some((msg) => msg.includes('剩余'));
+      expect(hasTimeEstimate).toBe(false);
+
+      mockWithProgress.mockRestore();
+    });
+
+    it('should use default options when not provided', async () => {
+      const title = '默认选项任务';
+      const mockTask = jest.fn().mockResolvedValue('result');
+
+      const mockWithProgress = jest
+        .spyOn(vscode.window, 'withProgress')
+        .mockImplementation(async (options, task) => {
+          // 默认应该是可取消的
+          expect(options.cancellable).toBe(true);
+          const mockProgress = { report: jest.fn() } as vscode.Progress<{
+            message?: string;
+            increment?: number;
+          }>;
+          const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+          return task(mockProgress, mockToken);
+        });
+
+      await uiManager.showEnhancedProgress(title, mockTask);
+
+      expect(mockWithProgress).toHaveBeenCalled();
+
+      mockWithProgress.mockRestore();
+    });
+  });
+
   describe('dispose', () => {
     it('should dispose status bar item if it exists', () => {
       const mockDispose = jest.fn();

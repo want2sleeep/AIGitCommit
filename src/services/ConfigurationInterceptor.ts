@@ -48,7 +48,7 @@ export class ConfigurationInterceptor {
       // 已配置，执行原始操作
       await operation();
       return true;
-    } catch (error) {
+    } catch {
       // 错误处理：尝试打开配置向导作为回退
       try {
         const autoRedirect = this.isAutoRedirectEnabled();
@@ -57,7 +57,7 @@ export class ConfigurationInterceptor {
         } else {
           await this.showManualConfigurationOption();
         }
-      } catch (wizardError) {
+      } catch {
         // 向导也打不开，显示错误并提供手动选项
         await this.showManualConfigurationOption();
       }

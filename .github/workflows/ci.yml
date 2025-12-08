@@ -6,12 +6,91 @@ on:
   pull_request:
     branches: [master, develop]
 
+# 取消同一分支上的重复运行
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  quality:
-    name: Code Quality & Tests
+  # 代码质量检查（并行执行）
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.1
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Run linter
+        run: pnpm run lint
+
+  format:
+    name: Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.1
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Check code formatting
+        run: pnpm run format:check
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.1
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Type Check
+        run: pnpm run type-check
+
+  # 测试作业（并行执行多个 Node 版本）
+  test:
+    name: Test (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node-version: [18.x, 20.x]
     
@@ -33,38 +112,124 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       
-      - name: Run linter
-        run: pnpm run lint
-        continue-on-error: true
-      
-      - name: Check code formatting
-        run: pnpm run format:check
-        continue-on-error: true
-      
-      - name: Type Check
-        run: pnpm run type-check
-      
       - name: Run tests with coverage
         run: pnpm exec jest --coverage --runInBand
       
       - name: Archive coverage report
         uses: actions/upload-artifact@v4
-        if: always()
+        if: matrix.node-version == '20.x'
         with:
-          name: coverage-report-node-${{ matrix.node-version }}
+          name: coverage-report
           path: coverage/
           retention-days: 30
+
+  # 覆盖率报告（仅在 Node 20.x 测试完成后）
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: test
+    if: always() && needs.test.result == 'success'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+      
+      - name: Display coverage summary
+        run: |
+          echo "## 📊 测试覆盖率报告" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f coverage/coverage-summary.json ]; then
+            # 提取覆盖率数据
+            LINES=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct')
+            STATEMENTS=$(cat coverage/coverage-summary.json | jq -r '.total.statements.pct')
+            FUNCTIONS=$(cat coverage/coverage-summary.json | jq -r '.total.functions.pct')
+            BRANCHES=$(cat coverage/coverage-summary.json | jq -r '.total.branches.pct')
+            
+            echo "| 指标 | 覆盖率 | 状态 |" >> $GITHUB_STEP_SUMMARY
+            echo "|------|--------|------|" >> $GITHUB_STEP_SUMMARY
+            
+            # 检查是否达到 70% 阈值
+            check_threshold() {
+              local value=$1
+              local name=$2
+              if (( $(echo "$value >= 70" | bc -l) )); then
+                echo "| $name | ${value}% | ✅ |" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "| $name | ${value}% | ⚠️ |" >> $GITHUB_STEP_SUMMARY
+              fi
+            }
+            
+            check_threshold "$LINES" "行覆盖率"
+            check_threshold "$STATEMENTS" "语句覆盖率"
+            check_threshold "$FUNCTIONS" "函数覆盖率"
+            check_threshold "$BRANCHES" "分支覆盖率"
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "目标覆盖率: 70%" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ 覆盖率报告文件不存在" >> $GITHUB_STEP_SUMMARY
+          fi
       
       - name: Check coverage thresholds
         run: |
-          echo "Coverage threshold check (70% target)"
-          echo "See coverage report artifact for details"
-        continue-on-error: true
+          if [ -f coverage/coverage-summary.json ]; then
+            LINES=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct')
+            BRANCHES=$(cat coverage/coverage-summary.json | jq -r '.total.branches.pct')
+            FUNCTIONS=$(cat coverage/coverage-summary.json | jq -r '.total.functions.pct')
+            STATEMENTS=$(cat coverage/coverage-summary.json | jq -r '.total.statements.pct')
+            
+            THRESHOLD=70
+            FAILED=0
+            
+            echo "检查覆盖率阈值 (目标: ${THRESHOLD}%)..."
+            echo ""
+            
+            if (( $(echo "$LINES < $THRESHOLD" | bc -l) )); then
+              echo "❌ 行覆盖率 ${LINES}% 低于阈值 ${THRESHOLD}%"
+              FAILED=1
+            else
+              echo "✅ 行覆盖率 ${LINES}% 达标"
+            fi
+            
+            if (( $(echo "$BRANCHES < $THRESHOLD" | bc -l) )); then
+              echo "❌ 分支覆盖率 ${BRANCHES}% 低于阈值 ${THRESHOLD}%"
+              FAILED=1
+            else
+              echo "✅ 分支覆盖率 ${BRANCHES}% 达标"
+            fi
+            
+            if (( $(echo "$FUNCTIONS < $THRESHOLD" | bc -l) )); then
+              echo "❌ 函数覆盖率 ${FUNCTIONS}% 低于阈值 ${THRESHOLD}%"
+              FAILED=1
+            else
+              echo "✅ 函数覆盖率 ${FUNCTIONS}% 达标"
+            fi
+            
+            if (( $(echo "$STATEMENTS < $THRESHOLD" | bc -l) )); then
+              echo "❌ 语句覆盖率 ${STATEMENTS}% 低于阈值 ${THRESHOLD}%"
+              FAILED=1
+            else
+              echo "✅ 语句覆盖率 ${STATEMENTS}% 达标"
+            fi
+            
+            if [ $FAILED -eq 1 ]; then
+              echo ""
+              echo "⚠️ 覆盖率未达标，但不阻止构建"
+            fi
+          fi
 
+  # 构建作业（等待所有检查完成）
   build:
     name: Build Extension
     runs-on: ubuntu-latest
-    needs: quality
+    needs: [lint, format, type-check, test]
     
     steps:
       - name: Checkout code
@@ -98,3 +263,18 @@ jobs:
           name: vsix-package
           path: '*.vsix'
           retention-days: 30
+      
+      - name: Build summary
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          VSIX_FILE="aigitcommit-${VERSION}.vsix"
+          
+          echo "## 🎉 构建成功" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 项目 | 值 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| 版本 | ${VERSION} |" >> $GITHUB_STEP_SUMMARY
+          echo "| VSIX 文件 | ${VSIX_FILE} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Node.js | 20.x |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "VSIX 文件已上传为 Actions 制品，可从 Actions 页面下载。" >> $GITHUB_STEP_SUMMARY

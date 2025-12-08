@@ -5,6 +5,7 @@ import { GitService } from '../services/GitService';
 import { LLMService } from '../services/LLMService';
 import { UIManager } from '../utils/UIManager';
 import { ErrorHandler } from '../utils/ErrorHandler';
+import { CommitMessagePreviewManager } from '../services/CommitMessagePreviewManager';
 import { ExtensionConfig, GitChange, ChangeStatus } from '../types';
 
 /**
@@ -76,6 +77,7 @@ describe('CommandHandler', () => {
 
     mockUIManager = {
       showProgress: jest.fn(),
+      showEnhancedProgress: jest.fn(),
       showError: jest.fn(),
       showStatusBarMessage: jest.fn(),
     } as unknown as jest.Mocked<UIManager>;
@@ -88,12 +90,18 @@ describe('CommandHandler', () => {
       logWarning: jest.fn(),
     } as unknown as jest.Mocked<ErrorHandler>;
 
+    const mockPreviewManager = {
+      showPreview: jest.fn().mockImplementation(async (message: string) => message),
+      dispose: jest.fn(),
+    } as unknown as jest.Mocked<CommitMessagePreviewManager>;
+
     commandHandler = new CommandHandler(
       mockConfigManager,
       mockGitService,
       mockLLMService,
       mockUIManager,
-      mockErrorHandler
+      mockErrorHandler,
+      mockPreviewManager
     );
   });
 
@@ -111,8 +119,10 @@ describe('CommandHandler', () => {
       mockLLMService.generateCommitMessage.mockResolvedValue('feat: add test feature');
 
       // Mock UI interactions
-      mockUIManager.showProgress.mockImplementation(async (_message, task) => {
-        return task({ report: jest.fn() } as vscode.Progress<{ message?: string }>);
+      mockUIManager.showEnhancedProgress.mockImplementation(async (_message, task) => {
+        const mockProgress = { report: jest.fn() } as vscode.Progress<{ message?: string }>;
+        const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+        return task(mockProgress, mockToken);
       });
 
       // Execute
@@ -217,8 +227,10 @@ describe('CommandHandler', () => {
       mockConfigManager.getConfig.mockResolvedValue(mockConfig);
       mockLLMService.generateCommitMessage.mockResolvedValue('feat: test message');
 
-      mockUIManager.showProgress.mockImplementation(async (_message, task) => {
-        return task({ report: jest.fn() } as vscode.Progress<{ message?: string }>);
+      mockUIManager.showEnhancedProgress.mockImplementation(async (_message, task) => {
+        const mockProgress = { report: jest.fn() } as vscode.Progress<{ message?: string }>;
+        const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+        return task(mockProgress, mockToken);
       });
     });
 
@@ -226,9 +238,13 @@ describe('CommandHandler', () => {
       await commandHandler.generateCommitMessage();
 
       // Progress should be shown for generation
-      expect(mockUIManager.showProgress).toHaveBeenCalledWith(
+      expect(mockUIManager.showEnhancedProgress).toHaveBeenCalledWith(
         '正在生成提交信息...',
-        expect.any(Function)
+        expect.any(Function),
+        expect.objectContaining({
+          cancellable: true,
+          showEstimatedTime: true,
+        })
       );
     });
   });
@@ -246,8 +262,10 @@ describe('CommandHandler', () => {
       mockConfigManager.getConfig.mockResolvedValue(mockConfig);
       mockLLMService.generateCommitMessage.mockRejectedValue(testError);
 
-      mockUIManager.showProgress.mockImplementation(async (_message, task) => {
-        return task({ report: jest.fn() } as vscode.Progress<{ message?: string }>);
+      mockUIManager.showEnhancedProgress.mockImplementation(async (_message, task) => {
+        const mockProgress = { report: jest.fn() } as vscode.Progress<{ message?: string }>;
+        const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+        return task(mockProgress, mockToken);
       });
 
       await commandHandler.generateCommitMessage();
@@ -260,8 +278,10 @@ describe('CommandHandler', () => {
       mockGitService.getStagedChanges.mockResolvedValue([]);
       mockConfigManager.getConfig.mockResolvedValue(mockConfig);
 
-      mockUIManager.showProgress.mockImplementation(async (_message, task) => {
-        return task({ report: jest.fn() } as vscode.Progress<{ message?: string }>);
+      mockUIManager.showEnhancedProgress.mockImplementation(async (_message, task) => {
+        const mockProgress = { report: jest.fn() } as vscode.Progress<{ message?: string }>;
+        const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+        return task(mockProgress, mockToken);
       });
 
       await commandHandler.generateCommitMessage();
@@ -282,8 +302,10 @@ describe('CommandHandler', () => {
       mockConfigManager.getConfig.mockResolvedValue(mockConfig);
       mockLLMService.generateCommitMessage.mockResolvedValue('feat: test');
 
-      mockUIManager.showProgress.mockImplementation(async (_message, task) => {
-        return task({ report: jest.fn() } as vscode.Progress<{ message?: string }>);
+      mockUIManager.showEnhancedProgress.mockImplementation(async (_message, task) => {
+        const mockProgress = { report: jest.fn() } as vscode.Progress<{ message?: string }>;
+        const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+        return task(mockProgress, mockToken);
       });
     });
 

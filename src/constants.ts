@@ -9,6 +9,9 @@ export const COMMANDS = {
 
   /** 配置AI Git Commit命令 - 打开配置面板，允许用户配置API设置 */
   CONFIGURE_SETTINGS: 'aigitcommit.configureSettings',
+
+  /** 测试API连接命令 - 测试当前配置的API连接是否正常 */
+  TEST_CONNECTION: 'aigitcommit.testConnection',
 } as const;
 
 /**

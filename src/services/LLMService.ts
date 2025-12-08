@@ -12,6 +12,7 @@ import { APIError, NetworkError } from '../errors';
 import { API_CONSTANTS, GIT_CONSTANTS } from '../constants';
 import { sleep } from '../utils/retry';
 import { isError, isAPIError, isNetworkError } from '../utils/typeGuards';
+import { normalizeUrl, buildUrl } from '../utils/common';
 
 /**
  * LLM服务类
@@ -36,7 +37,7 @@ export class LLMService {
    * @returns Gemini API端点URL
    */
   private buildGeminiEndpoint(config: ExtensionConfig): string {
-    const baseUrl = config.apiEndpoint.replace(/\/$/, '');
+    const baseUrl = normalizeUrl(config.apiEndpoint);
     const model = config.modelName;
     return `${baseUrl}/models/${model}:generateContent?key=${config.apiKey}`;
   }
@@ -376,7 +377,7 @@ ${diff}
 
     const endpoint = config.apiEndpoint.endsWith('/chat/completions')
       ? config.apiEndpoint
-      : `${config.apiEndpoint.replace(/\/$/, '')}/chat/completions`;
+      : buildUrl(config.apiEndpoint, '/chat/completions');
 
     try {
       const response = await axios.post<LLMResponse>(endpoint, requestBody, {

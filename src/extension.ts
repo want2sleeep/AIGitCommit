@@ -23,7 +23,7 @@ async function isCommandRegistered(commandId: string): Promise<boolean> {
   try {
     const commands = await vscode.commands.getCommands(true);
     return commands.includes(commandId);
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -95,6 +95,7 @@ async function createUnconfiguredTooltip(): Promise<vscode.MarkdownString> {
 async function createConfiguredTooltip(summary: ConfigSummary): Promise<vscode.MarkdownString> {
   const providerName = getProviderDisplayName(summary.provider);
   const configLink = await createCommandLink(COMMANDS.CONFIGURE_SETTINGS, '编辑配置');
+  const testLink = await createCommandLink(COMMANDS.TEST_CONNECTION, '测试连接');
 
   const tooltip = new vscode.MarkdownString(
     '**AI Git Commit**\n\n' +
@@ -105,7 +106,7 @@ async function createConfiguredTooltip(summary: ConfigSummary): Promise<vscode.M
       `**模型:** ${summary.modelName}\n\n` +
       '━━━━━━━━━━━━━━━━━━━━\n\n' +
       '点击生成提交信息\n\n' +
-      configLink
+      `${configLink} | ${testLink}`
   );
   tooltip.isTrusted = true;
   return tooltip;
@@ -139,7 +140,7 @@ async function updateStatusBarTooltip(
     }
 
     statusBarItem.tooltip = await createConfiguredTooltip(summary);
-  } catch (error) {
+  } catch {
     statusBarItem.tooltip = createDefaultTooltip();
   }
 }
@@ -275,6 +276,31 @@ function registerCommands(container: ServiceContainer): vscode.Disposable[] {
       `Command registered successfully: ${COMMANDS.CONFIGURE_SETTINGS}`,
       'Extension'
     );
+
+    // 注册测试连接命令
+    errorHandler.logInfo(`Registering command: ${COMMANDS.TEST_CONNECTION}`, 'Extension');
+    const testConnectionCommand = vscode.commands.registerCommand(
+      COMMANDS.TEST_CONNECTION,
+      async () => {
+        errorHandler.logInfo(`Executing command: ${COMMANDS.TEST_CONNECTION}`, 'Extension');
+        try {
+          const configManager = container.resolve<IConfigurationManager>(
+            ServiceKeys.ConfigurationManager
+          );
+          await configManager.testAPIConnection();
+          errorHandler.logInfo(`Command completed: ${COMMANDS.TEST_CONNECTION}`, 'Extension');
+        } catch (error) {
+          errorHandler.logError(error as Error, `Command failed: ${COMMANDS.TEST_CONNECTION}`);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          void vscode.window.showErrorMessage(`测试连接失败: ${errorMessage}`);
+        }
+      }
+    );
+    disposables.push(testConnectionCommand);
+    errorHandler.logInfo(
+      `Command registered successfully: ${COMMANDS.TEST_CONNECTION}`,
+      'Extension'
+    );
   } catch (error) {
     errorHandler.logError(error as Error, 'Command registration failed');
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -327,6 +353,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // 执行配置迁移（在命令注册后执行）
     await configManager.migrateConfiguration();
+
+    // 显示首次用户欢迎页面
+    const welcomePageManager = serviceContainer.resolve<{
+      shouldShowWelcome: () => boolean;
+      showWelcome: () => void;
+    }>('welcomePageManager');
+    if (welcomePageManager.shouldShowWelcome()) {
+      welcomePageManager.showWelcome();
+    }
 
     // 创建状态栏项
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);

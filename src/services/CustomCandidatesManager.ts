@@ -448,7 +448,7 @@ export class CustomCandidatesManager {
       }
     }
 
-    throw lastError;
+    throw lastError || new Error('保存操作失败');
   }
 
   /**

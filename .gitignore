@@ -185,3 +185,4 @@ pids
 *.vsix
 .kiro/
 .trae/
+.VSCodeCounter/

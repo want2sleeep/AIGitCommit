@@ -56,6 +56,12 @@
         "title": "配置AI Git Commit",
         "category": "AI Git Commit",
         "icon": "$(gear)"
+      },
+      {
+        "command": "aigitcommit.testConnection",
+        "title": "测试API连接",
+        "category": "AI Git Commit",
+        "icon": "$(plug)"
       }
     ],
     "configuration": {
@@ -197,14 +203,15 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^20.x",
     "@types/vscode": "^1.85.0",
-    "@typescript-eslint/eslint-plugin": "^6.15.0",
-    "@typescript-eslint/parser": "^6.15.0",
+    "@typescript-eslint/eslint-plugin": "^8.48.0",
+    "@typescript-eslint/parser": "^8.48.0",
     "@vscode/test-electron": "^2.3.8",
     "@vscode/vsce": "^3.7.0",
     "esbuild": "^0.27.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "fast-check": "^4.3.0",
     "husky": "^9.1.7",
     "jest": "^30.2.0",
     "lint-staged": "^16.2.6",

@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { ExtensionConfig } from '../types';
 import { ConfigurationError } from '../errors';
-import { isValidUrl } from '../utils/validation';
+import { validateApiEndpoint, validateApiKey, validateModelName } from '../utils/validationUtils';
+import { buildUrl } from '../utils/common';
 import { ConfigurationProvider } from './ConfigurationProvider';
 
 /**
@@ -63,15 +64,7 @@ export class ConfigurationWizard {
       prompt: '步骤 1/3: 请输入OpenAI兼容API的端点URL',
       value: defaultValue,
       placeHolder: 'https://api.openai.com/v1',
-      validateInput: (value) => {
-        if (!value || value.trim() === '') {
-          return 'API端点不能为空';
-        }
-        if (!isValidUrl(value)) {
-          return 'API端点格式无效';
-        }
-        return null;
-      },
+      validateInput: validateApiEndpoint,
     });
   }
 
@@ -84,12 +77,7 @@ export class ConfigurationWizard {
       prompt: '步骤 2/3: 请输入API密钥',
       password: true,
       placeHolder: 'sk-...',
-      validateInput: (value) => {
-        if (!value || value.trim() === '') {
-          return 'API密钥不能为空';
-        }
-        return null;
-      },
+      validateInput: validateApiKey,
     });
   }
 
@@ -103,12 +91,7 @@ export class ConfigurationWizard {
       prompt: '步骤 3/3: 请输入模型名称',
       value: defaultValue,
       placeHolder: 'gpt-3.5-turbo',
-      validateInput: (value) => {
-        if (!value || value.trim() === '') {
-          return '模型名称不能为空';
-        }
-        return null;
-      },
+      validateInput: validateModelName,
     });
   }
 
@@ -222,7 +205,7 @@ export class ConfigurationWizard {
   private buildChatCompletionsEndpoint(apiEndpoint: string): string {
     return apiEndpoint.endsWith('/chat/completions')
       ? apiEndpoint
-      : `${apiEndpoint.replace(/\/$/, '')}/chat/completions`;
+      : buildUrl(apiEndpoint, '/chat/completions');
   }
 
   /**

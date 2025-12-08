@@ -11,12 +11,14 @@
 
 ### 配置参考
 - [🤖 OpenAI 配置](configuration/openai.md) - 官方GPT模型配置
+- [💎 Google Gemini](configuration/gemini.md) - Google多模态模型
 - [🦙 Ollama 本地模型](configuration/ollama.md) - 完全本地运行
 - [🌐 其他服务](configuration/other-services.md) - Qwen、vLLM等
 
 ### 进阶指南
 - [📋 约定式提交](guides/conventional-commits.md) - 提交信息规范
 - [🔧 高级配置](configuration/README.md#高级配置) - 自定义和优化
+- [🔍 故障排查](troubleshooting.md) - 常见问题和解决方案
 
 ### 开发者文档
 - [🤝 贡献指南](../CONTRIBUTING.md) - 参与项目开发
@@ -45,7 +47,9 @@ docs/
 |---------|----------|
 | **首次安装使用** | [快速开始](guides/quick-start.md) |
 | **配置OpenAI** | [OpenAI配置](configuration/openai.md) |
+| **配置Gemini** | [Gemini配置](configuration/gemini.md) |
 | **使用本地模型** | [Ollama配置](configuration/ollama.md) |
+| **遇到问题** | [故障排查](troubleshooting.md) |
 | **了解提交规范** | [约定式提交](guides/conventional-commits.md) |
 | **参与开发** | [贡献指南](../CONTRIBUTING.md) |
 | **发布新版本** | [版本管理](development/version-management.md) |
