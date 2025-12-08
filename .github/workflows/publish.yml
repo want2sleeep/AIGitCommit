@@ -11,6 +11,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: write  # 允许上传文件到 Release 和更新 Release 内容
+
 jobs:
   validate:
     name: Validate Version
