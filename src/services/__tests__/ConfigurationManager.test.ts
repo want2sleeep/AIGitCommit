@@ -664,4 +664,195 @@ describe('ConfigurationManager', () => {
       );
     });
   });
+
+  describe('getSmartFilterConfig', () => {
+    it('should return default smart filter configuration', () => {
+      const config = configManager.getSmartFilterConfig();
+
+      expect(config).toEqual({
+        enableSmartFilter: true,
+        minFilesThreshold: 3,
+        maxFileListSize: 500,
+        filterTimeout: 10000,
+        filterModel: undefined,
+        customSystemPrompt: undefined,
+        showFilterStats: true,
+        enableDetailedLogging: false,
+      });
+    });
+
+    it('should return custom smart filter configuration', () => {
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        const customConfigs: Record<string, any> = {
+          enableSmartFilter: false,
+          minFilesThreshold: 5,
+          maxFileListSize: 300,
+          filterTimeout: 15000,
+          filterModel: 'gpt-4o-mini',
+          customSystemPrompt: 'Custom prompt',
+          showFilterStats: false,
+          enableDetailedLogging: true,
+        };
+        return customConfigs[key] !== undefined ? customConfigs[key] : defaultValue;
+      });
+
+      const config = configManager.getSmartFilterConfig();
+
+      expect(config).toEqual({
+        enableSmartFilter: false,
+        minFilesThreshold: 5,
+        maxFileListSize: 300,
+        filterTimeout: 15000,
+        filterModel: 'gpt-4o-mini',
+        customSystemPrompt: 'Custom prompt',
+        showFilterStats: false,
+        enableDetailedLogging: true,
+      });
+    });
+
+    it('should clamp minFilesThreshold to valid range', () => {
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        if (key === 'minFilesThreshold') return 15; // 超过最大值 10
+        return defaultValue;
+      });
+
+      const config = configManager.getSmartFilterConfig();
+
+      expect(config.minFilesThreshold).toBe(10);
+    });
+
+    it('should clamp maxFileListSize to valid range', () => {
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        if (key === 'maxFileListSize') return 50; // 低于最小值 100
+        return defaultValue;
+      });
+
+      const config = configManager.getSmartFilterConfig();
+
+      expect(config.maxFileListSize).toBe(100);
+    });
+
+    it('should clamp filterTimeout to valid range', () => {
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        if (key === 'filterTimeout') return 100000; // 超过最大值 60000
+        return defaultValue;
+      });
+
+      const config = configManager.getSmartFilterConfig();
+
+      expect(config.filterTimeout).toBe(60000);
+    });
+
+    it('should return undefined for empty filterModel', () => {
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        if (key === 'filterModel') return '';
+        return defaultValue;
+      });
+
+      const config = configManager.getSmartFilterConfig();
+
+      expect(config.filterModel).toBeUndefined();
+    });
+
+    it('should return undefined for empty customSystemPrompt', () => {
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        if (key === 'customSystemPrompt') return '';
+        return defaultValue;
+      });
+
+      const config = configManager.getSmartFilterConfig();
+
+      expect(config.customSystemPrompt).toBeUndefined();
+    });
+  });
+
+  describe('updateSmartFilterConfig', () => {
+    it('should update enableSmartFilter', async () => {
+      await configManager.updateSmartFilterConfig('enableSmartFilter', false);
+
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'enableSmartFilter',
+        false,
+        vscode.ConfigurationTarget.Global
+      );
+    });
+
+    it('should update minFilesThreshold', async () => {
+      await configManager.updateSmartFilterConfig('minFilesThreshold', 5);
+
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'minFilesThreshold',
+        5,
+        vscode.ConfigurationTarget.Global
+      );
+    });
+
+    it('should update maxFileListSize', async () => {
+      await configManager.updateSmartFilterConfig('maxFileListSize', 300);
+
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'maxFileListSize',
+        300,
+        vscode.ConfigurationTarget.Global
+      );
+    });
+
+    it('should update filterTimeout', async () => {
+      await configManager.updateSmartFilterConfig('filterTimeout', 20000);
+
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'filterTimeout',
+        20000,
+        vscode.ConfigurationTarget.Global
+      );
+    });
+
+    it('should update filterModel', async () => {
+      await configManager.updateSmartFilterConfig('filterModel', 'gpt-4o-mini');
+
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'filterModel',
+        'gpt-4o-mini',
+        vscode.ConfigurationTarget.Global
+      );
+    });
+
+    it('should update customSystemPrompt', async () => {
+      await configManager.updateSmartFilterConfig('customSystemPrompt', 'Custom prompt');
+
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'customSystemPrompt',
+        'Custom prompt',
+        vscode.ConfigurationTarget.Global
+      );
+    });
+
+    it('should update showFilterStats', async () => {
+      await configManager.updateSmartFilterConfig('showFilterStats', false);
+
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'showFilterStats',
+        false,
+        vscode.ConfigurationTarget.Global
+      );
+    });
+
+    it('should update enableDetailedLogging', async () => {
+      await configManager.updateSmartFilterConfig('enableDetailedLogging', true);
+
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'enableDetailedLogging',
+        true,
+        vscode.ConfigurationTarget.Global
+      );
+    });
+
+    it('should throw ConfigurationError on update failure', async () => {
+      mockConfig.update.mockRejectedValue(new Error('Update failed'));
+
+      await expect(
+        configManager.updateSmartFilterConfig('enableSmartFilter', false)
+      ).rejects.toThrow('更新智能过滤配置失败');
+    });
+  });
 });

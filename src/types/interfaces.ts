@@ -186,6 +186,21 @@ export interface IConfigurationManager {
    * @throws {ConfigurationError} 当配置迁移失败时
    */
   migrateConfiguration(): Promise<void>;
+
+  /**
+   * 获取智能过滤配置
+   * @returns 智能过滤配置对象
+   */
+  getSmartFilterConfig(): {
+    enableSmartFilter: boolean;
+    minFilesThreshold: number;
+    maxFileListSize: number;
+    filterTimeout: number;
+    filterModel?: string;
+    customSystemPrompt?: string;
+    showFilterStats: boolean;
+    enableDetailedLogging: boolean;
+  };
 }
 
 /**
@@ -468,6 +483,18 @@ export interface ILargeDiffHandler {
    * @returns 是否需要
    */
   needsLargeDiffHandling(changes: GitChange[]): boolean;
+
+  /**
+   * 设置 SmartDiffFilter（用于依赖注入）
+   * @param filter SmartDiffFilter 实例
+   */
+  setSmartDiffFilter(filter: unknown): void;
+
+  /**
+   * 设置 FilterFeedback（用于依赖注入）
+   * @param feedback FilterFeedback 实例
+   */
+  setFilterFeedback(feedback: unknown): void;
 }
 
 /**
@@ -498,4 +525,31 @@ export interface IProgressManager {
    * @param error 错误信息
    */
   reportError(error: string): void;
+}
+
+// ============================================================================
+// 智能 Diff 过滤相关接口
+// ============================================================================
+
+/**
+ * 智能过滤配置接口
+ * 定义了智能文件过滤功能的配置参数
+ */
+export interface SmartFilterConfig {
+  /** 是否启用智能过滤 */
+  enableSmartFilter: boolean;
+  /** 最小文件数阈值（少于此数量跳过过滤） */
+  minFilesThreshold: number;
+  /** 最大文件列表大小（超过此数量跳过过滤） */
+  maxFileListSize: number;
+  /** 过滤超时时间（毫秒） */
+  filterTimeout: number;
+  /** 过滤专用模型（可选，未设置则自动选择轻量级模型） */
+  filterModel?: string;
+  /** 自定义 System Prompt（高级用户） */
+  customSystemPrompt?: string;
+  /** 是否显示过滤统计信息 */
+  showFilterStats: boolean;
+  /** 是否在输出频道记录详细日志 */
+  enableDetailedLogging: boolean;
 }

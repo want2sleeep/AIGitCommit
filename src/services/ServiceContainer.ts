@@ -37,6 +37,9 @@ import { ChunkProcessor } from './ChunkProcessor';
 import { SummaryMerger } from './SummaryMerger';
 import { LargeDiffHandler } from './LargeDiffHandler';
 import { ProgressManager } from './ProgressManager';
+import { SmartDiffFilter, FilterFeedback, ISmartDiffFilter } from './SmartDiffFilter';
+import { LogManager } from './LogManager';
+import { ExtensionConfig } from '../types';
 
 /**
  * 服务容器类
@@ -157,6 +160,7 @@ export const ServiceKeys = {
   SummaryMerger: 'SummaryMerger',
   LargeDiffHandler: 'LargeDiffHandler',
   ProgressManager: 'ProgressManager',
+  SmartDiffFilter: 'SmartDiffFilter',
 } as const;
 
 /**
@@ -239,11 +243,16 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
     return new SummaryMerger(tokenEstimator, createSummaryGenerator());
   });
 
+  // 注册 SmartDiffFilter（需要在 LargeDiffHandler 之前注册）
+  // 注意：SmartDiffFilter 需要 LLMService，但 LLMService 需要 LargeDiffHandler
+  // 因此我们延迟注册 SmartDiffFilter，在 LLMService 注册后
+
   container.register<ILargeDiffHandler>(ServiceKeys.LargeDiffHandler, () => {
     const tokenEstimator = container.resolve<ITokenEstimator>(ServiceKeys.TokenEstimator);
     const diffSplitter = container.resolve<IDiffSplitter>(ServiceKeys.DiffSplitter);
     const chunkProcessor = container.resolve<IChunkProcessor>(ServiceKeys.ChunkProcessor);
     const summaryMerger = container.resolve<ISummaryMerger>(ServiceKeys.SummaryMerger);
+    // SmartDiffFilter 将在 LLMService 注册后通过 setter 注入
     return new LargeDiffHandler(
       tokenEstimator,
       diffSplitter,
@@ -260,6 +269,60 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
     llmService.setLargeDiffHandler(largeDiffHandler);
     return llmService;
   });
+
+  // 注册 SmartDiffFilter（在 LLMService 之后，因为需要 LLMService）
+  container.register<ISmartDiffFilter>(ServiceKeys.SmartDiffFilter, () => {
+    const llmService = container.resolve<ILLMService>(ServiceKeys.LLMService);
+    const configManager = container.resolve<IConfigurationManager>(
+      ServiceKeys.ConfigurationManager
+    );
+
+    // 创建一个占位符配置对象，实际配置将在运行时从 LLMService 获取
+    const placeholderConfig: ExtensionConfig = {
+      apiEndpoint: '',
+      apiKey: '',
+      modelName: 'gpt-4o-mini',
+      language: 'en',
+      commitFormat: 'conventional',
+      maxTokens: 1000,
+      temperature: 0.7,
+    };
+
+    // 创建 LogManager 实例（可选）
+    const logger = new LogManager();
+
+    // 从 ConfigurationManager 读取智能过滤配置
+    const smartFilterConfig = configManager.getSmartFilterConfig();
+
+    // 创建 SmartDiffFilter 实例
+    const smartDiffFilter = new SmartDiffFilter(llmService, placeholderConfig, logger, {
+      minFilesThreshold: smartFilterConfig.minFilesThreshold,
+      maxFileListSize: smartFilterConfig.maxFileListSize,
+      filterTimeout: smartFilterConfig.filterTimeout,
+    });
+
+    // 将 SmartDiffFilter 注入到 LargeDiffHandler
+    const largeDiffHandler = container.resolve<ILargeDiffHandler>(ServiceKeys.LargeDiffHandler);
+    largeDiffHandler.setSmartDiffFilter(smartDiffFilter);
+
+    return smartDiffFilter;
+  });
+
+  // 创建 FilterFeedback 实例并注入到 LargeDiffHandler
+  const configManager = container.resolve<IConfigurationManager>(ServiceKeys.ConfigurationManager);
+  const smartFilterConfig = configManager.getSmartFilterConfig();
+  const outputChannel = vscode.window.createOutputChannel('AI Git Commit - Smart Filter');
+
+  // 创建 FilterFeedback 实例（从配置读取参数）
+  const filterFeedback = new FilterFeedback(
+    outputChannel,
+    smartFilterConfig.showFilterStats,
+    smartFilterConfig.enableDetailedLogging
+  );
+
+  // 注入 FilterFeedback 到 LargeDiffHandler
+  const largeDiffHandler = container.resolve<ILargeDiffHandler>(ServiceKeys.LargeDiffHandler);
+  largeDiffHandler.setFilterFeedback(filterFeedback);
 
   container.register(ServiceKeys.ProviderManager, () => new ProviderManager());
 

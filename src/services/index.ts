@@ -52,3 +52,17 @@ export {
 export { ConfigPresetManager, IConfigPresetManager, ConfigPreset } from './ConfigPresetManager';
 export { SensitiveDataSanitizer } from './SensitiveDataSanitizer';
 export { CommitMessagePreviewManager } from './CommitMessagePreviewManager';
+export {
+  SmartDiffFilter,
+  FilterFeedback,
+  StatusConverter,
+  ModelSelector,
+  PromptBuilder,
+  ISmartDiffFilter,
+  IFilterFeedback,
+  IPromptBuilder,
+  IModelSelector,
+  FileInfo,
+  FilterStats,
+  FilterResult,
+} from './SmartDiffFilter';

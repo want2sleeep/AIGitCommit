@@ -375,4 +375,71 @@ export class ConfigurationManager {
       );
     }
   }
+
+  /**
+   * 获取智能过滤配置
+   * @returns 智能过滤配置对象
+   */
+  getSmartFilterConfig(): {
+    enableSmartFilter: boolean;
+    minFilesThreshold: number;
+    maxFileListSize: number;
+    filterTimeout: number;
+    filterModel?: string;
+    customSystemPrompt?: string;
+    showFilterStats: boolean;
+    enableDetailedLogging: boolean;
+  } {
+    const config = vscode.workspace.getConfiguration(CONFIG_CONSTANTS.SECTION);
+
+    const enableSmartFilter = config.get<boolean>('enableSmartFilter', true);
+    const minFilesThreshold = config.get<number>('minFilesThreshold', 3);
+    const maxFileListSize = config.get<number>('maxFileListSize', 500);
+    const filterTimeout = config.get<number>('filterTimeout', 10000);
+    const filterModel = config.get<string>('filterModel', '');
+    const customSystemPrompt = config.get<string>('customSystemPrompt', '');
+    const showFilterStats = config.get<boolean>('showFilterStats', true);
+    const enableDetailedLogging = config.get<boolean>('enableDetailedLogging', false);
+
+    return {
+      enableSmartFilter,
+      minFilesThreshold: Math.max(1, Math.min(10, minFilesThreshold)),
+      maxFileListSize: Math.max(100, Math.min(1000, maxFileListSize)),
+      filterTimeout: Math.max(5000, Math.min(60000, filterTimeout)),
+      filterModel: filterModel || undefined,
+      customSystemPrompt: customSystemPrompt || undefined,
+      showFilterStats,
+      enableDetailedLogging,
+    };
+  }
+
+  /**
+   * 更新智能过滤配置
+   * @param key 配置键
+   * @param value 配置值
+   * @throws {ConfigurationError} 当配置更新失败时
+   */
+  async updateSmartFilterConfig(
+    key:
+      | 'enableSmartFilter'
+      | 'minFilesThreshold'
+      | 'maxFileListSize'
+      | 'filterTimeout'
+      | 'filterModel'
+      | 'customSystemPrompt'
+      | 'showFilterStats'
+      | 'enableDetailedLogging',
+    value: boolean | number | string
+  ): Promise<void> {
+    try {
+      const config = vscode.workspace.getConfiguration(CONFIG_CONSTANTS.SECTION);
+      await config.update(key, value, vscode.ConfigurationTarget.Global);
+      this.invalidateCache();
+    } catch (error) {
+      throw new ConfigurationError(
+        `更新智能过滤配置失败: ${error instanceof Error ? error.message : String(error)}`,
+        'update'
+      );
+    }
+  }
 }

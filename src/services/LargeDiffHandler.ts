@@ -19,6 +19,7 @@ import {
 } from '../types/interfaces';
 import { ChangeStatus, ExtensionConfig, FullConfig, GitChange } from '../types';
 import { LARGE_DIFF_CONSTANTS, API_CONSTANTS } from '../constants';
+import { ISmartDiffFilter, IFilterFeedback } from './SmartDiffFilter';
 
 /**
  * 大型 Diff 处理配置
@@ -44,6 +45,8 @@ export class LargeDiffHandler implements ILargeDiffHandler {
   private summaryMerger: ISummaryMerger;
   private summaryGenerator: IChunkSummaryGenerator;
   private largeDiffConfig: LargeDiffConfig;
+  private smartDiffFilter?: ISmartDiffFilter;
+  private filterFeedback?: IFilterFeedback;
 
   /**
    * 创建 LargeDiffHandler 实例
@@ -54,13 +57,17 @@ export class LargeDiffHandler implements ILargeDiffHandler {
     chunkProcessor: IChunkProcessor,
     summaryMerger: ISummaryMerger,
     summaryGenerator: IChunkSummaryGenerator,
-    largeDiffConfig?: Partial<LargeDiffConfig>
+    largeDiffConfig?: Partial<LargeDiffConfig>,
+    smartDiffFilter?: ISmartDiffFilter,
+    filterFeedback?: IFilterFeedback
   ) {
     this.tokenEstimator = tokenEstimator;
     this.diffSplitter = diffSplitter;
     this.chunkProcessor = chunkProcessor;
     this.summaryMerger = summaryMerger;
     this.summaryGenerator = summaryGenerator;
+    this.smartDiffFilter = smartDiffFilter;
+    this.filterFeedback = filterFeedback;
     this.largeDiffConfig = {
       enableMapReduce: largeDiffConfig?.enableMapReduce ?? true,
       maxConcurrentRequests:
@@ -79,8 +86,29 @@ export class LargeDiffHandler implements ILargeDiffHandler {
    * @returns 生成的提交信息
    */
   async handle(changes: GitChange[], config: ExtensionConfig | FullConfig): Promise<string> {
+    // 检查是否启用智能过滤
+    const enableSmartFilter = this.isSmartFilterEnabled(config);
+
+    // 在处理前调用 SmartDiffFilter 过滤文件
+    let filteredChanges = changes;
+    if (enableSmartFilter && this.smartDiffFilter) {
+      try {
+        const filterResult = await this.smartDiffFilter.filterChanges(changes);
+        filteredChanges = filterResult.filteredChanges;
+
+        // 显示过滤统计信息
+        if (this.filterFeedback) {
+          this.filterFeedback.showFilterStats(filterResult.stats);
+        }
+      } catch (error) {
+        // 过滤失败时使用原始列表（Fail Open 策略）
+        console.warn('[LargeDiffHandler] SmartDiffFilter 失败，使用原始文件列表:', error);
+        filteredChanges = changes;
+      }
+    }
+
     // 将变更转换为 diff 字符串
-    const diff = this.changesToDiff(changes);
+    const diff = this.changesToDiff(filteredChanges);
 
     // 如果 Map-Reduce 被禁用，使用截断行为
     if (!this.largeDiffConfig.enableMapReduce) {
@@ -186,5 +214,35 @@ export class LargeDiffHandler implements ILargeDiffHandler {
    */
   getConfig(): LargeDiffConfig {
     return { ...this.largeDiffConfig };
+  }
+
+  /**
+   * 设置 SmartDiffFilter（用于依赖注入）
+   * @param filter SmartDiffFilter 实例
+   */
+  setSmartDiffFilter(filter: ISmartDiffFilter): void {
+    this.smartDiffFilter = filter;
+  }
+
+  /**
+   * 设置 FilterFeedback（用于依赖注入）
+   * @param feedback FilterFeedback 实例
+   */
+  setFilterFeedback(feedback: IFilterFeedback): void {
+    this.filterFeedback = feedback;
+  }
+
+  /**
+   * 检查是否启用智能过滤
+   * @param config 扩展配置
+   * @returns 是否启用
+   */
+  private isSmartFilterEnabled(config: ExtensionConfig | FullConfig): boolean {
+    // 检查配置中的 enableSmartFilter 选项
+    // 注意：这个字段可能还未添加到配置类型中，所以使用类型断言
+    const configWithFilter = config as ExtensionConfig & { enableSmartFilter?: boolean };
+
+    // 默认启用智能过滤
+    return configWithFilter.enableSmartFilter !== false;
   }
 }

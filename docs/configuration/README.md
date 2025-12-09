@@ -25,6 +25,9 @@ AI Git Commit 支持多种AI服务提供商，选择最适合您需求的服务�
 - [⚡ vLLM](other-services.md#vllm) - 高性能本地推理
 - [🔧 其他兼容服务](other-services.md) - LocalAI、LM Studio等
 
+### 功能配置
+- [🎯 智能文件过滤](smart-filter.md) - AI 驱动的文件过滤，提升质量和性能
+
 ## ⚙️ 通用配置
 
 ### 基本参数
