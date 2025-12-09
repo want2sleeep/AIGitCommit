@@ -2,7 +2,7 @@
   "name": "aigitcommit",
   "displayName": "AI Git Commit",
   "description": "使用AI自动生成高质量的Git提交信息",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "publisher": "SleepSheep",
   "author": {
     "name": "SleepSheep"
@@ -173,6 +173,52 @@
           "minimum": 1,
           "maximum": 20,
           "description": "处理大型 Diff 时的最大并发 API 请求数（1-20）"
+        },
+        "aigitcommit.enableSmartFilter": {
+          "type": "boolean",
+          "default": true,
+          "description": "启用智能文件过滤，自动过滤掉杂音文件（lockfiles、构建产物等）"
+        },
+        "aigitcommit.minFilesThreshold": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "智能过滤的最小文件数阈值，少于此数量时跳过过滤（1-10）"
+        },
+        "aigitcommit.maxFileListSize": {
+          "type": "number",
+          "default": 500,
+          "minimum": 100,
+          "maximum": 1000,
+          "description": "智能过滤的最大文件列表大小，超过此数量时跳过过滤（100-1000）"
+        },
+        "aigitcommit.filterTimeout": {
+          "type": "number",
+          "default": 10000,
+          "minimum": 5000,
+          "maximum": 60000,
+          "description": "智能过滤的超时时间（毫秒），5000-60000"
+        },
+        "aigitcommit.filterModel": {
+          "type": "string",
+          "default": "",
+          "description": "智能过滤专用模型（可选），留空则自动选择轻量级模型"
+        },
+        "aigitcommit.customSystemPrompt": {
+          "type": "string",
+          "default": "",
+          "description": "自定义智能过滤的 System Prompt（高级用户）"
+        },
+        "aigitcommit.showFilterStats": {
+          "type": "boolean",
+          "default": true,
+          "description": "显示智能过滤统计信息"
+        },
+        "aigitcommit.enableDetailedLogging": {
+          "type": "boolean",
+          "default": false,
+          "description": "在输出频道记录智能过滤的详细日志"
         }
       }
     },
