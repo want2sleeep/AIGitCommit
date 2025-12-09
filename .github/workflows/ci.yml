@@ -155,11 +155,11 @@ jobs:
             echo "| 指标 | 覆盖率 | 状态 |" >> $GITHUB_STEP_SUMMARY
             echo "|------|--------|------|" >> $GITHUB_STEP_SUMMARY
             
-            # 检查是否达到 70% 阈值
+            # 检查是否达到 85% 阈值
             check_threshold() {
               local value=$1
               local name=$2
-              if (( $(echo "$value >= 70" | bc -l) )); then
+              if (( $(echo "$value >= 85" | bc -l) )); then
                 echo "| $name | ${value}% | ✅ |" >> $GITHUB_STEP_SUMMARY
               else
                 echo "| $name | ${value}% | ⚠️ |" >> $GITHUB_STEP_SUMMARY
@@ -172,7 +172,7 @@ jobs:
             check_threshold "$BRANCHES" "分支覆盖率"
             
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "目标覆盖率: 70%" >> $GITHUB_STEP_SUMMARY
+            echo "目标覆盖率: 85%" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ 覆盖率报告文件不存在" >> $GITHUB_STEP_SUMMARY
           fi
@@ -185,7 +185,7 @@ jobs:
             FUNCTIONS=$(cat coverage/coverage-summary.json | jq -r '.total.functions.pct')
             STATEMENTS=$(cat coverage/coverage-summary.json | jq -r '.total.statements.pct')
             
-            THRESHOLD=70
+            THRESHOLD=85
             FAILED=0
             
             echo "检查覆盖率阈值 (目标: ${THRESHOLD}%)..."

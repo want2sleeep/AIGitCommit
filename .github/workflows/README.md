@@ -71,9 +71,9 @@ To enable all features, configure these secrets in your repository settings:
 ## Coverage Thresholds
 
 The project enforces minimum coverage thresholds:
-- Branches: 70%
-- Functions: 70%
-- Lines: 70%
-- Statements: 70%
+- Branches: 85%
+- Functions: 85%
+- Lines: 85%
+- Statements: 85%
 
 Tests will fail if coverage falls below these thresholds.
