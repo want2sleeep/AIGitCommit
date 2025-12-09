@@ -2,7 +2,7 @@
   "name": "aigitcommit",
   "displayName": "AI Git Commit",
   "description": "使用AI自动生成高质量的Git提交信息",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "publisher": "SleepSheep",
   "author": {
     "name": "SleepSheep"
