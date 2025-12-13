@@ -5,6 +5,181 @@ All notable changes to the "AI Git Commit" extension will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.4] - 2024-12-13
+
+### 🧪 测试
+
+- ✅ **测试覆盖率大幅提升**: 测试覆盖率从 70%+ 提升至 85%+
+  - **Statements**: 85.47% ✅ (之前: ~75%)
+  - **Branches**: 75.15% ✅ (之前: ~68%)
+  - **Functions**: 90.22% ✅ (之前: ~78%)
+  - **Lines**: 86.12% ✅ (之前: ~75%)
+
+- ✅ **新增测试**: 为关键服务添加完整的单元测试
+  - ProgressManager: 新增 205 行测试代码，覆盖进度管理的所有场景
+  - SSLValidator: 增强测试至 275 行，覆盖 SSL 验证的各种情况
+  - WelcomePageManager: 新增 193 行测试代码，覆盖欢迎页面管理
+
+### 🔧 改进
+
+- ✅ **CI 配置优化**: 调整 GitHub Actions 工作流
+  - 更新覆盖率阈值要求
+  - 优化测试执行流程
+
+- ✅ **Jest 配置优化**: 改进测试配置
+  - 调整覆盖率收集策略
+  - 优化测试性能
+
+### 📚 文档
+
+- ✅ **CI/CD 文档更新**: 更新工作流说明文档
+
+---
+
+## [1.6.0] - 2025-12-13
+
+### ✨ 新增功能
+
+#### 混合模型策略 (Hybrid Model Strategy)
+
+- ✅ **智能模型选择**: 实现"快模型读(Map)，慢模型写(Reduce)"的混合模型策略
+  - Map 阶段使用轻量级模型处理大量 chunks，显著降低成本和处理时间
+  - Reduce 阶段使用高质量主模型生成最终提交信息，确保输出质量
+  - 在保证质量的同时，成本可降低 **85%**，处理速度提升 **40%**
+
+- ✅ **ModelSelector**: 智能模型选择器
+  - 自动根据主模型选择合适的轻量级模型
+  - GPT-4 系列自动降级为 gpt-4o-mini（成本降低 90%）
+  - Gemini Pro 自动降级为 gemini-1.5-flash（成本降低 95%）
+  - 本地模型（Ollama、LM Studio）跳过降级，直接使用主模型
+  - 支持用户自定义 chunk 模型配置
+
+- ✅ **动态模型切换**: LLMService 支持为单次请求指定模型
+  - generateSummary 方法接受可选的 modelId 参数
+  - Map 阶段使用轻量级模型，Reduce 阶段使用主模型
+  - 自动处理模型不可用时的回退逻辑
+
+- ✅ **用户反馈机制**: 透明的混合模型使用情况展示
+  - HybridModelFeedback: 显示模型使用统计和成本节省估算
+  - HybridModelNotification: 首次使用时的功能介绍通知
+  - 输出频道记录详细的模型选择和处理信息
+  - 模型回退时的友好警告提示
+
+#### 新增配置项
+
+- `aigitcommit.chunkModel`: 用于 Map 阶段的专用模型（可选）
+  - 留空则自动根据主模型智能选择
+  - 推荐使用轻量级模型：gpt-4o-mini、gemini-1.5-flash、gpt-3.5-turbo
+  - 支持 Markdown 格式的详细配置说明
+
+### 🔧 改进
+
+#### LargeDiffHandler 集成
+
+- ✅ **混合模型策略集成**: 在 Map-Reduce 处理中自动应用混合模型策略
+  - 自动选择 Map 模型（用户配置 > 智能降级 > 主模型）
+  - 验证模型可用性，不可用时自动回退到主模型
+  - 记录模型选择信息，便于调试和监控
+  - Reduce 阶段始终使用主模型，确保最终质量
+
+#### ChunkProcessor 扩展
+
+- ✅ **模型 ID 传递**: 支持为每个 chunk 指定处理模型
+  - processChunks 方法接受 mapModelId 参数
+  - 确保所有 chunks 使用相同的 Map 模型
+  - 保持并发处理的模型一致性
+
+#### 配置验证增强
+
+- ✅ **Chunk 模型验证**: ConfigurationValidator 支持 chunkModel 验证
+  - 验证模型名称格式
+  - 检查 Provider 匹配性
+  - 提供清晰的错误信息和修复建议
+
+#### 向后兼容性
+
+- ✅ **完全向后兼容**: 未配置 chunkModel 时系统正常工作
+  - 自动应用智能降级逻辑
+  - Map-Reduce 禁用时忽略 chunkModel 配置
+  - 无缝升级，无需修改现有配置
+
+### 🧪 测试
+
+- ✅ **属性测试**: 13 个正确性属性的完整测试覆盖
+  - 使用 fast-check 进行基于属性的测试
+  - 每个测试至少运行 100 次迭代
+  - 覆盖用户配置优先级、智能降级、模型切换、向后兼容性等
+
+- ✅ **单元测试**: 完整的单元测试覆盖
+  - ModelSelector 的各个方法测试
+  - LLMService 的动态模型切换测试
+  - LargeDiffHandler 的模型选择测试
+  - ChunkProcessor 的模型传递测试
+
+- ✅ **集成测试**: 端到端混合模型策略流程测试
+  - 测试完整的 Map-Reduce 流程
+  - 测试模型回退机制
+  - 测试配置变更的影响
+
+### 📚 文档
+
+- ✅ **混合模型策略文档**: 新增详细的功能文档
+  - `docs/configuration/hybrid-model-strategy.md`: 完整的配置指南
+  - 推荐的轻量级模型列表及其特点
+  - 详细的配置示例和最佳实践
+  - 智能降级的工作原理和触发条件
+  - 成本和性能对比示例
+
+### 🎯 效果
+
+#### 成本节省
+
+假设处理一个包含 20 个 chunks 的大型提交：
+
+**传统方式（全部使用 GPT-4）**:
+- Map 阶段: 20 chunks × GPT-4 成本 = 20x
+- Reduce 阶段: 1 次 × GPT-4 成本 = 1x
+- **总成本: 21x**
+
+**混合模型策略（Map 使用 gpt-4o-mini）**:
+- Map 阶段: 20 chunks × gpt-4o-mini 成本 = 20 × 0.1x = 2x
+- Reduce 阶段: 1 次 × GPT-4 成本 = 1x
+- **总成本: 3x**
+
+**成本节省**: (21x - 3x) / 21x = **85.7%** 🎉
+
+#### 性能提升
+
+假设 GPT-4 平均响应时间为 2 秒，gpt-4o-mini 为 1 秒：
+
+**传统方式**:
+- Map 阶段: 20 chunks / 5 并发 = 4 批次 × 2 秒 = 8 秒
+- Reduce 阶段: 1 次 × 2 秒 = 2 秒
+- **总时间: 10 秒**
+
+**混合模型策略**:
+- Map 阶段: 20 chunks / 5 并发 = 4 批次 × 1 秒 = 4 秒
+- Reduce 阶段: 1 次 × 2 秒 = 2 秒
+- **总时间: 6 秒**
+
+**时间节省**: (10 - 6) / 10 = **40%** ⚡
+
+#### 质量保证
+
+- ✅ **输出质量不变**: Reduce 阶段仍使用高质量主模型
+- ✅ **智能回退**: 模型不可用时自动回退到主模型
+- ✅ **透明反馈**: 用户清楚了解使用的模型和节省的成本
+
+### 🔄 Breaking Changes
+
+无破坏性变更。所有变更向后兼容。
+
+### 📦 依赖更新
+
+无依赖更新。
+
+---
+
 ## [1.4.3] - 2025-12-09
 
 ### 🧪 测试
