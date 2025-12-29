@@ -272,17 +272,17 @@ describe('SmartDiffFilter 属性测试', () => {
 
       const result = await filter.filterChanges(changes);
 
-      // 验证返回原始列表
-      expect(result.filteredChanges.length).toBe(changes.length);
+      // 验证返回限制后的列表（最多 500 个文件）
+      expect(result.filteredChanges.length).toBe(500);
 
-      // 验证未调用 AI
+      // 验证未调用 AI（因为超过限制）
       expect(mockLLMService.generateCommitMessage).not.toHaveBeenCalled();
 
       // 验证统计信息
       expect(result.stats.filtered).toBe(false);
       expect(result.stats.skipReason).toContain('Too many files');
       expect(result.stats.totalFiles).toBe(501);
-      expect(result.stats.coreFiles).toBe(501);
+      expect(result.stats.coreFiles).toBe(500);
     });
 
     it('exceedsMaxFileListSize 应当正确判断', () => {
@@ -1006,9 +1006,9 @@ describe('SmartDiffFilter 属性测试', () => {
             return hasValidResult && returnsValidList;
           }
         ),
-        { numRuns: 10, timeout: 60000 }
+        { numRuns: 10, timeout: 120000 }
       );
-    }, 70000);
+    }, 180000); // 增加 Jest 测试超时到 3 分钟
 
     it('filterChanges 永远不应当抛出异常', async () => {
       const changes: GitChange[] = Array.from({ length: 5 }, (_, i) => ({

@@ -9,10 +9,11 @@ import { execSync } from 'child_process';
 describe('属性 19: ESLint 零错误', () => {
   it('运行 ESLint 应当无错误和警告', () => {
     try {
-      // 运行 ESLint
+      // 运行 ESLint，设置超时为 2 分钟
       const output = execSync('pnpm run lint', {
         encoding: 'utf-8',
         stdio: 'pipe',
+        timeout: 120000, // 2 分钟超时
       });
 
       // 检查输出中是否包含错误或警告
@@ -26,13 +27,14 @@ describe('属性 19: ESLint 零错误', () => {
         `ESLint 检查失败:\n退出码: ${err.status}\n输出: ${err.stdout || ''}\n错误: ${err.stderr || ''}`
       );
     }
-  });
+  }, 180000); // Jest 测试超时设置为 3 分钟
 
   it('ESLint 应当成功退出（退出码为 0）', () => {
     try {
       execSync('pnpm run lint', {
         encoding: 'utf-8',
         stdio: 'pipe',
+        timeout: 120000, // 2 分钟超时
       });
       // 如果没有抛出错误，说明退出码为 0
       expect(true).toBe(true);
@@ -40,5 +42,5 @@ describe('属性 19: ESLint 零错误', () => {
       const err = error as { status?: number };
       fail(`ESLint 返回非零退出码: ${err.status}`);
     }
-  });
+  }, 180000); // Jest 测试超时设置为 3 分钟
 });

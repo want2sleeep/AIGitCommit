@@ -545,6 +545,12 @@ describe('ConfigurationPanelManager', () => {
           data: {
             valid: true,
             errors: [],
+            confirmations: expect.arrayContaining([
+              '✅ 配置验证通过',
+              '✅ 提供商: openai',
+              '✅ 模型: gpt-3.5-turbo',
+              '💡 配置已准备就绪，可以保存',
+            ]),
           },
         });
       });
@@ -851,6 +857,12 @@ describe('ConfigurationPanelManager', () => {
         data: {
           valid: true,
           errors: [],
+          confirmations: expect.arrayContaining([
+            '✅ 配置验证通过',
+            '✅ 提供商: ollama',
+            '✅ 模型: llama2',
+            '💡 配置已准备就绪，可以保存',
+          ]),
         },
       });
     });
@@ -870,6 +882,12 @@ describe('ConfigurationPanelManager', () => {
         data: {
           valid: true,
           errors: [],
+          confirmations: expect.arrayContaining([
+            '✅ 配置验证通过',
+            '✅ 提供商: openai',
+            '✅ 模型: gpt-3.5-turbo',
+            '💡 配置已准备就绪，可以保存',
+          ]),
         },
       });
     });
@@ -1069,6 +1087,12 @@ describe('ConfigurationPanelManager', () => {
         data: {
           valid: true,
           errors: [],
+          confirmations: expect.arrayContaining([
+            '✅ 配置验证通过',
+            '✅ 提供商: ollama',
+            '✅ 模型: llama2',
+            '💡 配置已准备就绪，可以保存',
+          ]),
         },
       });
     });
@@ -1088,6 +1112,12 @@ describe('ConfigurationPanelManager', () => {
         data: {
           valid: true,
           errors: [],
+          confirmations: expect.arrayContaining([
+            '✅ 配置验证通过',
+            '✅ 提供商: openai',
+            '✅ 模型: gpt-3.5-turbo',
+            '💡 配置已准备就绪，可以保存',
+          ]),
         },
       });
     });
