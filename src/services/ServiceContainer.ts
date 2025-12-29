@@ -39,6 +39,9 @@ import { LargeDiffHandler } from './LargeDiffHandler';
 import { ProgressManager } from './ProgressManager';
 import { SmartDiffFilter, FilterFeedback, ISmartDiffFilter } from './SmartDiffFilter';
 import { LogManager } from './LogManager';
+import { ModelSelector } from './ModelSelector';
+import { HybridModelFeedback } from './HybridModelFeedback';
+import { HybridModelNotification } from './HybridModelNotification';
 import { ExtensionConfig } from '../types';
 
 /**
@@ -161,6 +164,9 @@ export const ServiceKeys = {
   LargeDiffHandler: 'LargeDiffHandler',
   ProgressManager: 'ProgressManager',
   SmartDiffFilter: 'SmartDiffFilter',
+  ModelSelector: 'ModelSelector',
+  HybridModelFeedback: 'HybridModelFeedback',
+  HybridModelNotification: 'HybridModelNotification',
 } as const;
 
 /**
@@ -226,6 +232,12 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
 
   container.register<IProgressManager>(ServiceKeys.ProgressManager, () => new ProgressManager());
 
+  // 注册 ModelSelector（需要 LogManager）
+  container.register(ServiceKeys.ModelSelector, () => {
+    const logger = new LogManager();
+    return new ModelSelector(logger);
+  });
+
   // 创建摘要生成器（占位符实现，实际使用时会被替换）
   const createSummaryGenerator = (): { generateSummary: (prompt: string) => Promise<string> } => ({
     generateSummary: (prompt: string): Promise<string> => {
@@ -252,13 +264,18 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
     const diffSplitter = container.resolve<IDiffSplitter>(ServiceKeys.DiffSplitter);
     const chunkProcessor = container.resolve<IChunkProcessor>(ServiceKeys.ChunkProcessor);
     const summaryMerger = container.resolve<ISummaryMerger>(ServiceKeys.SummaryMerger);
+    const modelSelector = container.resolve<ModelSelector>(ServiceKeys.ModelSelector);
     // SmartDiffFilter 将在 LLMService 注册后通过 setter 注入
     return new LargeDiffHandler(
       tokenEstimator,
       diffSplitter,
       chunkProcessor,
       summaryMerger,
-      createSummaryGenerator()
+      createSummaryGenerator(),
+      undefined, // largeDiffConfig
+      undefined, // smartDiffFilter
+      undefined, // filterFeedback
+      modelSelector // modelSelector
     );
   });
 
@@ -308,14 +325,22 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
     return smartDiffFilter;
   });
 
+  // 注册 HybridModelFeedback（需要在 LargeDiffHandler 之后注册并注入）
+  container.register(ServiceKeys.HybridModelFeedback, () => {
+    const hybridModelOutputChannel = vscode.window.createOutputChannel(
+      'AI Git Commit - Hybrid Model'
+    );
+    return new HybridModelFeedback(hybridModelOutputChannel);
+  });
+
   // 创建 FilterFeedback 实例并注入到 LargeDiffHandler
   const configManager = container.resolve<IConfigurationManager>(ServiceKeys.ConfigurationManager);
   const smartFilterConfig = configManager.getSmartFilterConfig();
-  const outputChannel = vscode.window.createOutputChannel('AI Git Commit - Smart Filter');
+  const filterOutputChannel = vscode.window.createOutputChannel('AI Git Commit - Smart Filter');
 
   // 创建 FilterFeedback 实例（从配置读取参数）
   const filterFeedback = new FilterFeedback(
-    outputChannel,
+    filterOutputChannel,
     smartFilterConfig.showFilterStats,
     smartFilterConfig.enableDetailedLogging
   );
@@ -323,6 +348,12 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
   // 注入 FilterFeedback 到 LargeDiffHandler
   const largeDiffHandler = container.resolve<ILargeDiffHandler>(ServiceKeys.LargeDiffHandler);
   largeDiffHandler.setFilterFeedback(filterFeedback);
+
+  // 注入 HybridModelFeedback 到 LargeDiffHandler
+  const hybridModelFeedback = container.resolve<HybridModelFeedback>(
+    ServiceKeys.HybridModelFeedback
+  );
+  largeDiffHandler.setHybridModelFeedback(hybridModelFeedback);
 
   container.register(ServiceKeys.ProviderManager, () => new ProviderManager());
 
@@ -393,6 +424,11 @@ export function configureServices(context: vscode.ExtensionContext): ServiceCont
   // 注册欢迎页面管理器
   container.register('welcomePageManager', () => {
     return new WelcomePageManager(context, container);
+  });
+
+  // 注册混合模型通知管理器
+  container.register(ServiceKeys.HybridModelNotification, () => {
+    return new HybridModelNotification(context);
   });
 
   return container;

@@ -29,6 +29,98 @@ export class LLMService {
   setLargeDiffHandler(handler: ILargeDiffHandler): void {
     this.largeDiffHandler = handler;
   }
+
+  /**
+   * 生成摘要（实现 IChunkSummaryGenerator 接口）
+   * 支持动态模型切换，用于 Map-Reduce 处理中的 chunk 摘要生成
+   * @param prompt 包含上下文的提示词
+   * @param options 可选配置
+   * @param options.modelId 可选的模型 ID，用于覆盖默认模型
+   * @returns 生成的摘要
+   */
+  async generateSummary(prompt: string, options?: { modelId?: string }): Promise<string> {
+    // 获取当前配置
+    const config = await this.getConfig();
+
+    // 如果提供了 modelId，创建临时配置覆盖默认模型
+    // 否则使用配置的主模型（默认模型回退）
+    const effectiveConfig = options?.modelId ? { ...config, modelName: options.modelId } : config;
+
+    // 构建消息数组
+    const messages: Message[] = [
+      {
+        role: 'system',
+        content: this.buildChunkSummarySystemPrompt(config),
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ];
+
+    // 调用 API，传入有效配置（包含可能被覆盖的模型 ID）
+    const summary = await this.callAPI(messages, effectiveConfig);
+
+    // 清理和返回摘要
+    return this.parseCommitMessage(summary);
+  }
+
+  /**
+   * 获取配置（需要从外部注入）
+   * 此方法将在服务容器中设置
+   * @returns 扩展配置
+   */
+  private async getConfig(): Promise<ExtensionConfig> {
+    // 这个方法需要从 ConfigurationManager 获取配置
+    // 在实际使用中，会通过依赖注入设置
+    if (!this.configGetter) {
+      throw new Error('配置获取器未设置。请通过 setConfigGetter 方法设置。');
+    }
+    return await this.configGetter();
+  }
+
+  private configGetter?: () => Promise<ExtensionConfig>;
+
+  /**
+   * 设置配置获取器
+   * @param getter 配置获取函数
+   */
+  setConfigGetter(getter: () => Promise<ExtensionConfig>): void {
+    this.configGetter = getter;
+  }
+
+  /**
+   * 构建 Chunk 摘要的系统提示词
+   * @param config 扩展配置
+   * @returns 系统提示词
+   */
+  private buildChunkSummarySystemPrompt(config: ExtensionConfig): string {
+    const language = config.language === 'zh-CN' ? '中文' : 'English';
+
+    if (config.language === 'zh-CN') {
+      return `你是一个专业的代码变更摘要生成助手。
+请根据提供的代码变更片段，生成简洁、准确的摘要。
+
+要求：
+- 摘要应该清晰描述变更的内容和目的
+- 使用${language}
+- 保持简洁，重点突出关键变更
+- 直接返回摘要内容，不需要额外解释
+- 不要使用<think>标签或展示思考过程
+- 不要包含任何XML标签或特殊标记`;
+    } else {
+      return `You are a professional code change summary generator.
+Generate concise and accurate summaries based on the provided code change fragments.
+
+Requirements:
+- Summary should clearly describe the content and purpose of changes
+- Use ${language}
+- Keep it concise, highlighting key changes
+- Return summary content directly without additional explanations
+- Do not use <think> tags or show thinking process
+- Do not include any XML tags or special markers`;
+    }
+  }
   /**
    * 检测是否为Gemini提供商
    * @param config 插件配置

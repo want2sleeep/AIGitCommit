@@ -27,6 +27,7 @@ AI Git Commit 支持多种AI服务提供商，选择最适合您需求的服务�
 
 ### 功能配置
 - [🎯 智能文件过滤](smart-filter.md) - AI 驱动的文件过滤，提升质量和性能
+- [⚡ 混合模型策略](hybrid-model-strategy.md) - 优化大型提交处理，节省成本和时间
 
 ## ⚙️ 通用配置
 

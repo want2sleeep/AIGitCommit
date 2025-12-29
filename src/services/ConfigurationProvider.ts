@@ -41,6 +41,7 @@ export class ConfigurationProvider {
         commitFormat: config.get<string>('commitFormat', 'conventional'),
         maxTokens: config.get<number>('maxTokens', 500),
         temperature: config.get<number>('temperature', 0.7),
+        chunkModel: config.get<string>('chunkModel', ''),
       };
     } catch (error) {
       throw new ConfigurationError(
@@ -211,6 +212,11 @@ export class ConfigurationProvider {
       await vsConfig.update('commitFormat', config.commitFormat, target);
       await vsConfig.update('maxTokens', config.maxTokens, target);
       await vsConfig.update('temperature', config.temperature, target);
+
+      // 保存 chunkModel（如果提供）
+      if (config.chunkModel !== undefined) {
+        await vsConfig.update('chunkModel', config.chunkModel, target);
+      }
     } catch (error) {
       if (error instanceof ConfigurationError) {
         throw error;

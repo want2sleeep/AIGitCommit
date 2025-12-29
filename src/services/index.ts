@@ -66,3 +66,6 @@ export {
   FilterStats,
   FilterResult,
 } from './SmartDiffFilter';
+export { ModelSelector as HybridModelSelector } from './ModelSelector';
+export { HybridModelFeedback } from './HybridModelFeedback';
+export { HybridModelNotification } from './HybridModelNotification';

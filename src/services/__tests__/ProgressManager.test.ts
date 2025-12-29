@@ -21,10 +21,10 @@ describe('ProgressManager', () => {
 
   beforeEach(() => {
     progressManager = new ProgressManager();
-    mockWithProgress = (vscode.window.withProgress as jest.Mock);
-    mockShowInformationMessage = (vscode.window.showInformationMessage as jest.Mock);
-    mockShowErrorMessage = (vscode.window.showErrorMessage as jest.Mock);
-    
+    mockWithProgress = vscode.window.withProgress as jest.Mock;
+    mockShowInformationMessage = vscode.window.showInformationMessage as jest.Mock;
+    mockShowErrorMessage = vscode.window.showErrorMessage as jest.Mock;
+
     jest.clearAllMocks();
   });
 
@@ -44,9 +44,9 @@ describe('ProgressManager', () => {
     it('should update completed chunks and calculate percentage', () => {
       const totalChunks = 10;
       progressManager.start(totalChunks);
-      
+
       progressManager.update(5);
-      
+
       const progress = progressManager.getProgress();
       expect(progress.completed).toBe(5);
       expect(progress.percentage).toBe(50);
@@ -57,13 +57,13 @@ describe('ProgressManager', () => {
       const mockProgressReporter = {
         report: jest.fn(),
       };
-      
+
       progressManager.start(totalChunks);
       // Access private property for testing
       (progressManager as any).progressReporter = mockProgressReporter;
-      
+
       progressManager.update(3);
-      
+
       expect(mockProgressReporter.report).toHaveBeenCalledWith({
         message: '处理中... 3/10 (30%)',
         increment: 10,
@@ -75,14 +75,14 @@ describe('ProgressManager', () => {
     it('should show completion message and clean up', () => {
       const totalChunks = 10;
       const processingTime = 5000;
-      
+
       progressManager.start(totalChunks);
       // Set up mock resolve function
       const mockResolve = jest.fn();
       (progressManager as any).progressResolve = mockResolve;
-      
+
       progressManager.complete(processingTime);
-      
+
       expect(mockResolve).toHaveBeenCalled();
       expect(mockShowInformationMessage).toHaveBeenCalledWith(
         '✅ 大型 Diff 处理完成！处理了 10 个块，耗时 5.0 秒'
@@ -96,15 +96,13 @@ describe('ProgressManager', () => {
     it('should show error message and clean up', () => {
       const errorMessage = 'Test error';
       const mockResolve = jest.fn();
-      
+
       (progressManager as any).progressResolve = mockResolve;
-      
+
       progressManager.reportError(errorMessage);
-      
+
       expect(mockResolve).toHaveBeenCalled();
-      expect(mockShowErrorMessage).toHaveBeenCalledWith(
-        `❌ 大型 Diff 处理失败: ${errorMessage}`
-      );
+      expect(mockShowErrorMessage).toHaveBeenCalledWith(`❌ 大型 Diff 处理失败: ${errorMessage}`);
       expect((progressManager as any).progressResolve).toBeNull();
       expect((progressManager as any).progressReporter).toBeNull();
     });
@@ -118,13 +116,13 @@ describe('ProgressManager', () => {
       const mockProgress = {
         report: jest.fn(),
       };
-      
+
       mockWithProgress.mockImplementation((_options, callback) => {
         return callback(mockProgress);
       });
-      
+
       const result = await progressManager.withProgress(totalChunks, mockOperation);
-      
+
       expect(mockOperation).toHaveBeenCalled();
       expect(result).toBe(mockResult);
       expect(mockProgress.report).toHaveBeenCalledWith({
@@ -140,15 +138,13 @@ describe('ProgressManager', () => {
       const mockProgress = {
         report: jest.fn(),
       };
-      
+
       mockWithProgress.mockImplementation((_options, callback) => {
         return callback(mockProgress);
       });
-      
+
       await expect(progressManager.withProgress(totalChunks, mockOperation)).rejects.toThrow(error);
-      expect(mockShowErrorMessage).toHaveBeenCalledWith(
-        '❌ 大型 Diff 处理失败: Test error'
-      );
+      expect(mockShowErrorMessage).toHaveBeenCalledWith('❌ 大型 Diff 处理失败: Test error');
     });
   });
 
@@ -157,9 +153,9 @@ describe('ProgressManager', () => {
       const totalChunks = 10;
       progressManager.start(totalChunks);
       progressManager.update(3);
-      
+
       const progress = progressManager.getProgress();
-      
+
       expect(progress).toEqual({
         total: 10,
         completed: 3,
@@ -169,9 +165,9 @@ describe('ProgressManager', () => {
 
     it('should return 0 percentage when total chunks is 0', () => {
       progressManager.start(0);
-      
+
       const progress = progressManager.getProgress();
-      
+
       expect(progress.percentage).toBe(0);
     });
   });
@@ -179,20 +175,20 @@ describe('ProgressManager', () => {
   describe('getElapsedTime', () => {
     it('should return elapsed time after start', () => {
       progressManager.start(10);
-      
+
       // Mock Date.now to return a fixed time
       const originalDateNow = Date.now;
       const startTime = 1000000;
       Date.now = jest.fn(() => startTime);
-      
+
       progressManager.start(10);
-      
+
       // Simulate 1000ms elapsed
       Date.now = jest.fn(() => startTime + 1000);
-      
+
       const elapsedTime = progressManager.getElapsedTime();
       expect(elapsedTime).toBe(1000);
-      
+
       // Restore original Date.now
       Date.now = originalDateNow;
     });

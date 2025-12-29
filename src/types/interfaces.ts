@@ -335,6 +335,8 @@ export interface ProcessConfig {
   maxRetries: number;
   /** 初始重试延迟（毫秒） */
   initialRetryDelay: number;
+  /** Map 阶段使用的模型 ID（可选） */
+  mapModelId?: string;
 }
 
 /**
@@ -415,9 +417,11 @@ export interface IChunkSummaryGenerator {
   /**
    * 为 chunk 生成摘要
    * @param prompt 包含上下文的提示词
+   * @param options 可选配置
+   * @param options.modelId 可选的模型 ID，用于覆盖默认模型
    * @returns 生成的摘要
    */
-  generateSummary(prompt: string): Promise<string>;
+  generateSummary(prompt: string, options?: { modelId?: string }): Promise<string>;
 }
 
 /**
@@ -437,9 +441,10 @@ export interface IChunkProcessor {
    * 处理单个 chunk
    * @param chunk 待处理的 chunk
    * @param config 处理配置
+   * @param modelId 可选的模型 ID，用于 Map 阶段
    * @returns 处理结果
    */
-  processChunk(chunk: DiffChunk, config: ProcessConfig): Promise<ChunkSummary>;
+  processChunk(chunk: DiffChunk, config: ProcessConfig, modelId?: string): Promise<ChunkSummary>;
 }
 
 /**
@@ -495,6 +500,12 @@ export interface ILargeDiffHandler {
    * @param feedback FilterFeedback 实例
    */
   setFilterFeedback(feedback: unknown): void;
+
+  /**
+   * 设置 HybridModelFeedback（用于依赖注入）
+   * @param feedback HybridModelFeedback 实例
+   */
+  setHybridModelFeedback(feedback: unknown): void;
 }
 
 /**

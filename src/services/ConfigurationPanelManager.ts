@@ -67,10 +67,12 @@ interface ConfigurationData {
  *
  * @property valid - 配置是否有效
  * @property errors - 验证错误列表，每个错误包含字段名和错误消息
+ * @property confirmations - 验证通过时的确认信息列表（可选）
  */
 interface ValidationResult {
   valid: boolean;
   errors: { field: string; message: string }[];
+  confirmations?: string[];
 }
 
 /**
@@ -558,7 +560,7 @@ export class ConfigurationPanelManager {
    * - 模型名称不能为空
    *
    * @param config - 要验证的配置数据
-   * @returns 验证结果，包含是否有效和错误列表
+   * @returns 验证结果，包含是否有效、错误列表和确认信息
    */
   private validateConfig(config: ConfigurationData): ValidationResult {
     const errors: { field: string; message: string }[] = [];
@@ -592,9 +594,19 @@ export class ConfigurationPanelManager {
       });
     }
 
+    // 生成确认信息（当配置有效时）
+    const confirmations: string[] = [];
+    if (errors.length === 0) {
+      confirmations.push('✅ 配置验证通过');
+      confirmations.push(`✅ 提供商: ${config.provider}`);
+      confirmations.push(`✅ 模型: ${config.modelName}`);
+      confirmations.push('💡 配置已准备就绪，可以保存');
+    }
+
     return {
       valid: errors.length === 0,
       errors,
+      confirmations: errors.length === 0 ? confirmations : undefined,
     };
   }
 
@@ -1063,6 +1075,13 @@ export class ConfigurationPanelManager {
                             showErrors(message.data.errors);
                         } else {
                             clearErrors();
+                            // 显示确认信息
+                            if (message.data.confirmations && message.data.confirmations.length > 0) {
+                                messageDiv.className = 'message success';
+                                messageDiv.innerHTML = message.data.confirmations
+                                    .map(conf => conf.replace(/\\n/g, '<br>'))
+                                    .join('<br><br>');
+                            }
                         }
                         break;
                 }

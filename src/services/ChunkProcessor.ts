@@ -48,7 +48,7 @@ export class ChunkProcessor implements IChunkProcessor {
     // 清空之前的摘要缓存
     this.chunkSummaries.clear();
 
-    const { concurrency } = config;
+    const { concurrency, mapModelId } = config;
     const results: ChunkSummary[] = new Array<ChunkSummary>(chunks.length);
 
     // 使用批处理模式控制并发
@@ -56,7 +56,7 @@ export class ChunkProcessor implements IChunkProcessor {
       const batch = chunks.slice(i, i + concurrency);
       const batchPromises = batch.map(async (chunk, batchIndex) => {
         const globalIndex = i + batchIndex;
-        const summary = await this.processChunk(chunk, config);
+        const summary = await this.processChunk(chunk, config, mapModelId);
         results[globalIndex] = summary;
 
         // 缓存成功的摘要，供后续 chunk 使用
@@ -80,9 +80,14 @@ export class ChunkProcessor implements IChunkProcessor {
    *
    * @param chunk 待处理的 chunk
    * @param config 处理配置
+   * @param modelId 可选的模型 ID，用于 Map 阶段
    * @returns 处理结果
    */
-  async processChunk(chunk: DiffChunk, config: ProcessConfig): Promise<ChunkSummary> {
+  async processChunk(
+    chunk: DiffChunk,
+    config: ProcessConfig,
+    modelId?: string
+  ): Promise<ChunkSummary> {
     const { maxRetries, initialRetryDelay } = config;
     let lastError: Error | undefined;
 
@@ -91,8 +96,10 @@ export class ChunkProcessor implements IChunkProcessor {
         // 构建提示词
         const prompt = this.buildChunkPrompt(chunk);
 
-        // 调用摘要生成器
-        const summary = await this.summaryGenerator.generateSummary(prompt);
+        // 调用摘要生成器，传入模型 ID（如果有）
+        const summary = await this.summaryGenerator.generateSummary(prompt, {
+          modelId,
+        });
 
         return {
           filePath: chunk.filePath,

@@ -12,16 +12,16 @@ describe('SSLValidator', () => {
   beforeEach(() => {
     sslValidator = new SSLValidator();
     mockHttpsRequest = https.request as jest.Mock;
-    
+
     jest.clearAllMocks();
   });
 
   describe('validateCertificate', () => {
     it('should return valid result for non-HTTPS URLs', async () => {
       const url = 'http://example.com';
-      
+
       const result = await sslValidator.validateCertificate(url);
-      
+
       expect(result).toEqual({
         valid: true,
         error: 'Not an HTTPS URL, no SSL validation needed',
@@ -32,7 +32,7 @@ describe('SSLValidator', () => {
       const url = 'https://example.com';
       const futureDate = new Date();
       futureDate.setFullYear(futureDate.getFullYear() + 1);
-      
+
       const mockCert = {
         issuer: { O: 'Test CA', CN: 'Test Certificate' },
         valid_to: futureDate.toISOString(),
@@ -56,7 +56,7 @@ describe('SSLValidator', () => {
 
       // Simulate successful request - no error callback triggered
       const result = await sslValidator.validateCertificate(url);
-      
+
       expect(result.valid).toBe(true);
       expect(result.issuer).toBe('Test CA Test Certificate');
       expect(result.expiryDate).toBeInstanceOf(Date);
@@ -66,7 +66,7 @@ describe('SSLValidator', () => {
       const url = 'https://example.com';
       const pastDate = new Date();
       pastDate.setFullYear(pastDate.getFullYear() - 1);
-      
+
       const mockCert = {
         issuer: { O: 'Test CA', CN: 'Test Certificate' },
         valid_to: pastDate.toISOString(),
@@ -89,7 +89,7 @@ describe('SSLValidator', () => {
       });
 
       const result = await sslValidator.validateCertificate(url);
-      
+
       expect(result.valid).toBe(false);
       expect(result.error).toBe('Certificate has expired');
       expect(result.issuer).toBe('Test CA Test Certificate');
@@ -115,7 +115,7 @@ describe('SSLValidator', () => {
       });
 
       const result = await sslValidator.validateCertificate(url);
-      
+
       expect(result.valid).toBe(false);
       expect(result.error).toBe('No certificate found');
     });
@@ -132,16 +132,14 @@ describe('SSLValidator', () => {
 
       // Simulate error
       setTimeout(() => {
-        const errorCallback = mockRequest.on.mock.calls.find(
-          (call) => call[0] === 'error'
-        );
+        const errorCallback = mockRequest.on.mock.calls.find((call) => call[0] === 'error');
         if (errorCallback) {
           errorCallback[1](new Error('Connection failed'));
         }
       }, 0);
 
       const result = await sslValidator.validateCertificate(url);
-      
+
       expect(result.valid).toBe(false);
       expect(result.error).toBe('Connection failed');
     });
@@ -158,16 +156,14 @@ describe('SSLValidator', () => {
 
       // Simulate timeout
       setTimeout(() => {
-        const timeoutCallback = mockRequest.on.mock.calls.find(
-          (call) => call[0] === 'timeout'
-        );
+        const timeoutCallback = mockRequest.on.mock.calls.find((call) => call[0] === 'timeout');
         if (timeoutCallback) {
           timeoutCallback[1]();
         }
       }, 0);
 
       const result = await sslValidator.validateCertificate(url);
-      
+
       expect(result.valid).toBe(false);
       expect(result.error).toBe('Connection timeout');
     });
@@ -175,9 +171,9 @@ describe('SSLValidator', () => {
     it('should use custom CA certificate when set', async () => {
       const url = 'https://example.com';
       const customCA = '-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----';
-      
+
       sslValidator.setCustomCA(customCA);
-      
+
       const mockResponse = {
         socket: {
           getPeerCertificate: jest.fn().mockReturnValue({
@@ -198,7 +194,7 @@ describe('SSLValidator', () => {
       });
 
       await sslValidator.validateCertificate(url);
-      
+
       expect(mockHttpsRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           ca: customCA,
@@ -209,9 +205,9 @@ describe('SSLValidator', () => {
 
     it('should handle invalid URLs', async () => {
       const url = 'invalid-url';
-      
+
       const result = await sslValidator.validateCertificate(url);
-      
+
       expect(result.valid).toBe(false);
       expect(result.error).toContain('Invalid URL');
     });
@@ -220,9 +216,9 @@ describe('SSLValidator', () => {
   describe('setCustomCA', () => {
     it('should set custom CA certificate', () => {
       const customCA = '-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----';
-      
+
       sslValidator.setCustomCA(customCA);
-      
+
       expect(sslValidator.getCustomCA()).toBe(customCA);
     });
   });
@@ -231,9 +227,9 @@ describe('SSLValidator', () => {
     it('should clear custom CA certificate', () => {
       const customCA = '-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----';
       sslValidator.setCustomCA(customCA);
-      
+
       sslValidator.clearCustomCA();
-      
+
       expect(sslValidator.getCustomCA()).toBeUndefined();
     });
   });
@@ -241,16 +237,16 @@ describe('SSLValidator', () => {
   describe('getCustomCA', () => {
     it('should return undefined when no custom CA is set', () => {
       const result = sslValidator.getCustomCA();
-      
+
       expect(result).toBeUndefined();
     });
 
     it('should return custom CA when set', () => {
       const customCA = '-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----';
       sslValidator.setCustomCA(customCA);
-      
+
       const result = sslValidator.getCustomCA();
-      
+
       expect(result).toBe(customCA);
     });
   });

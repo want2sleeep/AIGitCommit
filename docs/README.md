@@ -17,6 +17,7 @@
 
 ### 进阶指南
 - [📋 约定式提交](guides/conventional-commits.md) - 提交信息规范
+- [⚡ 混合模型策略](configuration/hybrid-model-strategy.md) - 优化大型提交处理
 - [🔧 高级配置](configuration/README.md#高级配置) - 自定义和优化
 - [🔍 故障排查](troubleshooting.md) - 常见问题和解决方案
 
@@ -49,6 +50,7 @@ docs/
 | **配置OpenAI** | [OpenAI配置](configuration/openai.md) |
 | **配置Gemini** | [Gemini配置](configuration/gemini.md) |
 | **使用本地模型** | [Ollama配置](configuration/ollama.md) |
+| **优化大型提交** | [混合模型策略](configuration/hybrid-model-strategy.md) |
 | **遇到问题** | [故障排查](troubleshooting.md) |
 | **了解提交规范** | [约定式提交](guides/conventional-commits.md) |
 | **参与开发** | [贡献指南](../CONTRIBUTING.md) |

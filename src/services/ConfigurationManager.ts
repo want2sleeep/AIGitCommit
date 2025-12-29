@@ -47,7 +47,8 @@ export class ConfigurationManager {
   async validateConfig(): Promise<ValidationResult> {
     try {
       const config = await this.getConfig();
-      return this.validator.validateConfig(config);
+      const provider = this.getProvider();
+      return this.validator.validateConfig(config, provider);
     } catch (error) {
       if (error instanceof ConfigurationError) {
         throw error;
@@ -372,6 +373,72 @@ export class ConfigurationManager {
       throw new ConfigurationError(
         `更新大型 Diff 配置失败: ${error instanceof Error ? error.message : String(error)}`,
         'update'
+      );
+    }
+  }
+
+  /**
+   * 获取 Chunk 模型配置
+   * @returns Chunk 模型名称（可选）
+   */
+  getChunkModel(): string | undefined {
+    const config = vscode.workspace.getConfiguration(CONFIG_CONSTANTS.SECTION);
+    const chunkModel = config.get<string>('chunkModel', '');
+
+    // 如果配置为空字符串，返回 undefined
+    return chunkModel && chunkModel.trim() !== '' ? chunkModel.trim() : undefined;
+  }
+
+  /**
+   * 更新 Chunk 模型配置
+   * @param chunkModel Chunk 模型名称（空字符串表示清除配置）
+   * @param target 配置目标（全局或工作区）
+   * @throws {ConfigurationError} 当配置更新失败时
+   */
+  async updateChunkModel(
+    chunkModel: string,
+    target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Global
+  ): Promise<void> {
+    try {
+      const config = vscode.workspace.getConfiguration(CONFIG_CONSTANTS.SECTION);
+
+      // 如果是空字符串，清除配置
+      const valueToSet = chunkModel && chunkModel.trim() !== '' ? chunkModel.trim() : '';
+
+      await config.update('chunkModel', valueToSet, target);
+      this.invalidateCache();
+    } catch (error) {
+      throw new ConfigurationError(
+        `更新 Chunk 模型配置失败: ${error instanceof Error ? error.message : String(error)}`,
+        'update'
+      );
+    }
+  }
+
+  /**
+   * 验证 Chunk 模型配置
+   * @param chunkModel Chunk 模型名称
+   * @returns 验证结果
+   */
+  async validateChunkModel(chunkModel: string): Promise<ValidationResult> {
+    try {
+      const config = await this.getConfig();
+      const provider = this.getProvider();
+
+      // 创建临时配置对象用于验证
+      const tempConfig = {
+        ...config,
+        chunkModel: chunkModel && chunkModel.trim() !== '' ? chunkModel.trim() : undefined,
+      };
+
+      return this.validator.validateConfig(tempConfig, provider);
+    } catch (error) {
+      if (error instanceof ConfigurationError) {
+        throw error;
+      }
+      throw new ConfigurationError(
+        `Chunk 模型验证失败: ${error instanceof Error ? error.message : String(error)}`,
+        'validation'
       );
     }
   }

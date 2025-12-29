@@ -538,6 +538,110 @@ export class SmartDiffFilter implements ISmartDiffFilter {
   }
 
   /**
+   * 处理大型文件列表
+   * 当文件列表超过最大限制时，按优先级排序并限制数量
+   * @param changes 文件变更列表
+   * @returns 处理后的文件变更列表
+   */
+  private handleLargeFileList(changes: GitChange[]): GitChange[] {
+    if (changes.length <= this.maxFileListSize) {
+      return changes;
+    }
+
+    // 按优先级排序文件
+    const prioritizedChanges = this.prioritizeFiles(changes);
+
+    // 取前 maxFileListSize 个重要文件
+    const selectedChanges = prioritizedChanges.slice(0, this.maxFileListSize);
+
+    // 记录警告
+    this.logWarning(
+      `文件列表过大 (${changes.length} 个文件)，已限制为前 ${this.maxFileListSize} 个重要文件`
+    );
+
+    return selectedChanges;
+  }
+
+  /**
+   * 文件优先级排序
+   * 按照文件类型和重要性对文件进行排序
+   * @param changes 文件变更列表
+   * @returns 排序后的文件变更列表
+   */
+  private prioritizeFiles(changes: GitChange[]): GitChange[] {
+    // 优先级规则：
+    // 1. 源代码文件 (.ts, .js, .py, .java 等)
+    // 2. 配置文件 (package.json, tsconfig.json 等)
+    // 3. 文档文件 (.md, .txt)
+    // 4. 其他文件
+
+    const priorityExtensions = {
+      high: [
+        '.ts',
+        '.js',
+        '.tsx',
+        '.jsx',
+        '.py',
+        '.java',
+        '.go',
+        '.rs',
+        '.c',
+        '.cpp',
+        '.cs',
+        '.rb',
+        '.php',
+        '.swift',
+        '.kt',
+      ],
+      medium: ['.json', '.yaml', '.yml', '.toml', '.xml', '.config', '.conf'],
+      low: ['.md', '.txt', '.rst', '.adoc'],
+    };
+
+    return [...changes].sort((a, b) => {
+      const extA = this.getFileExtension(a.path);
+      const extB = this.getFileExtension(b.path);
+
+      const priorityA = this.getPriority(extA, priorityExtensions);
+      const priorityB = this.getPriority(extB, priorityExtensions);
+
+      return priorityB - priorityA;
+    });
+  }
+
+  /**
+   * 获取文件扩展名
+   * @param filePath 文件路径
+   * @returns 文件扩展名（包含点号）
+   */
+  private getFileExtension(filePath: string): string {
+    const lastDotIndex = filePath.lastIndexOf('.');
+    if (lastDotIndex === -1 || lastDotIndex === filePath.length - 1) {
+      return '';
+    }
+    return filePath.substring(lastDotIndex).toLowerCase();
+  }
+
+  /**
+   * 获取文件优先级
+   * @param extension 文件扩展名
+   * @param priorityExtensions 优先级扩展名映射
+   * @returns 优先级分数（越高越重要）
+   */
+  private getPriority(
+    extension: string,
+    priorityExtensions: { high: string[]; medium: string[]; low: string[] }
+  ): number {
+    if (priorityExtensions.high.includes(extension)) {
+      return 3;
+    } else if (priorityExtensions.medium.includes(extension)) {
+      return 2;
+    } else if (priorityExtensions.low.includes(extension)) {
+      return 1;
+    }
+    return 0;
+  }
+
+  /**
    * 过滤文件变更列表
    * @param changes 原始文件变更列表
    * @returns 过滤后的文件变更列表和过滤统计信息
@@ -589,14 +693,17 @@ export class SmartDiffFilter implements ISmartDiffFilter {
 
     // 检查是否超过最大限制
     if (this.exceedsMaxFileListSize(changes)) {
+      // 处理大型文件列表：按优先级排序并限制数量
+      const limitedChanges = this.handleLargeFileList(changes);
+
       return {
-        filteredChanges: changes,
+        filteredChanges: limitedChanges,
         stats: {
           totalFiles,
-          coreFiles: totalFiles,
-          ignoredFiles: 0,
+          coreFiles: limitedChanges.length,
+          ignoredFiles: totalFiles - limitedChanges.length,
           filtered: false,
-          skipReason: `Too many files (> ${this.maxFileListSize}), skipping to prevent context overflow`,
+          skipReason: `Too many files (${totalFiles} > ${this.maxFileListSize}), limited to ${limitedChanges.length} prioritized files`,
         },
       };
     }

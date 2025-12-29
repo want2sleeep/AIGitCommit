@@ -18,6 +18,7 @@ describe('ConfigurationManager', () => {
     commitFormat: 'conventional',
     maxTokens: 500,
     temperature: 0.7,
+    chunkModel: '',
   };
 
   beforeEach(() => {
@@ -73,6 +74,7 @@ describe('ConfigurationManager', () => {
         commitFormat: 'conventional',
         maxTokens: 500,
         temperature: 0.7,
+        chunkModel: '',
       });
     });
 
@@ -406,6 +408,7 @@ describe('ConfigurationManager', () => {
         commitFormat: 'conventional',
         maxTokens: 500,
         temperature: 0.7,
+        chunkModel: '',
         provider: 'openai-compatible',
       });
     });
@@ -430,6 +433,7 @@ describe('ConfigurationManager', () => {
         commitFormat: 'simple',
         maxTokens: 1000,
         temperature: 0.5,
+        chunkModel: 'llama2:7b',
       };
 
       await configManager.saveFullConfig(fullConfig);
@@ -468,6 +472,11 @@ describe('ConfigurationManager', () => {
       expect(mockConfig.update).toHaveBeenCalledWith(
         'temperature',
         0.5,
+        vscode.ConfigurationTarget.Global
+      );
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'chunkModel',
+        'llama2:7b',
         vscode.ConfigurationTarget.Global
       );
     });
@@ -662,6 +671,151 @@ describe('ConfigurationManager', () => {
         'openai',
         vscode.ConfigurationTarget.Global
       );
+    });
+  });
+
+  describe('getChunkModel', () => {
+    it('should return configured chunk model', () => {
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        if (key === 'chunkModel') return 'gpt-4o-mini';
+        return defaultConfigs[key] !== undefined ? defaultConfigs[key] : defaultValue;
+      });
+
+      const chunkModel = configManager.getChunkModel();
+
+      expect(chunkModel).toBe('gpt-4o-mini');
+    });
+
+    it('should return undefined when chunk model is empty string', () => {
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        if (key === 'chunkModel') return '';
+        return defaultConfigs[key] !== undefined ? defaultConfigs[key] : defaultValue;
+      });
+
+      const chunkModel = configManager.getChunkModel();
+
+      expect(chunkModel).toBeUndefined();
+    });
+
+    it('should return undefined when chunk model is whitespace', () => {
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        if (key === 'chunkModel') return '   ';
+        return defaultConfigs[key] !== undefined ? defaultConfigs[key] : defaultValue;
+      });
+
+      const chunkModel = configManager.getChunkModel();
+
+      expect(chunkModel).toBeUndefined();
+    });
+
+    it('should trim chunk model value', () => {
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        if (key === 'chunkModel') return '  gpt-4o-mini  ';
+        return defaultConfigs[key] !== undefined ? defaultConfigs[key] : defaultValue;
+      });
+
+      const chunkModel = configManager.getChunkModel();
+
+      expect(chunkModel).toBe('gpt-4o-mini');
+    });
+  });
+
+  describe('updateChunkModel', () => {
+    it('should update chunk model configuration', async () => {
+      await configManager.updateChunkModel('gpt-4o-mini');
+
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'chunkModel',
+        'gpt-4o-mini',
+        vscode.ConfigurationTarget.Global
+      );
+    });
+
+    it('should clear chunk model when empty string provided', async () => {
+      await configManager.updateChunkModel('');
+
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'chunkModel',
+        '',
+        vscode.ConfigurationTarget.Global
+      );
+    });
+
+    it('should trim chunk model value before saving', async () => {
+      await configManager.updateChunkModel('  gpt-4o-mini  ');
+
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'chunkModel',
+        'gpt-4o-mini',
+        vscode.ConfigurationTarget.Global
+      );
+    });
+
+    it('should use specified configuration target', async () => {
+      await configManager.updateChunkModel('gpt-4o-mini', vscode.ConfigurationTarget.Workspace);
+
+      expect(mockConfig.update).toHaveBeenCalledWith(
+        'chunkModel',
+        'gpt-4o-mini',
+        vscode.ConfigurationTarget.Workspace
+      );
+    });
+
+    it('should throw ConfigurationError on update failure', async () => {
+      mockConfig.update.mockRejectedValue(new Error('Update failed'));
+
+      await expect(configManager.updateChunkModel('gpt-4o-mini')).rejects.toThrow(
+        '更新 Chunk 模型配置失败'
+      );
+    });
+  });
+
+  describe('validateChunkModel', () => {
+    it('should validate valid chunk model', async () => {
+      mockSecrets.get.mockResolvedValue('test-api-key');
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        if (key === 'provider') return 'openai';
+        return defaultConfigs[key] !== undefined ? defaultConfigs[key] : defaultValue;
+      });
+
+      const result = await configManager.validateChunkModel('gpt-4o-mini');
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('should detect invalid chunk model format', async () => {
+      mockSecrets.get.mockResolvedValue('test-api-key');
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        if (key === 'provider') return 'openai';
+        return defaultConfigs[key] !== undefined ? defaultConfigs[key] : defaultValue;
+      });
+
+      const result = await configManager.validateChunkModel('invalid model@#$');
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes('模型名称格式无效'))).toBe(true);
+    });
+
+    it('should allow empty chunk model', async () => {
+      mockSecrets.get.mockResolvedValue('test-api-key');
+
+      const result = await configManager.validateChunkModel('');
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('should validate chunk model against provider', async () => {
+      mockSecrets.get.mockResolvedValue('test-api-key');
+      mockConfig.get.mockImplementation((key: string, defaultValue?: any) => {
+        if (key === 'provider') return 'gemini';
+        if (key === 'modelName') return 'gemini-pro';
+        return defaultConfigs[key] !== undefined ? defaultConfigs[key] : defaultValue;
+      });
+
+      const result = await configManager.validateChunkModel('gpt-4o-mini');
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes('不匹配'))).toBe(true);
     });
   });
 

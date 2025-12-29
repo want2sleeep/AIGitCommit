@@ -11,6 +11,7 @@ import * as vscode from 'vscode';
  * @property commitFormat - 提交信息格式（conventional或simple）
  * @property maxTokens - API请求的最大token数
  * @property temperature - LLM生成的温度参数（0-2之间）
+ * @property chunkModel - 可选，用于Map阶段的专用轻量级模型
  */
 export interface ExtensionConfig {
   apiEndpoint: string;
@@ -20,6 +21,7 @@ export interface ExtensionConfig {
   commitFormat: string;
   maxTokens: number;
   temperature: number;
+  chunkModel?: string;
 }
 
 /**
@@ -93,10 +95,12 @@ export interface GitChange {
  *
  * @property valid - 配置是否有效
  * @property errors - 验证错误消息列表
+ * @property confirmations - 验证通过时的确认信息列表（可选）
  */
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
+  confirmations?: string[];
 }
 
 /**

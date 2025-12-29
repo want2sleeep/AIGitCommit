@@ -363,6 +363,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       welcomePageManager.showWelcome();
     }
 
+    // 显示混合模型策略功能通知（首次使用时）
+    const hybridModelNotification = serviceContainer.resolve<{
+      shouldShowNotification: () => boolean;
+      showFeatureNotification: () => Promise<void>;
+    }>(ServiceKeys.HybridModelNotification);
+
+    // 异步显示通知，不阻塞激活流程
+    if (hybridModelNotification.shouldShowNotification()) {
+      // 延迟 2 秒显示，避免与欢迎页面冲突
+      setTimeout(() => {
+        void hybridModelNotification.showFeatureNotification();
+      }, 2000);
+    }
+
     // 创建状态栏项
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     statusBarItem.command = COMMANDS.GENERATE_MESSAGE;

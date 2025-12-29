@@ -23,6 +23,7 @@ class MockSummaryGenerator implements IChunkSummaryGenerator {
   private failCount: number;
   private currentFailCount = 0;
   private delay: number;
+  private receivedModelIds: (string | undefined)[] = [];
 
   constructor(options: { shouldFail?: boolean; failCount?: number; delay?: number } = {}) {
     this.shouldFail = options.shouldFail ?? false;
@@ -30,10 +31,11 @@ class MockSummaryGenerator implements IChunkSummaryGenerator {
     this.delay = options.delay ?? 0;
   }
 
-  async generateSummary(prompt: string): Promise<string> {
+  async generateSummary(prompt: string, options?: { modelId?: string }): Promise<string> {
     this.callCount++;
     this.concurrentCalls++;
     this.maxConcurrentCalls = Math.max(this.maxConcurrentCalls, this.concurrentCalls);
+    this.receivedModelIds.push(options?.modelId);
 
     try {
       if (this.delay > 0) {
@@ -59,11 +61,16 @@ class MockSummaryGenerator implements IChunkSummaryGenerator {
     return this.maxConcurrentCalls;
   }
 
+  getReceivedModelIds(): (string | undefined)[] {
+    return this.receivedModelIds;
+  }
+
   resetStats(): void {
     this.callCount = 0;
     this.concurrentCalls = 0;
     this.maxConcurrentCalls = 0;
     this.currentFailCount = 0;
+    this.receivedModelIds = [];
   }
 }
 
@@ -432,6 +439,75 @@ describe('ChunkProcessor 属性测试', () => {
       // 第二个 chunk 应该能获取到第一个 chunk 的摘要
       // 但由于 buildChunkPrompt 是在处理后调用的，我们需要验证机制是否正确
       expect(prompt2).toContain('块位置: 2/3');
+    });
+  });
+
+  /**
+   * **Feature: hybrid-model-strategy, Property 6: Map 模型传递**
+   * **验证: 需求 4.4**
+   *
+   * 对于任意处理的 chunk，ChunkProcessor 应当将确定的 Map 模型 ID 传递给 generateSummary 方法
+   */
+  describe('属性 6: Map 模型传递', () => {
+    it('应当将 mapModelId 传递给所有 chunk 的 generateSummary 调用', async () => {
+      const mockService = new MockSummaryGenerator();
+      const processor = new ChunkProcessor(mockService);
+
+      const chunks: DiffChunk[] = [];
+      const chunkCount = 3;
+      for (let i = 0; i < chunkCount; i++) {
+        chunks.push({
+          content: `diff content ${i}`,
+          filePath: `file${i}.ts`,
+          chunkIndex: i,
+          totalChunks: chunkCount,
+          splitLevel: DiffSplitLevel.File,
+          context: { fileHeader: '' },
+        });
+      }
+
+      const mapModelId = 'gpt-4o-mini';
+      const config: ProcessConfig = {
+        concurrency: 2,
+        maxRetries: 0,
+        initialRetryDelay: 10,
+        mapModelId,
+      };
+
+      await processor.processChunks(chunks, config);
+
+      // 验证所有调用都收到了 mapModelId
+      const receivedModelIds = mockService.getReceivedModelIds();
+      expect(receivedModelIds.length).toBe(chunkCount);
+      expect(receivedModelIds.every((id) => id === mapModelId)).toBe(true);
+    });
+
+    it('当未提供 mapModelId 时，应当传递 undefined', async () => {
+      const mockService = new MockSummaryGenerator();
+      const processor = new ChunkProcessor(mockService);
+
+      const chunk: DiffChunk = {
+        content: 'test diff',
+        filePath: 'test.ts',
+        chunkIndex: 0,
+        totalChunks: 1,
+        splitLevel: DiffSplitLevel.File,
+        context: { fileHeader: '' },
+      };
+
+      const config: ProcessConfig = {
+        concurrency: 1,
+        maxRetries: 0,
+        initialRetryDelay: 10,
+        // 不提供 mapModelId
+      };
+
+      await processor.processChunks([chunk], config);
+
+      // 验证收到的 modelId 是 undefined
+      const receivedModelIds = mockService.getReceivedModelIds();
+      expect(receivedModelIds.length).toBe(1);
+      expect(receivedModelIds[0]).toBeUndefined();
     });
   });
 });

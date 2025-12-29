@@ -122,8 +122,8 @@ describe('SmartDiffFilter', () => {
     });
   });
 
-  describe('超大文件列表跳过', () => {
-    it('应当跳过超过 500 个文件的列表', async () => {
+  describe('超大文件列表处理', () => {
+    it('应当限制超过 500 个文件的列表', async () => {
       const changes = Array.from({ length: 501 }, (_, i) => createGitChange(`file${i}.ts`));
 
       const mockLLMService = createMockLLMService();
@@ -132,10 +132,96 @@ describe('SmartDiffFilter', () => {
 
       const result = await filter.filterChanges(changes);
 
-      expect(result.filteredChanges).toHaveLength(501);
+      // 应当限制为 500 个文件
+      expect(result.filteredChanges).toHaveLength(500);
       expect(result.stats.filtered).toBe(false);
       expect(result.stats.skipReason).toContain('Too many files');
+      expect(result.stats.skipReason).toContain('limited to 500 prioritized files');
+      expect(result.stats.totalFiles).toBe(501);
+      expect(result.stats.coreFiles).toBe(500);
+      expect(result.stats.ignoredFiles).toBe(1);
       expect(mockLLMService.generateCommitMessage).not.toHaveBeenCalled();
+    });
+
+    it('应当按优先级排序文件', async () => {
+      // 创建混合类型的文件列表
+      const changes = [
+        createGitChange('image.png'), // 低优先级
+        createGitChange('src/index.ts'), // 高优先级
+        createGitChange('README.md'), // 低优先级
+        createGitChange('package.json'), // 中优先级
+        createGitChange('dist/bundle.js'), // 无优先级
+        createGitChange('src/utils.py'), // 高优先级
+        ...Array.from({ length: 495 }, (_, i) => createGitChange(`file${i}.txt`)), // 填充到 501
+      ];
+
+      const mockLLMService = createMockLLMService();
+      const config = createTestConfig();
+      const filter = new SmartDiffFilter(mockLLMService, config);
+
+      const result = await filter.filterChanges(changes);
+
+      // 应当限制为 500 个文件
+      expect(result.filteredChanges).toHaveLength(500);
+
+      // 验证高优先级文件在前面
+      const paths = result.filteredChanges.map((c) => c.path);
+      const tsIndex = paths.indexOf('src/index.ts');
+      const pyIndex = paths.indexOf('src/utils.py');
+      const jsonIndex = paths.indexOf('package.json');
+      const mdIndex = paths.indexOf('README.md');
+
+      // 高优先级文件应该在列表中
+      expect(tsIndex).toBeGreaterThanOrEqual(0);
+      expect(pyIndex).toBeGreaterThanOrEqual(0);
+
+      // 中优先级文件应该在列表中
+      expect(jsonIndex).toBeGreaterThanOrEqual(0);
+
+      // 低优先级文件应该在列表中
+      expect(mdIndex).toBeGreaterThanOrEqual(0);
+    });
+
+    it('应当正确处理恰好 500 个文件的列表', async () => {
+      const changes = Array.from({ length: 500 }, (_, i) => createGitChange(`file${i}.ts`));
+
+      const mockLLMService = createMockLLMService('["file0.ts"]');
+      const config = createTestConfig();
+      const filter = new SmartDiffFilter(mockLLMService, config);
+
+      const result = await filter.filterChanges(changes);
+
+      // 应当正常过滤，不触发限制
+      expect(result.filteredChanges).toHaveLength(1);
+      expect(result.stats.filtered).toBe(true);
+      expect(mockLLMService.generateCommitMessage).toHaveBeenCalled();
+    });
+
+    it('应当优先保留源代码文件', async () => {
+      // 创建大量非源代码文件和少量源代码文件
+      const changes = [
+        ...Array.from({ length: 450 }, (_, i) => createGitChange(`image${i}.png`)),
+        ...Array.from({ length: 30 }, (_, i) => createGitChange(`src/file${i}.ts`)),
+        ...Array.from({ length: 30 }, (_, i) => createGitChange(`config${i}.json`)),
+      ];
+
+      const mockLLMService = createMockLLMService();
+      const config = createTestConfig();
+      const filter = new SmartDiffFilter(mockLLMService, config);
+
+      const result = await filter.filterChanges(changes);
+
+      // 应当限制为 500 个文件
+      expect(result.filteredChanges).toHaveLength(500);
+
+      // 验证所有源代码文件都被保留
+      const paths = result.filteredChanges.map((c) => c.path);
+      const tsFiles = paths.filter((p) => p.endsWith('.ts'));
+      expect(tsFiles.length).toBe(30); // 所有 30 个 .ts 文件都应该被保留
+
+      // 验证所有配置文件都被保留
+      const jsonFiles = paths.filter((p) => p.endsWith('.json'));
+      expect(jsonFiles.length).toBe(30); // 所有 30 个 .json 文件都应该被保留
     });
   });
 
