@@ -147,56 +147,97 @@ export class LargeDiffHandler implements ILargeDiffHandler {
   }
 
   /**
+   * 选择并验证 Map 阶段使用的模型
+   */
+  private selectAndValidateMapModel(config: ExtensionConfig | FullConfig): {
+    mapModelId: string | undefined;
+    usedFallback: boolean;
+  } {
+    if (!this.modelSelector || !this.isFullConfig(config)) {
+      return { mapModelId: undefined, usedFallback: false };
+    }
+
+    const selectedModel = this.modelSelector.selectMapModel(config);
+    const isValid = this.modelSelector.validateModel(selectedModel, config.provider);
+
+    if (isValid) {
+      console.log(`[LargeDiffHandler] Map 阶段使用模型: ${selectedModel}`);
+      console.log(`[LargeDiffHandler] Reduce 阶段使用模型: ${config.modelName}`);
+      return { mapModelId: selectedModel, usedFallback: false };
+    }
+
+    // 验证失败，回退到主模型
+    console.warn(
+      `[LargeDiffHandler] 选定的 Map 模型 ${selectedModel} 验证失败，回退到主模型 ${config.modelName}`
+    );
+
+    // 显示回退警告
+    if (this.hybridModelFeedback) {
+      this.hybridModelFeedback.showFallbackWarning(selectedModel, config.modelName);
+    }
+
+    // 验证主模型
+    const isPrimaryValid = this.modelSelector.validateModel(config.modelName, config.provider);
+    if (!isPrimaryValid) {
+      console.error(
+        `[LargeDiffHandler] 主模型 ${config.modelName} 也验证失败！将继续使用但可能出现问题`
+      );
+    }
+
+    return { mapModelId: config.modelName, usedFallback: true };
+  }
+
+  /**
+   * 显示使用情况摘要
+   */
+  private showUsageSummaryIfApplicable(
+    config: ExtensionConfig | FullConfig,
+    mapModelId: string | undefined,
+    chunksLength: number,
+    processingTime: number,
+    usedFallback: boolean
+  ): void {
+    if (
+      !this.hybridModelFeedback ||
+      !this.isFullConfig(config) ||
+      !mapModelId ||
+      mapModelId === config.modelName ||
+      usedFallback
+    ) {
+      return;
+    }
+
+    const tokenSavings = this.calculateTokenSavings(
+      mapModelId,
+      config.modelName,
+      chunksLength,
+      config.provider
+    );
+
+    console.log(`[LargeDiffHandler] 处理完成，耗时: ${processingTime}ms`);
+
+    this.hybridModelFeedback.showUsageSummary(
+      mapModelId,
+      config.modelName,
+      chunksLength,
+      tokenSavings,
+      processingTime
+    );
+  }
+
+  /**
    * 使用 Map-Reduce 处理大型 diff
    */
   private async handleWithMapReduce(
     diff: string,
     config: ExtensionConfig | FullConfig
   ): Promise<string> {
-    // 记录开始时间用于性能统计
     const startTime = Date.now();
 
     // 1. 选择 Map 阶段使用的模型
-    let mapModelId: string | undefined;
-    let selectedModel: string | undefined;
-    let usedFallback = false;
+    const { mapModelId, usedFallback } = this.selectAndValidateMapModel(config);
 
-    if (this.modelSelector && this.isFullConfig(config)) {
-      // 选择 Map 模型
-      selectedModel = this.modelSelector.selectMapModel(config);
-
-      // 2. 验证选定的模型
-      const isValid = this.modelSelector.validateModel(selectedModel, config.provider);
-
-      if (isValid) {
-        // 验证通过，使用选定的模型
-        mapModelId = selectedModel;
-        console.log(`[LargeDiffHandler] Map 阶段使用模型: ${mapModelId}`);
-        console.log(`[LargeDiffHandler] Reduce 阶段使用模型: ${config.modelName}`);
-      } else {
-        // 验证失败，回退到主模型
-        console.warn(
-          `[LargeDiffHandler] 选定的 Map 模型 ${selectedModel} 验证失败，回退到主模型 ${config.modelName}`
-        );
-        mapModelId = config.modelName;
-        usedFallback = true;
-
-        // 显示回退警告
-        if (this.hybridModelFeedback) {
-          this.hybridModelFeedback.showFallbackWarning(selectedModel, config.modelName);
-        }
-
-        // 验证主模型
-        const isPrimaryValid = this.modelSelector.validateModel(config.modelName, config.provider);
-        if (!isPrimaryValid) {
-          console.error(
-            `[LargeDiffHandler] 主模型 ${config.modelName} 也验证失败！将继续使用但可能出现问题`
-          );
-        }
-      }
-    }
-
-    // 3. 拆分 diff
+    // 2. 拆分 diff
     const effectiveLimit = this.tokenEstimator.getEffectiveLimit();
     const chunks = this.diffSplitter.split(diff, effectiveLimit);
 
@@ -214,7 +255,7 @@ export class LargeDiffHandler implements ILargeDiffHandler {
       this.hybridModelFeedback.logProcessingStart(chunks.length);
     }
 
-    // 4. Map 阶段：并发处理 chunks
+    // 3. Map 阶段：并发处理 chunks
     const processConfig: ProcessConfig = {
       concurrency: this.largeDiffConfig.maxConcurrentRequests,
       maxRetries: this.largeDiffConfig.maxRetries,
@@ -224,7 +265,7 @@ export class LargeDiffHandler implements ILargeDiffHandler {
 
     const summaries = await this.chunkProcessor.processChunks(chunks, processConfig);
 
-    // 5. Reduce 阶段：合并摘要
+    // 4. Reduce 阶段：合并摘要
     const finalMessage = await this.summaryMerger.merge(summaries, config);
 
     // 记录处理时间
@@ -235,33 +276,14 @@ export class LargeDiffHandler implements ILargeDiffHandler {
       this.hybridModelFeedback.logProcessingComplete(chunks.length, processingTime);
     }
 
-    // 6. 显示使用情况摘要（如果使用了混合模型策略）
-    if (
-      this.hybridModelFeedback &&
-      this.isFullConfig(config) &&
-      mapModelId &&
-      mapModelId !== config.modelName &&
-      !usedFallback
-    ) {
-      // 计算 token 节省百分比
-      const tokenSavings = this.calculateTokenSavings(
-        mapModelId,
-        config.modelName,
-        chunks.length,
-        config.provider
-      );
-
-      console.log(`[LargeDiffHandler] 处理完成，耗时: ${processingTime}ms`);
-
-      // 显示使用情况摘要
-      this.hybridModelFeedback.showUsageSummary(
-        mapModelId,
-        config.modelName,
-        chunks.length,
-        tokenSavings,
-        processingTime
-      );
-    }
+    // 5. 显示使用情况摘要（如果使用了混合模型策略）
+    this.showUsageSummaryIfApplicable(
+      config,
+      mapModelId,
+      chunks.length,
+      processingTime,
+      usedFallback
+    );
 
     return finalMessage;
   }
