@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { WelcomePageManager } from '../WelcomePageManager';
 import type { ServiceContainer } from '../ServiceContainer';
+import { ServiceKeys } from '../ServiceContainer';
 
 // Mock vscode module
 jest.mock('vscode', () => ({
@@ -128,7 +129,9 @@ describe('WelcomePageManager', () => {
 
       expect(mockGlobalState.update).toHaveBeenCalledWith('aigitcommit.welcomeShown', true);
       expect(mockWebviewPanel.dispose).toHaveBeenCalled();
-      expect(mockServiceContainer.resolve).toHaveBeenCalledWith('configurationPanelManager');
+      expect(mockServiceContainer.resolve).toHaveBeenCalledWith(
+        ServiceKeys.ConfigurationPanelManager
+      );
       expect(mockConfigPanelManager.showPanel).toHaveBeenCalled();
     });
 

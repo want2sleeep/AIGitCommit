@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import type { ServiceContainer } from './ServiceContainer';
+import { ServiceKeys } from './ServiceContainer';
 
 /**
  * 欢迎页面管理器
@@ -83,7 +84,7 @@ export class WelcomePageManager {
 
     const configPanelManager = this.serviceContainer.resolve<{
       showPanel: () => Promise<void>;
-    }>('configurationPanelManager');
+    }>(ServiceKeys.ConfigurationPanelManager);
     await configPanelManager.showPanel();
   }
 
